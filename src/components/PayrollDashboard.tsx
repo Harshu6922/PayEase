@@ -1,0 +1,291 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { formatINR } from '@/lib/payroll-utils'
+
+// Data types passed from Server
+interface Employee {
+  id: string
+  employee_id: string
+  full_name: string
+  company_id: string
+  monthly_salary: number
+}
+
+interface AttendanceRecord {
+  employee_id: string
+  date: string
+  worked_hours: number
+  overtime_hours: number | null
+  overtime_amount: number | null
+  deduction_amount: number | null
+}
+
+interface Advance {
+  employee_id: string
+  amount: number
+}
+
+interface PayrollDashboardProps {
+  initialMonth: string // YYYY-MM
+  employees: Employee[]
+  attendance: AttendanceRecord[]
+  advances: Advance[]
+  generateAction: (data: any) => Promise<void>
+}
+
+// Calculation Engine pure function
+function calculatePayroll(employees: Employee[], attendance: AttendanceRecord[], advances: Advance[], workingDays: number) {
+  let totalPayable = 0
+  let totalRecoverable = 0
+
+  const rows = employees.map(emp => {
+    // Filter attendance for this employee
+    const empAttendance = attendance.filter(a => a.employee_id === emp.id)
+    
+    let total_worked_days = 0
+    let total_overtime_amount = 0
+    let total_deduction_amount = 0
+
+    empAttendance.forEach(record => {
+      if (Number(record.worked_hours) > 0) total_worked_days += 1
+      total_overtime_amount += Number(record.overtime_amount || 0)
+      total_deduction_amount += Number(record.deduction_amount || 0)
+    })
+
+    // Calculate advances for this employee
+    const empAdvances = advances.filter(a => a.employee_id === emp.id)
+    const total_advances = empAdvances.reduce((sum, adv) => sum + Number(adv.amount), 0)
+
+    // Calculate Salary
+    const per_day_salary = workingDays > 0 ? Number(emp.monthly_salary) / workingDays : 0
+    const earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
+
+    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount - total_advances
+
+    // Aggregate totals based on positive/negative
+    if (final_payable_salary >= 0) {
+      totalPayable += final_payable_salary
+    } else {
+      totalRecoverable += Math.abs(final_payable_salary)
+    }
+
+    return {
+      employee_id: emp.id,
+      display_id: emp.employee_id,
+      full_name: emp.full_name,
+      total_worked_days,
+      earned_salary,
+      total_overtime_amount,
+      total_deduction_amount,
+      total_advances,
+      final_payable_salary
+    }
+  })
+  
+  // Sort alphabetically or by net payable mostly for consistancy, let's just sort by payable descending
+  rows.sort((a,b) => b.final_payable_salary - a.final_payable_salary)
+
+  const netPayout = totalPayable - totalRecoverable
+
+  return {
+    rows,
+    totalPayable,
+    totalRecoverable,
+    netPayout
+  }
+}
+
+function getDaysInMonth(monthStr: string) {
+  // monthStr is YYYY-MM
+  const parts = monthStr.split('-')
+  if (parts.length !== 2) return 30
+  
+  const year = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10)
+  
+  if (isNaN(year) || isNaN(month)) return 30
+  
+  return new Date(year, month, 0).getDate()
+}
+
+export default function PayrollDashboard({ 
+  initialMonth, 
+  employees, 
+  attendance, 
+  advances,
+  generateAction
+}: PayrollDashboardProps) {
+  const router = useRouter()
+  
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+  const [isGenerating, setIsGenerating] = useState(false)
+  // Use actual days in month for consistent daily wage calculation
+  const actualDaysInMonth = getDaysInMonth(selectedMonth)
+
+  // Memoize calculation so it ONLY runs when these specific variables change
+  const computedPayroll = useMemo(() => {
+    return calculatePayroll(employees, attendance, advances, actualDaysInMonth)
+  }, [employees, attendance, advances, actualDaysInMonth])
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMonth = e.target.value // Format YYYY-MM
+    if (!newMonth) return
+
+    setSelectedMonth(newMonth)
+
+    // Tell the server to fetch data for this new month
+    router.push(`/reports?month=${newMonth}`)
+  }
+
+  const handleGenerate = async () => {
+    setIsGenerating(true)
+    try {
+      // Pass the computed values to the Server Action
+      const [yearStr, monthStr] = selectedMonth.split('-')
+      await generateAction({
+        month: parseInt(monthStr, 10),
+        year: parseInt(yearStr, 10),
+        computedRows: computedPayroll.rows
+      })
+    } catch (e) {
+      console.error('Failed to generate payroll:', e)
+      alert('An error occurred generating the payroll.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Monthly Payroll Report</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Interactive dashboard for {selectedMonth}
+          </p>
+        </div>
+        <button 
+          onClick={handleGenerate}
+          disabled={isGenerating || computedPayroll.rows.length === 0}
+          className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isGenerating ? 'Generating...' : 'Generate Payroll'}
+        </button>
+      </div>
+
+      {/* Control Panel & Summary Section */}
+      <div className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm p-6">
+        <div className="flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
+          
+          {/* Controls */}
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div>
+              <label htmlFor="month-select" className="block text-sm font-medium leading-6 text-gray-900">Select Month</label>
+              <div className="mt-2">
+                <input
+                  type="month"
+                  id="month-select"
+                  value={selectedMonth}
+                  onChange={handleMonthChange}
+                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="days-select" className="block text-sm font-medium leading-6 text-gray-900">Days in Month</label>
+              <div className="mt-2">
+                <input
+                  type="number"
+                  id="days-select"
+                  min="1"
+                  max="31"
+                  value={actualDaysInMonth}
+                  readOnly
+                  className="block rounded-md border-0 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 sm:text-sm sm:leading-6 w-32 cursor-not-allowed"
+                  title="Based on actual days in selected month"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Dynamic Summary */}
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 bg-gray-50 rounded-lg p-4 border border-gray-100">
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-500 font-medium">Total Payable</span>
+              <span className="text-xl font-bold text-green-600">{formatINR(computedPayroll.totalPayable)}</span>
+            </div>
+            
+            <div className="w-px bg-gray-200 hidden sm:block"></div>
+            
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-500 font-medium">Total Recoverable</span>
+              <span className="text-xl font-bold text-red-600">
+                {computedPayroll.totalRecoverable > 0 ? `-${formatINR(computedPayroll.totalRecoverable)}` : formatINR(0)}
+              </span>
+            </div>
+
+            <div className="w-px bg-gray-200 hidden sm:block"></div>
+
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-500 font-medium">Final Net Payout</span>
+              <span className={`text-2xl font-black ${computedPayroll.netPayout < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                {computedPayroll.netPayout < 0 ? `-${formatINR(Math.abs(computedPayroll.netPayout))}` : formatINR(computedPayroll.netPayout)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Table */}
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm mb-12">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Overtime</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Advances</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Payable</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {!computedPayroll.rows || computedPayroll.rows.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                  No active employees found to calculate payroll for.
+                </td>
+              </tr>
+            ) : (
+              computedPayroll.rows.map((row) => (
+                <tr key={row.employee_id} className="hover:bg-gray-50 transition-colors">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                    {row.full_name} <span className="text-gray-400 text-xs font-normal block">{row.display_id}</span>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500 font-medium">{row.total_worked_days}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-700 font-medium">{formatINR(row.earned_salary)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500">{formatINR(row.total_overtime_amount)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-red-500">
+                    {row.total_deduction_amount > 0 ? `-${formatINR(row.total_deduction_amount)}` : '-'}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-orange-500">
+                    {row.total_advances > 0 ? `-${formatINR(row.total_advances)}` : '-'}
+                  </td>
+                  <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${row.final_payable_salary < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {row.final_payable_salary < 0 
+                      ? `Recover (${formatINR(Math.abs(row.final_payable_salary))})` 
+                      : formatINR(row.final_payable_salary)
+                    }
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
