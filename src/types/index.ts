@@ -63,3 +63,15 @@ export interface EmployeeAdvance {
   note?: string | null;
   created_at?: string;
 }
+
+export interface PayrollRow {
+  employee_id: string;      // internal UUID
+  display_id: string;       // human-readable ID (e.g. EMP-001)
+  full_name: string;
+  total_worked_days: number;
+  earned_salary: number;
+  total_overtime_amount: number;
+  total_deduction_amount: number;
+  total_advances: number;
+  final_payable_salary: number;
+}
