@@ -19,6 +19,7 @@ export interface Employee {
   overtime_multiplier: number;
   joining_date: string;
   is_active: boolean;
+  worker_type: 'salaried' | 'commission';
   created_at?: string;
 }
 
@@ -81,4 +82,33 @@ export interface ParsedPunchRow {
   date: string;           // 'YYYY-MM-DD'
   inTime: string | null;  // 'HH:mm' — null if only one punch
   outTime: string | null; // 'HH:mm' — null if only one punch
+}
+
+export interface CommissionItem {
+  id: string;
+  company_id: string;
+  name: string;
+  default_rate: number | null;
+  created_at: string;
+}
+
+export interface AgentItemRate {
+  id: string;
+  employee_id: string;
+  item_id: string;
+  commission_rate: number;
+  created_at: string;
+  commission_items?: Pick<CommissionItem, 'id' | 'name' | 'default_rate'>;
+}
+
+export interface WorkEntry {
+  id: string;
+  employee_id: string;
+  company_id: string;
+  date: string;           // 'YYYY-MM-DD'
+  item_id: string;
+  quantity: number;
+  rate: number;           // snapshotted at entry time
+  total_amount: number;   // generated column: quantity × rate
+  created_at: string;
 }
