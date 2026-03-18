@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { parseBiometricCsv } from '@/lib/biometric-utils';
 import { calculateDailyPayroll } from '@/lib/payroll-utils';
@@ -40,13 +40,13 @@ export default function BiometricImportModal({
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  function matchEmployee(name: string): Employee | null {
+  const matchEmployee = useCallback((name: string): Employee | null => {
     return (
       employees.find(
         e => e.full_name.toLowerCase() === name.toLowerCase(),
       ) ?? null
     );
-  }
+  }, [employees]);
 
   function computeStatus(
     parsed: ParsedPunchRow,
@@ -142,6 +142,8 @@ export default function BiometricImportModal({
     const failedLabels: string[] = [];
 
     for (const row of toProcess) {
+      // Safe: canImport ensures matchedEmployee !== null and outTime is resolved.
+      // inTime is always set by parseBiometricCsv when a row exists (times.length > 0).
       const emp = row.matchedEmployee!;
       const inTime = row.parsed.inTime!;
       const outTime = row.parsed.outTime ?? row.manualOutTime;
