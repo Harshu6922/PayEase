@@ -129,6 +129,8 @@ export default function PayrollDashboard({
   const [paidUpToDay, setPaidUpToDay] = useState<number | null>(null)
   const [isExportingBulk, setIsExportingBulk] = useState(false)
   const [exportingEmployeeId, setExportingEmployeeId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortOrder, setSortOrder] = useState<'default' | 'asc' | 'desc'>('default')
 
   useEffect(() => {
     setPaidUpToDay(null)
@@ -161,6 +163,28 @@ export default function PayrollDashboard({
       return sum + row.final_payable_salary + (prevBalances[row.employee_id] ?? 0)
     }, 0)
   }, [computedPayroll.rows, prevBalances])
+
+  const filteredRows = useMemo(() => {
+    let rows = computedPayroll.rows
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      rows = rows.filter(
+        r =>
+          r.full_name.toLowerCase().includes(q) ||
+          r.display_id.toLowerCase().includes(q)
+      )
+    }
+
+    if (sortOrder === 'asc') {
+      return [...rows].sort((a, b) => a.full_name.localeCompare(b.full_name))
+    }
+    if (sortOrder === 'desc') {
+      return [...rows].sort((a, b) => b.full_name.localeCompare(a.full_name))
+    }
+
+    return rows
+  }, [computedPayroll.rows, searchQuery, sortOrder])
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMonth = e.target.value // Format YYYY-MM
@@ -361,6 +385,25 @@ export default function PayrollDashboard({
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <input
+          type="text"
+          placeholder="Search employee…"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="block w-64 rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+        />
+        <button
+          onClick={() =>
+            setSortOrder(s => s === 'default' ? 'asc' : s === 'asc' ? 'desc' : 'default')
+          }
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+        >
+          {sortOrder === 'default' ? 'Default sort' : sortOrder === 'asc' ? 'A → Z' : 'Z → A'}
+        </button>
+      </div>
+
       {/* Dynamic Table */}
       <div className="overflow-hidden rounded-xl border bg-white shadow-sm mb-12">
         <table className="min-w-full divide-y divide-gray-200">
@@ -377,14 +420,16 @@ export default function PayrollDashboard({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
-            {!computedPayroll.rows || computedPayroll.rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No active employees found to calculate payroll for.
+                  {searchQuery.trim()
+                    ? 'No employees match your search.'
+                    : 'No active employees found to calculate payroll for.'}
                 </td>
               </tr>
             ) : (
-              computedPayroll.rows.map((row) => (
+              filteredRows.map((row) => (
                 <tr key={row.employee_id} className="hover:bg-gray-50 transition-colors">
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                     {row.full_name} <span className="text-gray-400 text-xs font-normal block">{row.display_id}</span>
