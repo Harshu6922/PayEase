@@ -81,6 +81,45 @@ CREATE TABLE public.work_entries (
 );
 ```
 
+### 1.5 Row Level Security
+
+All three new tables follow the same RLS pattern as `employee_advances` (see `sql/02-advances.sql`). The `get_my_company_id()` helper function already exists.
+
+**`commission_items`** — company-scoped via `company_id`:
+```sql
+ALTER TABLE public.commission_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Company admins manage commission items"
+ON public.commission_items FOR ALL TO authenticated
+USING (company_id = get_my_company_id())
+WITH CHECK (company_id = get_my_company_id());
+```
+
+**`agent_item_rates`** — scoped via the employee's company. Use a subquery since `agent_item_rates` has no direct `company_id`:
+```sql
+ALTER TABLE public.agent_item_rates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Company admins manage agent item rates"
+ON public.agent_item_rates FOR ALL TO authenticated
+USING (
+  employee_id IN (
+    SELECT id FROM public.employees WHERE company_id = get_my_company_id()
+  )
+)
+WITH CHECK (
+  employee_id IN (
+    SELECT id FROM public.employees WHERE company_id = get_my_company_id()
+  )
+);
+```
+
+**`work_entries`** — company-scoped via `company_id`:
+```sql
+ALTER TABLE public.work_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Company admins manage work entries"
+ON public.work_entries FOR ALL TO authenticated
+USING (company_id = get_my_company_id())
+WITH CHECK (company_id = get_my_company_id());
+```
+
 ---
 
 ## 2. TypeScript Types
