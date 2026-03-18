@@ -166,7 +166,7 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
 
       if (profileErr || !profile?.company_id) throw new Error('Could not verify company association.');
       
-      const companyId = profile.company_id;
+      const verifiedCompanyId = profile.company_id;
 
       // 2. Build full payload for all employees (upsert handles insert vs update automatically)
       // Calculate actual days in month from globalDate (YYYY-MM-DD format)
@@ -210,7 +210,7 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
         const deductionAmount = dailyWage - dailyPay;
 
         return {
-          company_id:       companyId,
+          company_id:       verifiedCompanyId,
           employee_id:      emp.id,
           date:             globalDate,
           status,
