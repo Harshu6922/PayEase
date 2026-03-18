@@ -20,7 +20,6 @@ export interface Employee {
   joining_date: string;
   is_active: boolean;
   worker_type: 'salaried' | 'commission';
-  created_at?: string;
 }
 
 export interface AttendanceRecord {
