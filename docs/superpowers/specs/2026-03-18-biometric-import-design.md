@@ -34,7 +34,7 @@ Ravi Kumar,2026-03-19,17:30:00
 - Group rows by `(Name, Date)`
 - Within each group, first timestamp = punch-in, last timestamp = punch-out
 - If a group has only one timestamp → `Missing punch-out` status
-- Date format: `YYYY-MM-DD`; Time format: `HH:mm:ss`
+- Date format: `YYYY-MM-DD`; Time format: `HH:mm` (strip seconds — `calculateDailyPayroll` expects `HH:mm`)
 
 ---
 
@@ -90,7 +90,7 @@ One row per `(employee, date)` pair. Columns:
 
 A row is `Conflict` if an attendance record already exists for that `(employee_id, date)` in the DB.
 
-- After parsing the CSV, the modal fetches existing attendance records from Supabase for all `(employee_id, date)` pairs present in the parsed data — a single query with `date IN (...)` filter
+- After parsing the CSV, the modal fetches existing attendance records from Supabase for all dates present in the parsed data — a single query filtered by `company_id = <current company>` AND `date IN (...distinct dates...)`
 - Conflict check runs client-side against the fetched records
 - Default action for conflicts: **Skip**
 - User can toggle conflict rows to **Overwrite** individually
@@ -101,19 +101,21 @@ A row is `Conflict` if an attendance record already exists for that `(employee_i
 
 Process only rows that are not marked Skip:
 
-1. For each `Matched` row with in + out times, build the full upsert payload using `buildAttendancePayload` from `src/lib/payroll-utils.ts` — the same function used by `AttendanceManager`. This computes all required fields: `daily_wage`, `hourly_rate`, `worked_hours`, `daily_pay`, `overtime_hours`, `overtime_amount`, `deduction_hours`, `deduction_amount`.
+1. For each `Matched` row with in + out times, call `calculateDailyPayroll(employee, date, inTime, outTime)` from `src/lib/payroll-utils.ts` (same function used by `AttendanceManager`). `inTime`/`outTime` are `'HH:mm'` strings. This returns all required computed fields.
 
-   The payload shape mirrors `AttendanceRecord`:
+   Assemble the upsert payload:
    ```ts
-   {
-     company_id, employee_id, date,
+   const computed = calculateDailyPayroll(employee, row.parsed.date, inTime, outTime);
+   const payload = {
+     company_id,
+     employee_id: employee.id,
+     date: row.parsed.date,
      status: 'present',
-     start_time: inTime,   // 'HH:mm:ss'
-     end_time: outTime,    // 'HH:mm:ss'
-     daily_wage, hourly_rate, worked_hours, daily_pay,
-     overtime_hours, overtime_amount,
-     deduction_hours, deduction_amount,
-   }
+     start_time: inTime,   // 'HH:mm'
+     end_time: outTime,    // 'HH:mm'
+     ...computed,          // daily_wage, hourly_rate, worked_hours, daily_pay,
+                           // overtime_hours, overtime_amount, deduction_hours, deduction_amount
+   };
    ```
    Upsert using `onConflict: 'employee_id,date'` — same pattern as `AttendanceManager`.
 
@@ -123,7 +125,7 @@ Process only rows that are not marked Skip:
 
 4. After all upserts complete:
    - Close modal
-   - Refresh attendance page to the earliest imported date
+   - Navigate to the earliest imported date: the modal accepts an `onImportComplete(date: string) => void` prop; the attendance page passes a handler that sets `globalDate` on `AttendanceManager` to that date
 
 **Error handling:** if any upsert fails, show an error summary listing failed rows. Successful rows are still committed (no rollback).
 
@@ -161,8 +163,8 @@ Process only rows that are not marked Skip:
 export interface ParsedPunchRow {
   biometricName: string;
   date: string;           // 'YYYY-MM-DD'
-  inTime: string | null;  // 'HH:mm:ss'
-  outTime: string | null; // 'HH:mm:ss'
+  inTime: string | null;  // 'HH:mm'
+  outTime: string | null; // 'HH:mm'
 }
 ```
 
@@ -173,7 +175,7 @@ interface ImportRow {
   matchedEmployee: Employee | null;
   status: 'matched' | 'unmatched' | 'missing-punch-out' | 'conflict';
   action: 'import' | 'skip' | 'overwrite';
-  manualOutTime: string;  // 'HH:mm' from time input; converted to 'HH:mm:ss' (append ':00') when building payload
+  manualOutTime: string;  // 'HH:mm' — from <input type="time">; used directly with calculateDailyPayroll
 }
 ```
 
