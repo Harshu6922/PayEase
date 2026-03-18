@@ -75,3 +75,10 @@ export interface PayrollRow {
   total_advances: number;
   final_payable_salary: number;
 }
+
+export interface ParsedPunchRow {
+  biometricName: string;
+  date: string;           // 'YYYY-MM-DD'
+  inTime: string | null;  // 'HH:mm' — null if only one punch
+  outTime: string | null; // 'HH:mm' — null if only one punch
+}
