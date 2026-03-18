@@ -27,6 +27,13 @@ export default async function ReportsPage({
     return <div className="p-8 text-red-600">No company associated with this profile.</div>
   }
 
+  const { data: companyData } = await supabase
+    .from('companies')
+    .select('name')
+    .eq('id', companyId)
+    .maybeSingle();
+  const companyName = companyData?.name ?? 'My Company';
+
   // Handle Date Parameters
   const today = new Date()
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
@@ -103,11 +110,12 @@ export default async function ReportsPage({
 
   return (
     <div className="p-8">
-      <PayrollDashboard 
+      <PayrollDashboard
         initialMonth={selectedMonthStr}
         employees={(employees || []) as any[]}
         attendance={(attendance || []) as any[]}
         advances={(advances || []) as any[]}
+        companyName={companyName}
         generateAction={generatePayrollAction}
       />
     </div>
