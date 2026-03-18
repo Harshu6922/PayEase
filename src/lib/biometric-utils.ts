@@ -40,7 +40,7 @@ export function parseBiometricCsv(text: string): ParsedPunchRow[] {
     throw new Error('CSV must have columns: Name, Date, Time');
   }
 
-  // Map: "Name|Date" → [time1, time2, ...]
+  // Map: "Name\x00Date" → [time1, time2, ...]
   const groups = new Map<string, string[]>();
 
   for (let i = 1; i < lines.length; i++) {
@@ -52,16 +52,16 @@ export function parseBiometricCsv(text: string): ParsedPunchRow[] {
     const time = cols[timeIdx];
     if (!name || !date || !time) continue;
 
-    const key = `${name}|${date}`;
+    const key = `${name}\x00${date}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(time);
   }
 
   const result: ParsedPunchRow[] = [];
   groups.forEach((times, key) => {
-    const pipeIdx = key.indexOf('|');
-    const biometricName = key.substring(0, pipeIdx);
-    const date = key.substring(pipeIdx + 1);
+    const nullIdx = key.indexOf('\x00');
+    const biometricName = key.substring(0, nullIdx);
+    const date = key.substring(nullIdx + 1);
     result.push({
       biometricName,
       date,

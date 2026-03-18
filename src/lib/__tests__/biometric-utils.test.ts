@@ -73,4 +73,16 @@ Ravi,2026-03-18,17:30:00`;
     expect(result[0].inTime).toBe('09:00');
     expect(result[0].outTime).toBe('17:30');
   });
+
+  it('handles employee names containing pipe characters', () => {
+    const csv = `Name,Date,Time
+O'Brien|Smith,2026-03-18,09:00:00
+O'Brien|Smith,2026-03-18,17:00:00`;
+    const result = parseBiometricCsv(csv);
+    expect(result).toHaveLength(1);
+    expect(result[0].biometricName).toBe("O'Brien|Smith");
+    expect(result[0].date).toBe('2026-03-18');
+    expect(result[0].inTime).toBe('09:00');
+    expect(result[0].outTime).toBe('17:00');
+  });
 });
