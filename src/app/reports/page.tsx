@@ -32,7 +32,7 @@ export default async function ReportsPage({
     .select('name')
     .eq('id', companyId)
     .maybeSingle();
-  const companyName = companyData?.name ?? 'My Company';
+  const companyName = (companyData as any)?.name ?? 'My Company';
 
   // Handle Date Parameters
   const today = new Date()

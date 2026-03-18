@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/payroll-utils'
+import { format } from 'date-fns'
+import { getPrevMonth, calcPrevBalance, downloadPdf } from '@/lib/pdf-utils'
+import type { PayrollRow } from '@/types'
 
 // Data types passed from Server
 interface Employee {
@@ -33,6 +36,7 @@ interface PayrollDashboardProps {
   attendance: AttendanceRecord[]
   advances: Advance[]
   generateAction: (data: any) => Promise<void>
+  companyName: string
 }
 
 // Calculation Engine pure function
@@ -110,24 +114,53 @@ function getDaysInMonth(monthStr: string) {
   return new Date(year, month, 0).getDate()
 }
 
-export default function PayrollDashboard({ 
-  initialMonth, 
-  employees, 
-  attendance, 
+export default function PayrollDashboard({
+  initialMonth,
+  employees,
+  attendance,
   advances,
-  generateAction
+  generateAction,
+  companyName,
 }: PayrollDashboardProps) {
   const router = useRouter()
   
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [paidUpToDay, setPaidUpToDay] = useState<number | null>(null)
+  const [isExportingBulk, setIsExportingBulk] = useState(false)
+  const [exportingEmployeeId, setExportingEmployeeId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setPaidUpToDay(null)
+  }, [selectedMonth])
+
   // Use actual days in month for consistent daily wage calculation
   const actualDaysInMonth = getDaysInMonth(selectedMonth)
+
+  const prevMonth = useMemo(() => getPrevMonth(selectedMonth), [selectedMonth])
+
+  const daysInPrevMonth = useMemo(() => getDaysInMonth(prevMonth), [prevMonth])
 
   // Memoize calculation so it ONLY runs when these specific variables change
   const computedPayroll = useMemo(() => {
     return calculatePayroll(employees, attendance, advances, actualDaysInMonth)
   }, [employees, attendance, advances, actualDaysInMonth])
+
+  const prevBalances = useMemo((): Record<string, number> => {
+    if (!paidUpToDay) return {}
+    return Object.fromEntries(
+      employees.map(emp => [
+        emp.id,
+        calcPrevBalance(emp.monthly_salary, prevMonth, paidUpToDay)
+      ])
+    )
+  }, [paidUpToDay, prevMonth, employees])
+
+  const pdfTotalNetPayout = useMemo(() => {
+    return computedPayroll.rows.reduce((sum, row) => {
+      return sum + row.final_payable_salary + (prevBalances[row.employee_id] ?? 0)
+    }, 0)
+  }, [computedPayroll.rows, prevBalances])
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMonth = e.target.value // Format YYYY-MM
@@ -157,6 +190,67 @@ export default function PayrollDashboard({
     }
   }
 
+  const handleExportBulkPdf = async () => {
+    setIsExportingBulk(true)
+    try {
+      const [{ default: PayrollSummaryPDF }, { pdf }] = await Promise.all([
+        import('@/components/pdf/PayrollSummaryPDF'),
+        import('@react-pdf/renderer'),
+      ])
+      const blob = await pdf(
+        <PayrollSummaryPDF
+          month={selectedMonth}
+          companyName={companyName}
+          rows={computedPayroll.rows as PayrollRow[]}
+          prevBalances={prevBalances}
+          totalNetPayout={pdfTotalNetPayout}
+        />
+      ).toBlob()
+      downloadPdf(blob, `payroll-${selectedMonth}.pdf`)
+    } catch {
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsExportingBulk(false)
+    }
+  }
+
+  const handleExportEmployeePdf = async (row: PayrollRow) => {
+    setExportingEmployeeId(row.employee_id)
+    try {
+      const emp = employees.find(e => e.id === row.employee_id)
+      if (!emp) return
+      const pb = prevBalances[row.employee_id] ?? 0
+      const od = pb > 0 && paidUpToDay
+        ? Math.max(0, daysInPrevMonth - paidUpToDay)
+        : 0
+      const prevMonthName = format(new Date(
+        parseInt(prevMonth.split('-')[0], 10),
+        parseInt(prevMonth.split('-')[1], 10) - 1
+      ), 'MMMM yyyy')
+      const [{ default: EmployeeDetailPDF }, { pdf }] = await Promise.all([
+        import('@/components/pdf/EmployeeDetailPDF'),
+        import('@react-pdf/renderer'),
+      ])
+      const blob = await pdf(
+        <EmployeeDetailPDF
+          month={selectedMonth}
+          companyName={companyName}
+          row={row}
+          monthlySalary={emp.monthly_salary}
+          daysInMonth={actualDaysInMonth}
+          prevBalance={pb}
+          outstandingDays={od}
+          prevMonthName={prevMonthName}
+        />
+      ).toBlob()
+      downloadPdf(blob, `payroll-${row.display_id}-${selectedMonth}.pdf`)
+    } catch {
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setExportingEmployeeId(null)
+    }
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-8">
@@ -166,13 +260,22 @@ export default function PayrollDashboard({
             Interactive dashboard for {selectedMonth}
           </p>
         </div>
-        <button 
-          onClick={handleGenerate}
-          disabled={isGenerating || computedPayroll.rows.length === 0}
-          className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {isGenerating ? 'Generating...' : 'Generate Payroll'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportBulkPdf}
+            disabled={isExportingBulk || computedPayroll.rows.length === 0}
+            className="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isExportingBulk ? 'Generating...' : 'Export PDF'}
+          </button>
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || computedPayroll.rows.length === 0}
+            className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isGenerating ? 'Generating...' : 'Generate Payroll'}
+          </button>
+        </div>
       </div>
 
       {/* Control Panel & Summary Section */}
@@ -205,6 +308,26 @@ export default function PayrollDashboard({
                   readOnly
                   className="block rounded-md border-0 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 sm:text-sm sm:leading-6 w-32 cursor-not-allowed"
                   title="Based on actual days in selected month"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="paid-up-to" className="block text-sm font-medium leading-6 text-gray-900">
+                Prev. month paid up to
+              </label>
+              <div className="mt-2">
+                <input
+                  type="number"
+                  id="paid-up-to"
+                  min={1}
+                  max={daysInPrevMonth}
+                  value={paidUpToDay ?? ''}
+                  onChange={e => {
+                    const val = parseInt(e.target.value, 10)
+                    setPaidUpToDay(isNaN(val) ? null : Math.min(val, daysInPrevMonth))
+                  }}
+                  placeholder="e.g. 25"
+                  className="block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 w-28 px-3"
                 />
               </div>
             </div>
@@ -250,12 +373,13 @@ export default function PayrollDashboard({
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Advances</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Payable</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {!computedPayroll.rows || computedPayroll.rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
                   No active employees found to calculate payroll for.
                 </td>
               </tr>
@@ -275,10 +399,20 @@ export default function PayrollDashboard({
                     {row.total_advances > 0 ? `-${formatINR(row.total_advances)}` : '-'}
                   </td>
                   <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${row.final_payable_salary < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {row.final_payable_salary < 0 
-                      ? `Recover (${formatINR(Math.abs(row.final_payable_salary))})` 
+                    {row.final_payable_salary < 0
+                      ? `Recover (${formatINR(Math.abs(row.final_payable_salary))})`
                       : formatINR(row.final_payable_salary)
                     }
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleExportEmployeePdf(row as PayrollRow)}
+                      disabled={!!exportingEmployeeId}
+                      title="Download employee PDF"
+                      className="text-gray-400 hover:text-indigo-600 disabled:opacity-40 transition-colors"
+                    >
+                      {exportingEmployeeId === row.employee_id ? '...' : '↓'}
+                    </button>
                   </td>
                 </tr>
               ))
