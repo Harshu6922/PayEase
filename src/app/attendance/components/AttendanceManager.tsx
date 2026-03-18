@@ -7,6 +7,7 @@ import { calculateRates } from '@/lib/payroll-utils';
 import type { Database } from '@/types/supabase';
 import type { Employee, AttendanceRecord } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import BiometricImportModal from './BiometricImportModal';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Half Day';
 
@@ -38,6 +39,8 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   // Fetch Existing Data when Date Changes
   const fetchExistingRecords = useCallback(async (dateStr: string) => {
@@ -107,6 +110,19 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
     fetchExistingRecords(globalDate);
   }, [globalDate, fetchExistingRecords]);
 
+  useEffect(() => {
+    async function fetchCompanyId() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profile?.company_id) setCompanyId(profile.company_id);
+    }
+    fetchCompanyId();
+  }, [supabase]);
 
   // Handle Status Toggle
   const handleStatusChange = (empId: string, status: AttendanceStatus) => {
@@ -265,13 +281,22 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
           </div>
         </div>
         
-        <button 
-          onClick={handleSave}
-          disabled={loading || fetching}
-          className="flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-        >
-          {loading ? 'Saving securely...' : 'Save All Attendance'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsImportOpen(true)}
+            disabled={!companyId}
+            className="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition-colors"
+          >
+            Import Biometric
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={loading || fetching}
+            className="flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Saving securely...' : 'Save All Attendance'}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -370,6 +395,18 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
           </tbody>
         </table>
       </div>
+
+      {isImportOpen && companyId && (
+        <BiometricImportModal
+          employees={employees}
+          companyId={companyId}
+          onImportComplete={(date) => {
+            setGlobalDate(date);
+            setIsImportOpen(false);
+          }}
+          onClose={() => setIsImportOpen(false)}
+        />
+      )}
     </div>
   );
 }
