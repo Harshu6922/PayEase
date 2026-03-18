@@ -82,7 +82,7 @@ One row per `(employee, date)` pair. Columns:
 
 **Multiple matches:** if two employees share the same name, show both in the dropdown — user picks one.
 
-**Commission agents:** excluded from import. Rows whose matched employee has `worker_type = 'commission'` are automatically marked Skip (with a tooltip: "Commission agents don't use attendance tracking").
+**Commission agents:** excluded from import. Once the Commission Foundation sub-project is deployed, rows whose matched employee has `worker_type = 'commission'` are automatically marked Skip (with a tooltip: "Commission agents don't use attendance tracking"). Until then, all matched employees are treated as importable.
 
 ---
 
@@ -90,7 +90,8 @@ One row per `(employee, date)` pair. Columns:
 
 A row is `Conflict` if an attendance record already exists for that `(employee_id, date)` in the DB.
 
-- Check is done client-side after parsing, by comparing against attendance records already fetched on the page
+- After parsing the CSV, the modal fetches existing attendance records from Supabase for all `(employee_id, date)` pairs present in the parsed data — a single query with `date IN (...)` filter
+- Conflict check runs client-side against the fetched records
 - Default action for conflicts: **Skip**
 - User can toggle conflict rows to **Overwrite** individually
 
@@ -100,9 +101,21 @@ A row is `Conflict` if an attendance record already exists for that `(employee_i
 
 Process only rows that are not marked Skip:
 
-1. For each `Matched` row with in + out times:
-   - Upsert into `attendance_records` with `status = 'present'`, `override_start_time = in time`, `override_end_time = out time`
-   - Use `onConflict: 'employee_id,date'` — same upsert pattern as `AttendanceManager`
+1. For each `Matched` row with in + out times, build the full upsert payload using `buildAttendancePayload` from `src/lib/payroll-utils.ts` — the same function used by `AttendanceManager`. This computes all required fields: `daily_wage`, `hourly_rate`, `worked_hours`, `daily_pay`, `overtime_hours`, `overtime_amount`, `deduction_hours`, `deduction_amount`.
+
+   The payload shape mirrors `AttendanceRecord`:
+   ```ts
+   {
+     company_id, employee_id, date,
+     status: 'present',
+     start_time: inTime,   // 'HH:mm:ss'
+     end_time: outTime,    // 'HH:mm:ss'
+     daily_wage, hourly_rate, worked_hours, daily_pay,
+     overtime_hours, overtime_amount,
+     deduction_hours, deduction_amount,
+   }
+   ```
+   Upsert using `onConflict: 'employee_id,date'` — same pattern as `AttendanceManager`.
 
 2. `Overwrite` conflict rows: included in upsert (overwrites existing record)
 
@@ -138,9 +151,9 @@ Process only rows that are not marked Skip:
 
 | File | Action | Responsibility |
 |------|--------|---------------|
-| `src/app/attendance/page.tsx` | Modify | Add "Import Biometric" button; pass employees + attendance to modal |
-| `src/app/attendance/components/BiometricImportModal.tsx` | Create | Full two-step modal: upload + preview table + confirm logic |
-| `src/lib/biometric-utils.ts` | Create | Pure CSV parsing function: `parsebiometricCsv(text) → ParsedPunchRow[]` |
+| `src/app/attendance/page.tsx` | Modify | Add "Import Biometric" button; pass employees list to modal |
+| `src/app/attendance/components/BiometricImportModal.tsx` | Create | Full two-step modal: upload + preview table + conflict fetch + confirm logic |
+| `src/lib/biometric-utils.ts` | Create | Pure CSV parsing function: `parseBiometricCsv(text) → ParsedPunchRow[]` |
 | `src/lib/__tests__/biometric-utils.test.ts` | Create | Unit tests for CSV parsing logic |
 
 ### `ParsedPunchRow` type (in `src/types/index.ts`):
@@ -160,7 +173,7 @@ interface ImportRow {
   matchedEmployee: Employee | null;
   status: 'matched' | 'unmatched' | 'missing-punch-out' | 'conflict';
   action: 'import' | 'skip' | 'overwrite';
-  manualOutTime: string;  // editable if missing punch-out
+  manualOutTime: string;  // 'HH:mm' from time input; converted to 'HH:mm:ss' (append ':00') when building payload
 }
 ```
 
@@ -168,7 +181,7 @@ interface ImportRow {
 
 ## 8. Testing
 
-`parsebiometricCsv` is a pure function — unit tested with Vitest:
+`parseBiometricCsv` is a pure function — unit tested with Vitest:
 
 - Normal case: 2 rows per employee per day → correct in/out
 - Single punch: 1 row → `outTime: null`
