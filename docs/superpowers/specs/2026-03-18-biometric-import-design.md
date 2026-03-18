@@ -42,7 +42,7 @@ Ravi Kumar,2026-03-19,17:30:00
 
 ### 2.1 Entry point
 
-Add an **"Import Biometric"** button to the attendance page (`src/app/attendance/page.tsx`), alongside the existing controls. Clicking it opens the import modal.
+Add an **"Import Biometric"** button inside `AttendanceManager.tsx` (a client component), alongside the existing global controls (date picker, default start/end times). The button opens the import modal. `attendance/page.tsx` is a server component and must not be changed for this feature — all interactive logic lives in `AttendanceManager`.
 
 ### 2.2 Modal — Step 1: Upload
 
@@ -72,6 +72,8 @@ One row per `(employee, date)` pair. Columns:
 
 **Import button** is disabled while any row is `Unmatched` or `Missing punch-out` and not marked Skip.
 
+**Status precedence:** if a row has only one punch AND an existing DB record, status is `missing-punch-out` (takes priority over `conflict`).
+
 ---
 
 ## 3. Name Matching
@@ -82,7 +84,7 @@ One row per `(employee, date)` pair. Columns:
 
 **Multiple matches:** if two employees share the same name, show both in the dropdown — user picks one.
 
-**Commission agents:** excluded from import. Once the Commission Foundation sub-project is deployed, rows whose matched employee has `worker_type = 'commission'` are automatically marked Skip (with a tooltip: "Commission agents don't use attendance tracking"). Until then, all matched employees are treated as importable.
+**Commission agents:** excluded from import. The `worker_type` field does not exist on `Employee` yet — it ships with the Commission Foundation sub-project. Until that sub-project is deployed, skip this check entirely (all matched employees are importable). Once deployed, rows whose matched employee has `worker_type = 'commission'` are automatically marked Skip with tooltip "Commission agents don't use attendance tracking". Do not add a `worker_type` guard in this implementation.
 
 ---
 
@@ -125,7 +127,7 @@ Process only rows that are not marked Skip:
 
 4. After all upserts complete:
    - Close modal
-   - Navigate to the earliest imported date: the modal accepts an `onImportComplete(date: string) => void` prop; the attendance page passes a handler that sets `globalDate` on `AttendanceManager` to that date
+   - Navigate to the earliest imported date: the modal accepts an `onImportComplete(date: string) => void` prop; `AttendanceManager` passes `(date) => setGlobalDate(date)` as that prop, since `globalDate` is local state in `AttendanceManager`
 
 **Error handling:** if any upsert fails, show an error summary listing failed rows. Successful rows are still committed (no rollback).
 
@@ -153,7 +155,7 @@ Process only rows that are not marked Skip:
 
 | File | Action | Responsibility |
 |------|--------|---------------|
-| `src/app/attendance/page.tsx` | Modify | Add "Import Biometric" button; pass employees list to modal |
+| `src/app/attendance/components/AttendanceManager.tsx` | Modify | Add "Import Biometric" button and `<BiometricImportModal>` mount; pass `employees`, `companyId`, and `onImportComplete` |
 | `src/app/attendance/components/BiometricImportModal.tsx` | Create | Full two-step modal: upload + preview table + conflict fetch + confirm logic |
 | `src/lib/biometric-utils.ts` | Create | Pure CSV parsing function: `parseBiometricCsv(text) → ParsedPunchRow[]` |
 | `src/lib/__tests__/biometric-utils.test.ts` | Create | Unit tests for CSV parsing logic |
