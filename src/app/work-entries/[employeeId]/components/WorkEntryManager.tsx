@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, addMonths, subMonths, parse } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
+import { downloadPdf } from '@/lib/pdf-utils'
 import type { Employee, AgentItemRate, WorkEntry } from '@/types'
 import LogDayModal from './LogDayModal'
 
@@ -13,13 +14,15 @@ interface Props {
   initialEntries: WorkEntry[]
   month: string
   companyId: string
+  companyName: string
 }
 
-export default function WorkEntryManager({ employee, agentRates, initialEntries, month, companyId }: Props) {
+export default function WorkEntryManager({ employee, agentRates, initialEntries, month, companyId, companyName }: Props) {
   const router = useRouter()
   const [entries, setEntries] = useState<WorkEntry[]>(initialEntries)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingDate, setEditingDate] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Group entries by date, sorted descending
   const entriesByDate = useMemo(() => {
@@ -71,6 +74,31 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
   const openAdd = () => { setEditingDate(null); setIsModalOpen(true) }
   const openEdit = (date: string) => { setEditingDate(date); setIsModalOpen(true) }
 
+  const handleDownloadPdf = async () => {
+    if (entries.length === 0) { alert('No entries for this month.'); return }
+    setIsDownloading(true)
+    try {
+      const [{ default: CommissionPayslipPDF }, { pdf }] = await Promise.all([
+        import('@/components/pdf/CommissionPayslipPDF'),
+        import('@react-pdf/renderer'),
+      ])
+      const blob = await pdf(
+        <CommissionPayslipPDF
+          month={month}
+          companyName={companyName}
+          employee={{ full_name: employee.full_name, employee_id: employee.employee_id }}
+          entries={entries}
+          agentRates={agentRates}
+        />
+      ).toBlob()
+      downloadPdf(blob, `commission-${employee.employee_id}-${month}.pdf`)
+    } catch {
+      alert('Failed to generate PDF.')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       {/* Header */}
@@ -95,6 +123,13 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
         <button onClick={prevMonth} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold">‹</button>
         <span className="text-base font-semibold text-gray-800 w-40 text-center">{monthLabel}</span>
         <button onClick={nextMonth} className="px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold">›</button>
+        <button
+          onClick={handleDownloadPdf}
+          disabled={isDownloading || entries.length === 0}
+          className="px-4 py-1.5 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {isDownloading ? 'Generating...' : 'Download PDF'}
+        </button>
       </div>
 
       {/* No items assigned warning */}

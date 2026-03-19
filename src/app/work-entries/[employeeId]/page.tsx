@@ -20,6 +20,10 @@ export default async function WorkerDetailPage({
   const companyId = (profileData as { company_id: string | null } | null)?.company_id
   if (!companyId) redirect('/login')
 
+  const { data: companyData } = await supabase
+    .from('companies').select('name').eq('id', companyId).maybeSingle()
+  const companyName = (companyData as { name: string } | null)?.name ?? 'My Company'
+
   // Default to current month
   const month = searchParams.month ?? format(new Date(), 'yyyy-MM')
   const [yearStr, monthStr] = month.split('-')
@@ -66,6 +70,7 @@ export default async function WorkerDetailPage({
       initialEntries={initialEntries}
       month={month}
       companyId={companyId}
+      companyName={companyName}
     />
   )
 }
