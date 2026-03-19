@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { downloadPdf } from '@/lib/pdf-utils'
 import type { Employee, AgentItemRate, WorkEntry } from '@/types'
 import LogDayModal from './LogDayModal'
+import PaymentModal from '@/components/PaymentModal'
 
 interface Props {
   employee: Employee
@@ -23,6 +24,13 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingDate, setEditingDate] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+
+  // Total earnings for current month (currentMonthPayable for PaymentModal)
+  const currentMonthPayable = useMemo(
+    () => entries.reduce((sum, e) => sum + Number(e.total_amount), 0),
+    [entries]
+  )
 
   // Group entries by date, sorted descending
   const entriesByDate = useMemo(() => {
@@ -130,6 +138,12 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
         >
           {isDownloading ? 'Generating...' : 'Download PDF'}
         </button>
+        <button
+          onClick={() => setIsPaymentModalOpen(true)}
+          className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500"
+        >
+          Record Payment
+        </button>
       </div>
 
       {/* No items assigned warning */}
@@ -182,6 +196,17 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
             )
           })}
         </div>
+      )}
+
+      {isPaymentModalOpen && (
+        <PaymentModal
+          employee={{ id: employee.id, full_name: employee.full_name, employee_id: employee.employee_id }}
+          month={month}
+          currentMonthPayable={currentMonthPayable}
+          companyId={companyId}
+          onClose={() => setIsPaymentModalOpen(false)}
+          onPaymentRecorded={() => {}}
+        />
       )}
 
       {isModalOpen && (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { format, getDaysInMonth, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
 import type { Employee, DailyAttendance } from '@/types'
+import PaymentModal from '@/components/PaymentModal'
 
 interface Props {
   workers: Employee[]
@@ -31,6 +32,7 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
   const [editHours, setEditHours] = useState('')
   const [saving, setSaving] = useState(false)
+  const [paymentWorker, setPaymentWorker] = useState<Employee | null>(null)
 
   const daysInMonth = getDaysInMonth(new Date(year, month - 1))
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -302,6 +304,7 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
                     <th className="text-right px-4 py-3 text-gray-500 font-medium">Days</th>
                     <th className="text-right px-4 py-3 text-gray-500 font-medium">Hours</th>
                     <th className="text-right px-4 py-3 text-gray-500 font-medium">Total Pay</th>
+                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Pay</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -313,6 +316,16 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
                         <td className="px-4 py-3 text-right text-gray-700">{s.days}</td>
                         <td className="px-4 py-3 text-right text-gray-700">{s.hours}h</td>
                         <td className="px-4 py-3 text-right font-semibold text-gray-900">Rs. {s.pay.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right">
+                          {s.pay > 0 && (
+                            <button
+                              onClick={() => setPaymentWorker(worker)}
+                              className="rounded px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                            >
+                              Pay
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     )
                   })}
@@ -321,6 +334,7 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
                     <td className="px-4 py-3 text-right text-gray-400">—</td>
                     <td className="px-4 py-3 text-right text-gray-400">—</td>
                     <td className="px-4 py-3 text-right font-bold text-gray-900">Rs. {totalPay.toLocaleString()}</td>
+                    <td />
                   </tr>
                 </tbody>
               </table>
@@ -328,6 +342,22 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
           </div>
         </div>
       )}
+
+      {/* Payment modal */}
+      {paymentWorker && (() => {
+        const s = summaryMap.get(paymentWorker.id)!
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`
+        return (
+          <PaymentModal
+            employee={{ id: paymentWorker.id, full_name: paymentWorker.full_name, employee_id: paymentWorker.employee_id }}
+            month={monthStr}
+            currentMonthPayable={s.pay}
+            companyId={companyId}
+            onClose={() => setPaymentWorker(null)}
+            onPaymentRecorded={() => {}}
+          />
+        )
+      })()}
 
       {/* Edit popup */}
       {editingCell && (

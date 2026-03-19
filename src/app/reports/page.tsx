@@ -71,6 +71,13 @@ export default async function ReportsPage({
     .gte('advance_date', startDate)
     .lte('advance_date', endDate)
 
+  // Fetch payments for this month (for balance display in Pay column)
+  const { data: monthPayments } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('company_id', companyId)
+    .eq('month', selectedMonthStr)
+
   // Action for saving the computed dashboard 
   async function generatePayrollAction(payload: { month: number, year: number, computedRows: any[] }) {
     'use server'
@@ -116,6 +123,8 @@ export default async function ReportsPage({
         attendance={(attendance || []) as any[]}
         advances={(advances || []) as any[]}
         companyName={companyName}
+        companyId={companyId}
+        monthPayments={(monthPayments || []) as any[]}
         generateAction={generatePayrollAction}
       />
     </div>

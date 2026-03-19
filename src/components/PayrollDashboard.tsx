@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { formatINR } from '@/lib/payroll-utils'
 import { format } from 'date-fns'
 import { getPrevMonth, calcPrevBalance, downloadPdf } from '@/lib/pdf-utils'
-import type { PayrollRow } from '@/types'
+import type { PayrollRow, Payment } from '@/types'
+import PaymentModal from '@/components/PaymentModal'
 
 // Data types passed from Server
 interface Employee {
@@ -37,6 +38,8 @@ interface PayrollDashboardProps {
   advances: Advance[]
   generateAction: (data: any) => Promise<void>
   companyName: string
+  companyId: string
+  monthPayments: Payment[]
 }
 
 // Calculation Engine pure function
@@ -121,6 +124,8 @@ export default function PayrollDashboard({
   advances,
   generateAction,
   companyName,
+  companyId,
+  monthPayments,
 }: PayrollDashboardProps) {
   const router = useRouter()
   
@@ -131,10 +136,18 @@ export default function PayrollDashboard({
   const [exportingEmployeeId, setExportingEmployeeId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'default' | 'asc' | 'desc'>('default')
+  const [paymentModal, setPaymentModal] = useState<{ row: PayrollRow; payable: number } | null>(null)
+  const [localPayments, setLocalPayments] = useState<Payment[]>(monthPayments)
 
   useEffect(() => {
     setPaidUpToDay(null)
+    setLocalPayments(monthPayments)
   }, [selectedMonth])
+
+  // When month changes externally (e.g. navigate), sync monthPayments
+  useEffect(() => {
+    setLocalPayments(monthPayments)
+  }, [monthPayments])
 
   // Use actual days in month for consistent daily wage calculation
   const actualDaysInMonth = getDaysInMonth(selectedMonth)
@@ -163,6 +176,15 @@ export default function PayrollDashboard({
       return sum + row.final_payable_salary + (prevBalances[row.employee_id] ?? 0)
     }, 0)
   }, [computedPayroll.rows, prevBalances])
+
+  // Compute paid-this-month per employee from localPayments
+  const paidByEmployee = useMemo(() => {
+    const map: Record<string, number> = {}
+    localPayments.forEach(p => {
+      map[p.employee_id] = (map[p.employee_id] ?? 0) + Number(p.amount)
+    })
+    return map
+  }, [localPayments])
 
   const filteredRows = useMemo(() => {
     let rows = computedPayroll.rows
@@ -416,13 +438,14 @@ export default function PayrollDashboard({
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Advances</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Payable</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pay</th>
               <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500">
                   {searchQuery.trim()
                     ? 'No employees match your search.'
                     : 'No active employees found to calculate payroll for.'}
@@ -450,6 +473,24 @@ export default function PayrollDashboard({
                     }
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                    {row.final_payable_salary > 0 && (() => {
+                      const paid = paidByEmployee[row.employee_id] ?? 0
+                      const remaining = row.final_payable_salary - paid
+                      return (
+                        <button
+                          onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary })}
+                          className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
+                            remaining <= 0
+                              ? 'bg-green-100 text-green-700 cursor-default'
+                              : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                          }`}
+                        >
+                          {remaining <= 0 ? 'Paid' : formatINR(remaining)}
+                        </button>
+                      )
+                    })()}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                     <button
                       onClick={() => handleExportEmployeePdf(row as PayrollRow)}
                       disabled={!!exportingEmployeeId}
@@ -465,6 +506,31 @@ export default function PayrollDashboard({
           </tbody>
         </table>
       </div>
+
+      {paymentModal && (
+        <PaymentModal
+          employee={{
+            id: paymentModal.row.employee_id,
+            full_name: paymentModal.row.full_name,
+            employee_id: paymentModal.row.display_id,
+          }}
+          month={selectedMonth}
+          currentMonthPayable={paymentModal.payable}
+          companyId={companyId}
+          onClose={() => setPaymentModal(null)}
+          onPaymentRecorded={async () => {
+            // Refresh local payment totals for this month
+            const { createClient } = await import('@/lib/supabase/client')
+            const supabase = createClient() as unknown as any
+            const { data } = await supabase
+              .from('payments')
+              .select('*')
+              .eq('company_id', companyId)
+              .eq('month', selectedMonth)
+            if (data) setLocalPayments(data)
+          }}
+        />
+      )}
     </>
   )
 }
