@@ -27,6 +27,7 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
     overtime_multiplier: String(employee.overtime_multiplier || 1.5),
     joining_date: employee.joining_date,
     is_active: employee.is_active,
+    worker_type: employee.worker_type ?? ('salaried' as 'salaried' | 'commission'),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -54,6 +55,7 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
           overtime_multiplier: parseFloat(formData.overtime_multiplier),
           joining_date: formData.joining_date,
           is_active: formData.is_active,
+          worker_type: formData.worker_type,
         })
         .eq('id', employee.id);
 
@@ -169,6 +171,19 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
                       title="Overtime rate multiplier (e.g., 1.5 means 1.5x regular rate)"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Worker Type</label>
+                  <select
+                    name="worker_type"
+                    value={formData.worker_type}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                  >
+                    <option value="salaried">Salaried</option>
+                    <option value="commission">Commission</option>
+                  </select>
                 </div>
 
                 <div className="flex items-center pt-2">
