@@ -156,10 +156,10 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Daily Attendance</h1>
-        <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-gray-100">‹</button>
-          <span className="text-lg font-medium w-40 text-center">{monthLabel}</span>
-          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-gray-100">›</button>
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg leading-none">‹</button>
+          <span className="text-lg font-semibold text-gray-800 w-44 text-center">{monthLabel}</span>
+          <button onClick={nextMonth} className="px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold text-lg leading-none">›</button>
         </div>
       </div>
 
@@ -168,29 +168,36 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
       ) : (
         <>
           {/* Grid */}
-          <div className="overflow-x-auto mb-8">
-            <table className="border-collapse bg-white rounded-lg shadow text-sm">
+          <div className="overflow-x-auto mb-8 rounded-lg shadow">
+            <table className="border-collapse bg-white text-sm min-w-full">
               <thead>
-                <tr className="border-b bg-gray-50">
-                  <th className="sticky left-0 bg-gray-50 text-left p-3 font-medium text-gray-600 min-w-[150px] z-10">Worker</th>
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="sticky left-0 bg-gray-50 text-left px-4 py-3 font-semibold text-gray-700 min-w-[180px] z-10 border-r border-gray-200">
+                    Worker
+                  </th>
                   {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                     const dateStr = getDateStr(day)
                     const isToday = dateStr === today
+                    const dayOfWeek = new Date(dateStr).toLocaleDateString('en', { weekday: 'short' })
                     return (
-                      <th key={day} className={`p-2 font-medium text-center w-10 ${isToday ? 'text-blue-600' : 'text-gray-500'}`}>
-                        {day}
+                      <th key={day} className={`px-1 py-2 font-medium text-center w-12 min-w-[48px] ${isToday ? 'bg-blue-50' : ''}`}>
+                        <div className={`text-base font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</div>
+                        <div className={`text-[10px] uppercase tracking-wide ${isToday ? 'text-blue-400' : 'text-gray-400'}`}>{dayOfWeek}</div>
                       </th>
                     )
                   })}
                 </tr>
               </thead>
               <tbody>
-                {workers.map(worker => (
-                  <tr key={worker.id} className="border-b last:border-0">
-                    <td className="sticky left-0 bg-white p-3 font-medium text-gray-900 z-10">{worker.full_name}</td>
+                {workers.map((worker, idx) => (
+                  <tr key={worker.id} className={`border-b last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                    <td className="sticky left-0 px-4 py-3 font-semibold text-gray-900 z-10 border-r border-gray-200 bg-inherit">
+                      {worker.full_name}
+                    </td>
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                       const dateStr = getDateStr(day)
                       const isFuture = dateStr > today
+                      const isToday = dateStr === today
                       const record = recordMap.get(`${worker.id}_${dateStr}`)
                       const isPresent = !!record
 
@@ -198,21 +205,26 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
                         <td
                           key={day}
                           onClick={isFuture ? undefined : () => handleCellClick(worker, dateStr)}
-                          className={`p-1 text-center border border-gray-100 transition-colors ${
+                          className={`text-center border border-gray-100 transition-colors h-14 w-12 align-middle ${
                             isFuture
-                              ? 'bg-gray-50 opacity-40 cursor-not-allowed'
+                              ? 'bg-gray-100 cursor-not-allowed'
                               : isPresent
-                              ? 'bg-green-100 cursor-pointer hover:bg-green-200'
-                              : 'cursor-pointer hover:bg-blue-50'
+                              ? 'bg-green-500 cursor-pointer hover:bg-green-600'
+                              : isToday
+                              ? 'bg-blue-50 cursor-pointer hover:bg-blue-100'
+                              : 'cursor-pointer hover:bg-green-50'
                           }`}
                         >
-                          {isPresent && (
-                            <span className="text-xs text-green-800 font-medium block leading-tight">
-                              {record!.pay_amount % 1 === 0
-                                ? record!.pay_amount
-                                : record!.pay_amount.toFixed(0)}
-                            </span>
-                          )}
+                          {isPresent ? (
+                            <div className="flex flex-col items-center justify-center h-full px-1">
+                              <span className="text-white text-base font-bold leading-none">✓</span>
+                              <span className="text-white text-[11px] font-semibold mt-0.5 leading-none">
+                                {Math.round(record!.pay_amount)}
+                              </span>
+                            </div>
+                          ) : !isFuture ? (
+                            <span className="text-gray-300 text-lg">·</span>
+                          ) : null}
                         </td>
                       )
                     })}
@@ -220,7 +232,9 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
                 ))}
               </tbody>
             </table>
-            {loading && <p className="text-gray-400 text-sm mt-2">Loading...</p>}
+            {loading && (
+              <div className="text-center py-4 text-gray-500 text-sm">Loading attendance data...</div>
+            )}
           </div>
 
           {/* Monthly Summary */}
