@@ -50,9 +50,9 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
         .update({
           full_name: formData.full_name,
           employee_id: formData.employee_id,
-          monthly_salary: parseFloat(formData.monthly_salary),
-          standard_working_hours: parseFloat(formData.standard_working_hours),
-          overtime_multiplier: parseFloat(formData.overtime_multiplier),
+          monthly_salary: formData.worker_type === 'commission' ? 0 : parseFloat(formData.monthly_salary),
+          standard_working_hours: formData.worker_type === 'commission' ? 0 : parseFloat(formData.standard_working_hours),
+          overtime_multiplier: formData.worker_type === 'commission' ? 0 : parseFloat(formData.overtime_multiplier),
           joining_date: formData.joining_date,
           is_active: formData.is_active,
           worker_type: formData.worker_type,
@@ -128,52 +128,6 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Monthly Salary (INR)</label>
-                  <input
-                    type="number"
-                    name="monthly_salary"
-                    required
-                    step="0.01"
-                    min="0"
-                    value={formData.monthly_salary}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Working Hours/Day</label>
-                    <input
-                      type="number"
-                      name="standard_working_hours"
-                      required
-                      step="0.5"
-                      min="1"
-                      max="24"
-                      value={formData.standard_working_hours}
-                      onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">OT Multiplier</label>
-                    <input
-                      type="number"
-                      name="overtime_multiplier"
-                      required
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      value={formData.overtime_multiplier}
-                      onChange={handleChange}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                      title="Overtime rate multiplier (e.g., 1.5 means 1.5x regular rate)"
-                    />
-                  </div>
-                </div>
-
-                <div>
                   <label className="block text-sm font-medium text-gray-700">Worker Type</label>
                   <select
                     name="worker_type"
@@ -185,6 +139,56 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
                     <option value="commission">Commission</option>
                   </select>
                 </div>
+
+                {formData.worker_type === 'salaried' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Monthly Salary (INR)</label>
+                      <input
+                        type="number"
+                        name="monthly_salary"
+                        required
+                        step="0.01"
+                        min="0"
+                        value={formData.monthly_salary}
+                        onChange={handleChange}
+                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Working Hours/Day</label>
+                        <input
+                          type="number"
+                          name="standard_working_hours"
+                          required
+                          step="0.5"
+                          min="1"
+                          max="24"
+                          value={formData.standard_working_hours}
+                          onChange={handleChange}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">OT Multiplier</label>
+                        <input
+                          type="number"
+                          name="overtime_multiplier"
+                          required
+                          step="0.1"
+                          min="1"
+                          max="5"
+                          value={formData.overtime_multiplier}
+                          onChange={handleChange}
+                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+                          title="Overtime rate multiplier (e.g., 1.5 means 1.5x regular rate)"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="flex items-center pt-2">
                   <input
