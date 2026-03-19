@@ -10,7 +10,8 @@ import {
   LogOut,
   Banknote,
   Tag,
-  CalendarDays
+  CalendarDays,
+  ClipboardList
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Advances', href: '/advances', icon: Banknote },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Commission', href: '/commission', icon: Tag },
+  { name: 'Work Entries', href: '/work-entries', icon: ClipboardList },
 ]
 
 export default function Sidebar() {
