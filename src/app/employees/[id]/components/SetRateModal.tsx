@@ -36,6 +36,7 @@ export default function SetRateModal({
     setSaving(true);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const supabase = createClient() as unknown as any;
 
       if (existingRate) {
