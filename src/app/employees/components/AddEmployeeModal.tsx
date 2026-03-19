@@ -22,7 +22,8 @@ export default function AddEmployeeModal() {
     overtime_multiplier: '1.5', // default 1.5x (common labor law standard)
     joining_date: new Date().toISOString().split('T')[0], // today
     is_active: true,
-    worker_type: 'salaried' as 'salaried' | 'commission',
+    worker_type: 'salaried' as 'salaried' | 'commission' | 'daily',
+    daily_rate: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -40,6 +41,14 @@ export default function AddEmployeeModal() {
     setError(null);
 
     try {
+      if (formData.worker_type === 'daily') {
+        if (!formData.daily_rate || parseFloat(formData.daily_rate) <= 0) {
+          setError('Daily rate must be greater than 0');
+          setLoading(false);
+          return;
+        }
+      }
+
       // 1. Get logged in user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) {
@@ -55,7 +64,7 @@ export default function AddEmployeeModal() {
         .select('company_id')
         .eq('id', user.id)
         .maybeSingle();
-      
+
       if (profileError) {
         throw new Error('Could not fetch company profile.');
       }
@@ -71,12 +80,21 @@ export default function AddEmployeeModal() {
         company_id: profile.company_id,
         full_name: formData.full_name,
         employee_id: formData.employee_id,
-        monthly_salary: formData.worker_type === 'commission' ? 0 : parseFloat(formData.monthly_salary),
-        standard_working_hours: formData.worker_type === 'commission' ? 0 : parseFloat(formData.standard_working_hours),
-        overtime_multiplier: formData.worker_type === 'commission' ? 0 : parseFloat(formData.overtime_multiplier),
+        monthly_salary: formData.worker_type === 'daily' || formData.worker_type === 'commission'
+          ? 0
+          : parseFloat(formData.monthly_salary),
+        standard_working_hours: formData.worker_type === 'commission'
+          ? 8
+          : parseFloat(formData.standard_working_hours),
+        overtime_multiplier: formData.worker_type === 'commission' || formData.worker_type === 'daily'
+          ? 1
+          : parseFloat(formData.overtime_multiplier),
         joining_date: formData.joining_date,
         is_active: formData.is_active,
         worker_type: formData.worker_type,
+        daily_rate: formData.worker_type === 'daily'
+          ? parseFloat(formData.daily_rate)
+          : null,
       });
 
       if (insertError) {
@@ -94,8 +112,9 @@ export default function AddEmployeeModal() {
         joining_date: new Date().toISOString().split('T')[0],
         is_active: true,
         worker_type: 'salaried',
+        daily_rate: '',
       });
-      
+
       // Refresh list
       router.refresh();
 
@@ -112,7 +131,7 @@ export default function AddEmployeeModal() {
 
   return (
     <>
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
       >
@@ -172,57 +191,67 @@ export default function AddEmployeeModal() {
                   >
                     <option value="salaried">Salaried</option>
                     <option value="commission">Commission</option>
+                    <option value="daily">Daily</option>
                   </select>
                 </div>
 
+                {/* Monthly Salary - only salaried */}
                 {formData.worker_type === 'salaried' && (
-                  <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Salary (INR)</label>
+                    <input
+                      type="number"
+                      value={formData.monthly_salary}
+                      onChange={e => setFormData(prev => ({ ...prev, monthly_salary: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Daily Rate - only daily */}
+                {formData.worker_type === 'daily' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Daily Rate (INR)</label>
+                    <input
+                      type="number"
+                      value={formData.daily_rate}
+                      onChange={e => setFormData(prev => ({ ...prev, daily_rate: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                      min="0.01"
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* Working Hours + OT Multiplier - salaried and daily only */}
+                {(formData.worker_type === 'salaried' || formData.worker_type === 'daily') && (
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Monthly Salary (INR)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Working Hours/Day</label>
                       <input
                         type="number"
-                        name="monthly_salary"
+                        value={formData.standard_working_hours}
+                        onChange={e => setFormData(prev => ({ ...prev, standard_working_hours: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
                         required
-                        step="0.01"
-                        min="0"
-                        value={formData.monthly_salary}
-                        onChange={handleChange}
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
                       />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
+                    {formData.worker_type === 'salaried' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Working Hours/Day</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">OT Multiplier</label>
                         <input
                           type="number"
-                          name="standard_working_hours"
-                          required
-                          step="0.5"
-                          min="1"
-                          max="24"
-                          value={formData.standard_working_hours}
-                          onChange={handleChange}
-                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">OT Multiplier</label>
-                        <input
-                          type="number"
-                          name="overtime_multiplier"
-                          required
-                          step="0.1"
-                          min="1"
-                          max="5"
                           value={formData.overtime_multiplier}
-                          onChange={handleChange}
-                          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                          title="Overtime rate multiplier (e.g., 1.5 means 1.5x regular rate)"
+                          onChange={e => setFormData(prev => ({ ...prev, overtime_multiplier: e.target.value }))}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          step="0.1"
+                          required
                         />
                       </div>
-                    </div>
-                  </>
+                    )}
+                  </div>
                 )}
 
                 <div className="flex items-center pt-2">
