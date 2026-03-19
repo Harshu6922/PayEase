@@ -272,6 +272,37 @@ export interface Database {
           }
         ]
       }
+      commission_items: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          default_rate: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          default_rate?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          default_rate?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_items_company_id_fkey"
+            columns: ["company_id"]
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
