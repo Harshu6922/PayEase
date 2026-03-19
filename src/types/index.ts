@@ -19,7 +19,8 @@ export interface Employee {
   overtime_multiplier: number;
   joining_date: string;
   is_active: boolean;
-  worker_type: 'salaried' | 'commission';
+  worker_type: 'salaried' | 'commission' | 'daily';
+  daily_rate: number | null;
 }
 
 export interface AttendanceRecord {
@@ -109,5 +110,15 @@ export interface WorkEntry {
   quantity: number;
   rate: number;           // snapshotted at entry time
   total_amount: number;   // generated column: quantity × rate
+  created_at: string;
+}
+
+export interface DailyAttendance {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  date: string;           // 'YYYY-MM-DD'
+  hours_worked: number;
+  pay_amount: number;
   created_at: string;
 }
