@@ -122,3 +122,14 @@ export interface DailyAttendance {
   pay_amount: number;
   created_at: string;
 }
+
+export interface Payment {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  month: string;          // 'YYYY-MM'
+  amount: number;
+  payment_date: string;   // 'YYYY-MM-DD'
+  note: string | null;
+  created_at: string;
+}
