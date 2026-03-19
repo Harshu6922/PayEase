@@ -144,6 +144,7 @@ export interface Database {
         Row: {
           company_id: string
           created_at: string | null
+          daily_rate: number | null
           employee_id: string
           full_name: string
           id: string
@@ -152,10 +153,12 @@ export interface Database {
           monthly_salary: number
           overtime_multiplier: number
           standard_working_hours: number
+          worker_type: string
         }
         Insert: {
           company_id: string
           created_at?: string | null
+          daily_rate?: number | null
           employee_id: string
           full_name: string
           id?: string
@@ -164,10 +167,12 @@ export interface Database {
           monthly_salary: number
           overtime_multiplier?: number
           standard_working_hours: number
+          worker_type?: string
         }
         Update: {
           company_id?: string
           created_at?: string | null
+          daily_rate?: number | null
           employee_id?: string
           full_name?: string
           id?: string
@@ -176,6 +181,7 @@ export interface Database {
           monthly_salary?: number
           overtime_multiplier?: number
           standard_working_hours?: number
+          worker_type?: string
         }
         Relationships: [
           {
