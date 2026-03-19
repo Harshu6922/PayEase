@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { 
+import {
   Users,
   CalendarCheck,
   FileText,
   LayoutDashboard,
   LogOut,
   Banknote,
-  Tag
+  Tag,
+  CalendarDays
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -17,6 +18,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Employees', href: '/employees', icon: Users },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
+  { name: 'Daily Attendance', href: '/daily-attendance', icon: CalendarDays },
   { name: 'Advances', href: '/advances', icon: Banknote },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Commission', href: '/commission', icon: Tag },
