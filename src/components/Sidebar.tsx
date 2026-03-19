@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
-  Users, 
-  CalendarCheck, 
-  FileText, 
+  Users,
+  CalendarCheck,
+  FileText,
   LayoutDashboard,
   LogOut,
-  Banknote
+  Banknote,
+  Tag
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -18,6 +19,7 @@ const navigation = [
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
   { name: 'Advances', href: '/advances', icon: Banknote },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'Commission', href: '/commission', icon: Tag },
 ]
 
 export default function Sidebar() {
