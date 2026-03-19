@@ -21,7 +21,8 @@ export default async function CommissionPage() {
     .maybeSingle()
 
   const profile = profileData as { company_id: string | null } | null
-  const companyId = profile?.company_id ?? ''
+  const companyId = profile?.company_id
+  if (!companyId) redirect('/login')
 
   const { data: items } = await supabase
     .from('commission_items')

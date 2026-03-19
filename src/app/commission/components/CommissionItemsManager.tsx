@@ -16,6 +16,7 @@ export default function CommissionItemsManager({ items: initialItems, companyId 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CommissionItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<CommissionItem | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   return (
     <div className="p-6">
@@ -86,13 +87,19 @@ export default function CommissionItemsManager({ items: initialItems, companyId 
       {deleteItem && (
         <DeleteConfirmModal
           itemName={deleteItem.name}
+          error={deleteError}
           onConfirm={async () => {
             const supabase = createClient();
-            await supabase.from('commission_items').delete().eq('id', deleteItem.id);
+            const { error } = await supabase.from('commission_items').delete().eq('id', deleteItem.id);
+            if (error) {
+              setDeleteError('Failed to delete item. It may be in use.');
+              return;
+            }
             setItems(prev => prev.filter(i => i.id !== deleteItem.id));
             setDeleteItem(null);
+            setDeleteError(null);
           }}
-          onClose={() => setDeleteItem(null)}
+          onClose={() => { setDeleteItem(null); setDeleteError(null); }}
         />
       )}
     </div>
