@@ -48,14 +48,16 @@ export default async function ReportsPage({
   const startDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`
   const endDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${daysInMonth}`
 
-  // Fetch Raw Employees
-  const { data: employees } = await supabase
+  // Fetch Raw Employees (all worker types)
+  const { data: employees, error: empErr } = await supabase
     .from('employees')
-    .select('id, employee_id, full_name, company_id, monthly_salary')
+    .select('id, employee_id, full_name, company_id, monthly_salary, worker_type, daily_rate, standard_working_hours')
     .eq('company_id', companyId)
     .eq('is_active', true)
 
-  // Fetch Raw Attendance for this exact month spread
+  if (empErr) console.error('[reports] employees error:', empErr.message)
+
+  // Fetch Raw Attendance for salaried workers
   const { data: attendance } = await supabase
     .from('attendance_records')
     .select('employee_id, date, worked_hours, overtime_hours, overtime_amount, deduction_amount')
@@ -63,13 +65,61 @@ export default async function ReportsPage({
     .gte('date', startDate)
     .lte('date', endDate)
 
-  // Fetch Advances for this exact month spread
-  const { data: advances } = await supabase
-    .from('employee_advances')
-    .select('employee_id, amount')
+  // Fetch work entries for commission workers (total_amount is pre-calculated at log time)
+  const { data: workEntries, error: weErr } = await supabase
+    .from('work_entries')
+    .select('employee_id, item_id, quantity, date, total_amount')
     .eq('company_id', companyId)
-    .gte('advance_date', startDate)
-    .lte('advance_date', endDate)
+    .gte('date', startDate)
+    .lte('date', endDate)
+
+  if (weErr) console.error('[reports] work_entries error:', weErr.message)
+
+  // agentRates not needed for earnings (using stored total_amount), kept for future use
+  const { data: agentRates } = await supabase
+    .from('agent_item_rates')
+    .select('employee_id, item_id, rate')
+    .eq('company_id', companyId)
+
+  // Fetch daily attendance for daily workers
+  const { data: dailyAttendance, error: daErr } = await supabase
+    .from('daily_attendance')
+    .select('employee_id, date, hours_worked, pay_amount')
+    .eq('company_id', companyId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+
+  if (daErr) console.error('[reports] daily_attendance error:', daErr.message)
+
+  // Fetch ALL outstanding (unrepaid) advances per employee
+  const { data: advancesRaw } = await supabase
+    .from('employee_advances')
+    .select(`
+      id, employee_id, amount, advance_date,
+      advance_repayments(amount)
+    `)
+    .eq('company_id', companyId)
+
+  // Build outstandingByEmployee map
+  const outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {}
+  ;(advancesRaw || []).forEach((a: any) => {
+    const repaid = (a.advance_repayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+    const remaining = Number(a.amount) - repaid
+    if (remaining <= 0) return  // settled, skip
+    if (!outstandingByEmployee[a.employee_id]) {
+      outstandingByEmployee[a.employee_id] = { totalOutstanding: 0, advances: [] }
+    }
+    outstandingByEmployee[a.employee_id].totalOutstanding += remaining
+    outstandingByEmployee[a.employee_id].advances.push({
+      id: a.id,
+      remaining,
+      advance_date: a.advance_date,
+    })
+    // Sort advances oldest-first for FIFO allocation
+    outstandingByEmployee[a.employee_id].advances.sort(
+      (x, y) => x.advance_date.localeCompare(y.advance_date)
+    )
+  })
 
   // Fetch payments for this month (for balance display in Pay column)
   const { data: monthPayments } = await supabase
@@ -116,12 +166,15 @@ export default async function ReportsPage({
   }
 
   return (
-    <div className="p-8">
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
       <PayrollDashboard
         initialMonth={selectedMonthStr}
         employees={(employees || []) as any[]}
         attendance={(attendance || []) as any[]}
-        advances={(advances || []) as any[]}
+        workEntries={(workEntries || []) as any[]}
+        agentRates={(agentRates || []) as any[]}
+        dailyAttendance={(dailyAttendance || []) as any[]}
+        outstandingByEmployee={outstandingByEmployee}
         companyName={companyName}
         companyId={companyId}
         monthPayments={(monthPayments || []) as any[]}
