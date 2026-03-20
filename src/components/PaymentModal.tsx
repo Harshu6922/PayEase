@@ -68,7 +68,7 @@ export default function PaymentModal({
     fetchData()
   }, [employee.id])
 
-  // currentMonthPayable already has advances deducted — only subtract salary payments here
+  // currentMonthPayable is earned salary without advance deductions (advances are recovered separately)
   const paymentsThisMonth = payments
     .filter(p => p.month === month)
     .reduce((sum, p) => sum + Number(p.amount), 0)
@@ -97,7 +97,7 @@ export default function PaymentModal({
       for (const adv of outstandingAdvances.advances) {
         if (toDistribute <= 0) break
         const toRepay = Math.min(toDistribute, adv.remaining)
-        await supabase.from('advance_repayments').insert({
+        const { error: repErr } = await supabase.from('advance_repayments').insert({
           company_id: companyId,
           advance_id: adv.id,
           employee_id: employee.id,
@@ -106,6 +106,12 @@ export default function PaymentModal({
           method: 'salary_deduction',
           note: noteText || null,
         })
+        if (repErr) {
+          setError(`Payment recorded, but advance repayment failed: ${repErr.message}`)
+          setSaving(false)
+          onPaymentRecorded()
+          return
+        }
         toDistribute -= toRepay
       }
     }
@@ -313,8 +319,8 @@ export default function PaymentModal({
                       />
                     </div>
                     {(() => {
-                      const amt = mode === 'full' ? remainingThisMonth : (parseFloat(partialAmount) || 0)
-                      const overpaymentAmt = paymentsThisMonthTotal + amt - effectivePayable
+                      const amt = mode === 'parts' ? (parseFloat(partialAmount) || 0) : 0
+                      const overpaymentAmt = mode === 'full' ? 0 : (paymentsThisMonthTotal + amt - effectivePayable)
                       return overpaymentAmt > 0 ? (
                         <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
                           ⚠️ This payment exceeds the remaining net payable by {formatRs(overpaymentAmt)}. Proceed anyway?
