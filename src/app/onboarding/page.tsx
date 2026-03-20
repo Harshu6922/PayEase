@@ -16,7 +16,7 @@ export default async function OnboardingPage() {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (existing?.company_id) {
+  if ((existing as any)?.company_id) {
     // Profile already set up — go to dashboard
     redirect('/dashboard')
   }
