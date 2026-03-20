@@ -133,3 +133,32 @@ export interface Payment {
   note: string | null;
   created_at: string;
 }
+
+export interface AdvanceRepayment {
+  id: string
+  company_id: string
+  advance_id: string
+  employee_id: string
+  amount: number
+  repayment_date: string   // 'YYYY-MM-DD'
+  method: 'salary_deduction' | 'cash'
+  note: string | null
+  created_at: string
+}
+
+export interface ExpenseTemplate {
+  id: string
+  company_id: string
+  category: string
+  description: string
+  amount: number
+  paid_to: string | null
+  note: string | null
+  created_at: string
+}
+
+// Per-employee outstanding advance data passed from reports page to PaymentModal
+export interface OutstandingAdvancesEntry {
+  totalOutstanding: number
+  advances: { id: string; remaining: number; advance_date: string }[]
+}
