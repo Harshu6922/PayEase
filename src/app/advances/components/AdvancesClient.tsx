@@ -42,7 +42,7 @@ export default function AdvancesClient({
 
   const handleRepaymentSaved = async () => {
     // Refresh advances with new balances
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('employee_advances')
       .select(`
         id, employee_id, company_id, amount, advance_date, note,
@@ -51,6 +51,12 @@ export default function AdvancesClient({
       `)
       .eq('company_id', companyId)
       .order('advance_date', { ascending: false })
+
+    if (error) {
+      // Silently close modal on error; data will be stale until next page load
+      setRepayingAdvance(null)
+      return
+    }
 
     if (data) {
       setAdvances(data.map((a: any) => {
