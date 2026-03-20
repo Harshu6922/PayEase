@@ -115,10 +115,10 @@ export default async function ReportsPage({
       remaining,
       advance_date: a.advance_date,
     })
-    // Sort advances oldest-first for FIFO allocation
-    outstandingByEmployee[a.employee_id].advances.sort(
-      (x, y) => x.advance_date.localeCompare(y.advance_date)
-    )
+  })
+  // Sort advances oldest-first for FIFO allocation (once, after all advances collected)
+  Object.values(outstandingByEmployee).forEach(entry => {
+    entry.advances.sort((x, y) => x.advance_date.localeCompare(y.advance_date))
   })
 
   // Fetch payments for this month (for balance display in Pay column)
