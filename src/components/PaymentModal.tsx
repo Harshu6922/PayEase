@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format, parse } from 'date-fns'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import type { Payment, EmployeeAdvance } from '@/types'
 
@@ -10,6 +11,10 @@ interface PaymentModalProps {
   month: string                 // 'YYYY-MM'
   currentMonthPayable: number
   companyId: string
+  outstandingAdvances: {
+    totalOutstanding: number
+    advances: { id: string; remaining: number; advance_date: string }[]
+  }
   onClose: () => void
   onPaymentRecorded: () => void
 }
@@ -22,6 +27,7 @@ export default function PaymentModal({
   month,
   currentMonthPayable,
   companyId,
+  outstandingAdvances,
   onClose,
   onPaymentRecorded,
 }: PaymentModalProps) {
@@ -36,6 +42,7 @@ export default function PaymentModal({
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [recoveryAmount, setRecoveryAmount] = useState('')
 
   const monthLabel = format(parse(month + '-01', 'yyyy-MM-dd', new Date()), 'MMMM yyyy')
 
@@ -61,6 +68,7 @@ export default function PaymentModal({
     fetchData()
   }, [employee.id])
 
+  // currentMonthPayable already has advances deducted — only subtract salary payments here
   const paymentsThisMonth = payments
     .filter(p => p.month === month)
     .reduce((sum, p) => sum + Number(p.amount), 0)
@@ -82,6 +90,25 @@ export default function PaymentModal({
       setSaving(false)
       return
     }
+    // FIFO advance repayments
+    const recovery = parseFloat(recoveryAmount) || 0
+    if (recovery > 0) {
+      let toDistribute = recovery
+      for (const adv of outstandingAdvances.advances) {
+        if (toDistribute <= 0) break
+        const toRepay = Math.min(toDistribute, adv.remaining)
+        await supabase.from('advance_repayments').insert({
+          company_id: companyId,
+          advance_id: adv.id,
+          employee_id: employee.id,
+          amount: toRepay,
+          repayment_date: date,
+          method: 'salary_deduction',
+          note: noteText || null,
+        })
+        toDistribute -= toRepay
+      }
+    }
     // Re-fetch payments
     const { data } = await supabase
       .from('payments')
@@ -92,6 +119,7 @@ export default function PaymentModal({
     setMode(null)
     setPartialAmount('')
     setNote('')
+    setRecoveryAmount('')
     setSaving(false)
     onPaymentRecorded()
   }
@@ -135,8 +163,22 @@ export default function PaymentModal({
   ].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl flex flex-col max-h-[90vh]"
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
@@ -170,6 +212,34 @@ export default function PaymentModal({
             </div>
           </div>
 
+          {/* Advance Recovery */}
+          {outstandingAdvances.totalOutstanding > 0 && (
+            <div className="rounded-lg bg-orange-50 border border-orange-100 p-4 space-y-3">
+              <p className="text-sm font-semibold text-orange-800">Advance Recovery</p>
+              <div className="space-y-1">
+                {outstandingAdvances.advances.map(adv => (
+                  <div key={adv.id} className="flex justify-between text-xs text-orange-700">
+                    <span>Advance ({format(new Date(adv.advance_date + 'T00:00:00'), 'dd MMM yyyy')})</span>
+                    <span className="font-semibold">{formatRs(adv.remaining)} outstanding</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-orange-800 mb-1">
+                  Recover this month (Rs.) — Total outstanding: {formatRs(outstandingAdvances.totalOutstanding)}
+                </label>
+                <input
+                  type="number" min="0" step="0.01"
+                  max={outstandingAdvances.totalOutstanding}
+                  value={recoveryAmount}
+                  onChange={e => setRecoveryAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="block w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           {remainingThisMonth > 0 && (
             <div className="space-y-3">
@@ -198,56 +268,70 @@ export default function PaymentModal({
                 </button>
               </div>
 
-              {mode && (
-                <div className="rounded-lg border border-gray-200 p-4 space-y-3">
-                  {mode === 'full' && (
-                    <p className="text-sm text-gray-600">
-                      Record full remaining payment of <span className="font-semibold text-gray-900">{formatRs(remainingThisMonth)}</span>
-                    </p>
-                  )}
-                  {mode === 'parts' && (
+              {mode && (() => {
+                const recovery = parseFloat(recoveryAmount) || 0
+                const effectivePayable = currentMonthPayable - recovery
+                const paymentsThisMonthTotal = paymentsThisMonth  // already computed above
+                return (
+                  <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+                    {mode === 'full' && (
+                      <p className="text-sm text-gray-600">
+                        Record full remaining payment of <span className="font-semibold text-gray-900">{formatRs(remainingThisMonth)}</span>
+                      </p>
+                    )}
+                    {mode === 'parts' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={partialAmount}
+                          onChange={e => setPartialAmount(e.target.value)}
+                          placeholder="Enter amount"
+                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        />
+                      </div>
+                    )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
                       <input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={partialAmount}
-                        onChange={e => setPartialAmount(e.target.value)}
-                        placeholder="Enter amount"
-                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        type="date"
+                        value={paymentDate}
+                        onChange={e => setPaymentDate(e.target.value)}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       />
                     </div>
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
-                    <input
-                      type="date"
-                      value={paymentDate}
-                      onChange={e => setPaymentDate(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Note <span className="text-gray-400 font-normal">(optional)</span></label>
+                      <input
+                        type="text"
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        placeholder="e.g. March partial"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                      />
+                    </div>
+                    {(() => {
+                      const amt = mode === 'full' ? remainingThisMonth : (parseFloat(partialAmount) || 0)
+                      const overpaymentAmt = paymentsThisMonthTotal + amt - effectivePayable
+                      return overpaymentAmt > 0 ? (
+                        <div className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-sm text-yellow-800">
+                          ⚠️ This payment exceeds the remaining net payable by {formatRs(overpaymentAmt)}. Proceed anyway?
+                        </div>
+                      ) : null
+                    })()}
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <button
+                      onClick={mode === 'full' ? handlePayFull : handlePayParts}
+                      disabled={saving}
+                      className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                    >
+                      {saving ? 'Recording…' : 'Record Payment'}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Note <span className="text-gray-400 font-normal">(optional)</span></label>
-                    <input
-                      type="text"
-                      value={note}
-                      onChange={e => setNote(e.target.value)}
-                      placeholder="e.g. March partial"
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
-                  {error && <p className="text-sm text-red-600">{error}</p>}
-                  <button
-                    onClick={mode === 'full' ? handlePayFull : handlePayParts}
-                    disabled={saving}
-                    className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-                  >
-                    {saving ? 'Recording…' : 'Record Payment'}
-                  </button>
-                </div>
-              )}
+                )
+              })()}
             </div>
           )}
 
@@ -283,7 +367,7 @@ export default function PaymentModal({
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

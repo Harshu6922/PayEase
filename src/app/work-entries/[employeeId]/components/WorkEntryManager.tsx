@@ -28,7 +28,8 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
 
   // Total earnings for current month (currentMonthPayable for PaymentModal)
   const currentMonthPayable = useMemo(
-    () => entries.reduce((sum, e) => sum + Number(e.total_amount), 0),
+    () => entries.reduce((sum, e) =>
+      sum + (Number(e.total_amount) || Number(e.quantity) * Number(e.rate)), 0),
     [entries]
   )
 
@@ -77,6 +78,7 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
     })
     setIsModalOpen(false)
     setEditingDate(null)
+    router.refresh()
   }
 
   const openAdd = () => { setEditingDate(null); setIsModalOpen(true) }
@@ -108,7 +110,7 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-1">
         <a href="/work-entries" className="text-blue-600 hover:text-blue-800 text-sm">← Workers</a>
@@ -146,6 +148,16 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
         </button>
       </div>
 
+      {/* Monthly earnings summary */}
+      {entries.length > 0 && (
+        <div className="mb-5 rounded-xl bg-indigo-50 border border-indigo-100 px-5 py-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-indigo-700">Total Earnings — {monthLabel}</span>
+          <span className="text-lg font-bold text-indigo-900">
+            Rs. {currentMonthPayable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      )}
+
       {/* No items assigned warning */}
       {agentRates.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-yellow-800 text-sm">
@@ -162,7 +174,8 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
           {entriesByDate.map(({ date, dayEntries }) => {
-            const dayTotal = dayEntries.reduce((sum: number, e: WorkEntry) => sum + Number(e.total_amount), 0)
+            const dayTotal = dayEntries.reduce((sum: number, e: WorkEntry) =>
+              sum + (Number(e.total_amount) || Number(e.quantity) * Number(e.rate)), 0)
             const itemSummary = dayEntries
               .map((e: WorkEntry) => {
                 const rate = agentRates.find(r => r.item_id === e.item_id)
@@ -204,8 +217,9 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
           month={month}
           currentMonthPayable={currentMonthPayable}
           companyId={companyId}
+          outstandingAdvances={{ totalOutstanding: 0, advances: [] }}
           onClose={() => setIsPaymentModalOpen(false)}
-          onPaymentRecorded={() => {}}
+          onPaymentRecorded={() => { router.refresh() }}
         />
       )}
 

@@ -353,6 +353,7 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
             month={monthStr}
             currentMonthPayable={s.pay}
             companyId={companyId}
+            outstandingAdvances={{ totalOutstanding: 0, advances: [] }}
             onClose={() => setPaymentWorker(null)}
             onPaymentRecorded={() => {}}
           />

@@ -7,6 +7,7 @@ import { format } from 'date-fns'
 import { getPrevMonth, calcPrevBalance, downloadPdf } from '@/lib/pdf-utils'
 import type { PayrollRow, Payment } from '@/types'
 import PaymentModal from '@/components/PaymentModal'
+import Link from 'next/link'
 
 // Data types passed from Server
 interface Employee {
@@ -15,6 +16,9 @@ interface Employee {
   full_name: string
   company_id: string
   monthly_salary: number
+  worker_type: 'salaried' | 'commission' | 'daily'
+  daily_rate: number | null
+  standard_working_hours: number | null
 }
 
 interface AttendanceRecord {
@@ -26,16 +30,35 @@ interface AttendanceRecord {
   deduction_amount: number | null
 }
 
-interface Advance {
+interface WorkEntry {
   employee_id: string
-  amount: number
+  item_id: string
+  quantity: number
+  date?: string
+  total_amount?: number
+}
+
+interface AgentRate {
+  employee_id: string
+  item_id: string
+  rate: number
+}
+
+interface DailyAttendanceRecord {
+  employee_id: string
+  date: string
+  hours_worked: number
+  pay_amount: number
 }
 
 interface PayrollDashboardProps {
   initialMonth: string // YYYY-MM
   employees: Employee[]
   attendance: AttendanceRecord[]
-  advances: Advance[]
+  workEntries: WorkEntry[]
+  agentRates: AgentRate[]
+  dailyAttendance: DailyAttendanceRecord[]
+  outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }>
   generateAction: (data: any) => Promise<void>
   companyName: string
   companyId: string
@@ -43,33 +66,51 @@ interface PayrollDashboardProps {
 }
 
 // Calculation Engine pure function
-function calculatePayroll(employees: Employee[], attendance: AttendanceRecord[], advances: Advance[], workingDays: number) {
+function calculatePayroll(
+  employees: Employee[],
+  attendance: AttendanceRecord[],
+  workEntries: WorkEntry[],
+  agentRates: AgentRate[],
+  dailyAttendance: DailyAttendanceRecord[],
+  workingDays: number
+) {
   let totalPayable = 0
   let totalRecoverable = 0
 
   const rows = employees.map(emp => {
-    // Filter attendance for this employee
-    const empAttendance = attendance.filter(a => a.employee_id === emp.id)
-    
     let total_worked_days = 0
+    let earned_salary = 0
     let total_overtime_amount = 0
     let total_deduction_amount = 0
 
-    empAttendance.forEach(record => {
-      if (Number(record.worked_hours) > 0) total_worked_days += 1
-      total_overtime_amount += Number(record.overtime_amount || 0)
-      total_deduction_amount += Number(record.deduction_amount || 0)
-    })
+    if (emp.worker_type === 'commission') {
+      // Commission: use pre-calculated total_amount stored at log time
+      const empEntries = workEntries.filter(e => e.employee_id === emp.id)
+      earned_salary = empEntries.reduce((sum, e) => sum + Number(e.total_amount ?? 0), 0)
+      // Count unique dates worked
+      const uniqueDates = new Set(empEntries.map(e => e.date).filter(Boolean))
+      total_worked_days = uniqueDates.size
 
-    // Calculate advances for this employee
-    const empAdvances = advances.filter(a => a.employee_id === emp.id)
-    const total_advances = empAdvances.reduce((sum, adv) => sum + Number(adv.amount), 0)
+    } else if (emp.worker_type === 'daily') {
+      // Daily: use pre-calculated pay_amount stored at attendance time
+      const empDailyAtt = dailyAttendance.filter(a => a.employee_id === emp.id)
+      earned_salary = empDailyAtt.reduce((sum, a) => sum + Number(a.pay_amount ?? 0), 0)
+      total_worked_days = empDailyAtt.length
 
-    // Calculate Salary
-    const per_day_salary = workingDays > 0 ? Number(emp.monthly_salary) / workingDays : 0
-    const earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
+    } else {
+      // Salaried: attendance-based with overtime/deductions
+      const empAttendance = attendance.filter(a => a.employee_id === emp.id)
+      empAttendance.forEach(record => {
+        if (Number(record.worked_hours) > 0) total_worked_days += 1
+        total_overtime_amount += Number(record.overtime_amount || 0)
+        total_deduction_amount += Number(record.deduction_amount || 0)
+      })
+      const per_day_salary = workingDays > 0 ? Number(emp.monthly_salary) / workingDays : 0
+      earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
+    }
 
-    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount - total_advances
+    const total_advances = 0  // advances now tracked via repayments; column shows outstanding balance
+    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount
 
     // Aggregate totals based on positive/negative
     if (final_payable_salary >= 0) {
@@ -82,6 +123,7 @@ function calculatePayroll(employees: Employee[], attendance: AttendanceRecord[],
       employee_id: emp.id,
       display_id: emp.employee_id,
       full_name: emp.full_name,
+      worker_type: emp.worker_type,
       total_worked_days,
       earned_salary,
       total_overtime_amount,
@@ -121,7 +163,10 @@ export default function PayrollDashboard({
   initialMonth,
   employees,
   attendance,
-  advances,
+  workEntries,
+  agentRates,
+  dailyAttendance,
+  outstandingByEmployee,
   generateAction,
   companyName,
   companyId,
@@ -158,8 +203,8 @@ export default function PayrollDashboard({
 
   // Memoize calculation so it ONLY runs when these specific variables change
   const computedPayroll = useMemo(() => {
-    return calculatePayroll(employees, attendance, advances, actualDaysInMonth)
-  }, [employees, attendance, advances, actualDaysInMonth])
+    return calculatePayroll(employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth)
+  }, [employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth])
 
   const prevBalances = useMemo((): Record<string, number> => {
     if (!paidUpToDay) return {}
@@ -185,6 +230,22 @@ export default function PayrollDashboard({
     })
     return map
   }, [localPayments])
+
+  // Summary totals after subtracting recorded payments
+  const remainingTotals = useMemo(() => {
+    let totalRemaining = 0
+    let totalRecoverable = 0
+    computedPayroll.rows.forEach(row => {
+      if (row.final_payable_salary < 0) {
+        totalRecoverable += Math.abs(row.final_payable_salary)
+      } else {
+        const paid = paidByEmployee[row.employee_id] ?? 0
+        const remaining = row.final_payable_salary - paid
+        if (remaining > 0) totalRemaining += remaining
+      }
+    })
+    return { totalRemaining, totalRecoverable, net: totalRemaining - totalRecoverable }
+  }, [computedPayroll.rows, paidByEmployee])
 
   const filteredRows = useMemo(() => {
     let rows = computedPayroll.rows
@@ -249,7 +310,8 @@ export default function PayrollDashboard({
           companyName={companyName}
           rows={computedPayroll.rows as PayrollRow[]}
           prevBalances={prevBalances}
-          totalNetPayout={pdfTotalNetPayout}
+          totalNetPayout={remainingTotals.net}
+          paidByEmployee={paidByEmployee}
         />
       ).toBlob()
       downloadPdf(blob, `payroll-${selectedMonth}.pdf`)
@@ -307,6 +369,12 @@ export default function PayrollDashboard({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href={`/reports/comparison?month=${selectedMonth}`}
+            className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Compare →
+          </Link>
           <button
             onClick={handleExportBulkPdf}
             disabled={isExportingBulk || computedPayroll.rows.length === 0}
@@ -383,24 +451,24 @@ export default function PayrollDashboard({
           <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 bg-gray-50 rounded-lg p-4 border border-gray-100">
             <div className="flex flex-col">
               <span className="text-sm text-gray-500 font-medium">Total Payable</span>
-              <span className="text-xl font-bold text-green-600">{formatINR(computedPayroll.totalPayable)}</span>
+              <span className="text-xl font-bold text-green-600">{formatINR(remainingTotals.totalRemaining)}</span>
             </div>
-            
+
             <div className="w-px bg-gray-200 hidden sm:block"></div>
-            
+
             <div className="flex flex-col">
               <span className="text-sm text-gray-500 font-medium">Total Recoverable</span>
               <span className="text-xl font-bold text-red-600">
-                {computedPayroll.totalRecoverable > 0 ? `-${formatINR(computedPayroll.totalRecoverable)}` : formatINR(0)}
+                {remainingTotals.totalRecoverable > 0 ? `-${formatINR(remainingTotals.totalRecoverable)}` : formatINR(0)}
               </span>
             </div>
 
             <div className="w-px bg-gray-200 hidden sm:block"></div>
 
             <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Final Net Payout</span>
-              <span className={`text-2xl font-black ${computedPayroll.netPayout < 0 ? 'text-red-700' : 'text-gray-900'}`}>
-                {computedPayroll.netPayout < 0 ? `-${formatINR(Math.abs(computedPayroll.netPayout))}` : formatINR(computedPayroll.netPayout)}
+              <span className="text-sm text-gray-500 font-medium">Remaining to Pay</span>
+              <span className={`text-2xl font-black ${remainingTotals.net < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+                {remainingTotals.net < 0 ? `-${formatINR(Math.abs(remainingTotals.net))}` : formatINR(remainingTotals.net)}
               </span>
             </div>
           </div>
@@ -464,13 +532,36 @@ export default function PayrollDashboard({
                     {row.total_deduction_amount > 0 ? `-${formatINR(row.total_deduction_amount)}` : '-'}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-orange-500">
-                    {row.total_advances > 0 ? `-${formatINR(row.total_advances)}` : '-'}
+                    {(() => {
+                      const outstanding = outstandingByEmployee[row.employee_id]?.totalOutstanding ?? 0
+                      return outstanding > 0 ? formatINR(outstanding) : '-'
+                    })()}
                   </td>
-                  <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-bold ${row.final_payable_salary < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {row.final_payable_salary < 0
-                      ? `Recover (${formatINR(Math.abs(row.final_payable_salary))})`
-                      : formatINR(row.final_payable_salary)
-                    }
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-bold">
+                    {(() => {
+                      const paid = paidByEmployee[row.employee_id] ?? 0
+                      const remaining = row.final_payable_salary - paid
+                      if (row.final_payable_salary < 0) {
+                        return <span className="text-red-600">Recover ({formatINR(Math.abs(row.final_payable_salary))})</span>
+                      }
+                      if (remaining < 0) {
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-red-600 font-bold">{formatINR(Math.abs(remaining))}</span>
+                            <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">Overpaid</span>
+                          </span>
+                        )
+                      }
+                      if (remaining === 0) {
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="text-gray-400 line-through">{formatINR(row.final_payable_salary)}</span>
+                            <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Settled</span>
+                          </span>
+                        )
+                      }
+                      return <span className="text-green-600">{formatINR(remaining)}</span>
+                    })()}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                     {row.final_payable_salary > 0 && (() => {
@@ -479,13 +570,14 @@ export default function PayrollDashboard({
                       return (
                         <button
                           onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary })}
+                          disabled={remaining <= 0}
                           className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
                             remaining <= 0
                               ? 'bg-green-100 text-green-700 cursor-default'
                               : 'bg-indigo-600 text-white hover:bg-indigo-500'
                           }`}
                         >
-                          {remaining <= 0 ? 'Paid' : formatINR(remaining)}
+                          {remaining <= 0 ? 'Paid' : 'Pay'}
                         </button>
                       )
                     })()}
@@ -517,9 +609,9 @@ export default function PayrollDashboard({
           month={selectedMonth}
           currentMonthPayable={paymentModal.payable}
           companyId={companyId}
+          outstandingAdvances={outstandingByEmployee[paymentModal.row.employee_id] ?? { totalOutstanding: 0, advances: [] }}
           onClose={() => setPaymentModal(null)}
           onPaymentRecorded={async () => {
-            // Refresh local payment totals for this month
             const { createClient } = await import('@/lib/supabase/client')
             const supabase = createClient() as unknown as any
             const { data } = await supabase
@@ -528,6 +620,7 @@ export default function PayrollDashboard({
               .eq('company_id', companyId)
               .eq('month', selectedMonth)
             if (data) setLocalPayments(data)
+            router.refresh()
           }}
         />
       )}
