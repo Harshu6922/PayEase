@@ -179,21 +179,21 @@ export default function PaymentModal({
         onClick={onClose}
       />
       <motion.div
-        className="relative w-full max-w-lg rounded-xl bg-white shadow-2xl flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-lg rounded-xl bg-white dark:bg-gray-800 shadow-2xl flex flex-col max-h-[90vh]"
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
+        <div className="flex items-center justify-between border-b dark:border-gray-700 px-6 py-4">
           <div>
-            <p className="text-lg font-bold text-gray-900">{employee.full_name}</p>
-            <p className="text-sm text-gray-500">{employee.employee_id} · {monthLabel}</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-white">{employee.full_name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{employee.employee_id} · {monthLabel}</p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xl font-bold leading-none"
           >
             ×
           </button>
@@ -201,17 +201,17 @@ export default function PaymentModal({
 
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-6">
           {/* Balance Summary */}
-          <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 space-y-2">
+          <div className="rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">This Month&apos;s Payable</span>
-              <span className="font-semibold text-gray-900">{formatRs(currentMonthPayable)}</span>
+              <span className="text-gray-600 dark:text-gray-400">This Month&apos;s Payable</span>
+              <span className="font-semibold text-gray-900 dark:text-white">{formatRs(currentMonthPayable)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Paid This Month</span>
+              <span className="text-gray-600 dark:text-gray-400">Paid This Month</span>
               <span className="font-semibold text-green-600">{formatRs(paymentsThisMonth)}</span>
             </div>
-            <div className="flex justify-between text-sm border-t pt-2 mt-1">
-              <span className="text-gray-800 font-medium">Remaining</span>
+            <div className="flex justify-between text-sm border-t dark:border-gray-600 pt-2 mt-1">
+              <span className="text-gray-800 dark:text-gray-200 font-medium">Remaining</span>
               <span className={`font-bold text-base ${remainingThisMonth <= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {remainingThisMonth <= 0 ? 'Fully Paid' : formatRs(remainingThisMonth)}
               </span>
@@ -240,7 +240,7 @@ export default function PaymentModal({
                   value={recoveryAmount}
                   onChange={e => setRecoveryAmount(e.target.value)}
                   placeholder="0.00"
-                  className="block w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="block w-full rounded-lg border border-orange-200 dark:border-orange-700 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function PaymentModal({
                   className={`flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                     mode === 'full'
                       ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   Pay in Full
@@ -267,7 +267,7 @@ export default function PaymentModal({
                   className={`flex-1 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
                     mode === 'parts'
                       ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   Pay in Parts
@@ -279,15 +279,15 @@ export default function PaymentModal({
                 const effectivePayable = currentMonthPayable - recovery
                 const paymentsThisMonthTotal = paymentsThisMonth  // already computed above
                 return (
-                  <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+                  <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
                     {mode === 'full' && (
-                      <p className="text-sm text-gray-600">
-                        Record full remaining payment of <span className="font-semibold text-gray-900">{formatRs(remainingThisMonth)}</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Record full remaining payment of <span className="font-semibold text-gray-900 dark:text-white">{formatRs(remainingThisMonth)}</span>
                       </p>
                     )}
                     {mode === 'parts' && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
                         <input
                           type="number"
                           min="0.01"
@@ -295,27 +295,27 @@ export default function PaymentModal({
                           value={partialAmount}
                           onChange={e => setPartialAmount(e.target.value)}
                           placeholder="Enter amount"
-                          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                          className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         />
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Date</label>
                       <input
                         type="date"
                         value={paymentDate}
                         onChange={e => setPaymentDate(e.target.value)}
-                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Note <span className="text-gray-400 font-normal">(optional)</span></label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span></label>
                       <input
                         type="text"
                         value={note}
                         onChange={e => setNote(e.target.value)}
                         placeholder="e.g. March partial"
-                        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                       />
                     </div>
                     {(() => {
@@ -343,28 +343,28 @@ export default function PaymentModal({
 
           {/* Payment History */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Payment History</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Payment History</h3>
             {loading ? (
-              <p className="text-sm text-gray-400">Loading…</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Loading…</p>
             ) : history.length === 0 ? (
-              <p className="text-sm text-gray-400">No payments or advances recorded yet.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">No payments or advances recorded yet.</p>
             ) : (
               <div className="space-y-2">
                 {history.map((item, i) => (
-                  <div key={i} className="flex items-start justify-between rounded-md bg-gray-50 px-3 py-2">
+                  <div key={i} className="flex items-start justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2">
                     <div>
-                      <p className="text-sm font-medium text-gray-800">
+                      <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                         {item.type === 'advance' ? 'Advance' : 'Salary'}
                         {item.type === 'salary' && item.month && item.month !== month && (
-                          <span className="ml-1 text-xs text-gray-400">({item.month})</span>
+                          <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({item.month})</span>
                         )}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {format(new Date(item.date + 'T00:00:00'), 'MMM d, yyyy')}
                         {item.note && <> · <span className="italic">{item.note}</span></>}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 ml-4 whitespace-nowrap">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white ml-4 whitespace-nowrap">
                       {formatRs(item.amount)}
                     </span>
                   </div>

@@ -363,15 +363,15 @@ export default function PayrollDashboard({
     <>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Monthly Payroll Report</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Monthly Payroll Report</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Interactive dashboard for {selectedMonth}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href={`/reports/comparison?month=${selectedMonth}`}
-            className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             Compare →
           </Link>
@@ -393,25 +393,25 @@ export default function PayrollDashboard({
       </div>
 
       {/* Control Panel & Summary Section */}
-      <div className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm p-6">
+      <div className="mb-8 overflow-hidden rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm p-6">
         <div className="flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
           
           {/* Controls */}
           <div className="flex flex-col sm:flex-row gap-6">
             <div>
-              <label htmlFor="month-select" className="block text-sm font-medium leading-6 text-gray-900">Select Month</label>
+              <label htmlFor="month-select" className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Select Month</label>
               <div className="mt-2">
                 <input
                   type="month"
                   id="month-select"
                   value={selectedMonth}
                   onChange={handleMonthChange}
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="days-select" className="block text-sm font-medium leading-6 text-gray-900">Days in Month</label>
+              <label htmlFor="days-select" className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">Days in Month</label>
               <div className="mt-2">
                 <input
                   type="number"
@@ -420,13 +420,13 @@ export default function PayrollDashboard({
                   max="31"
                   value={actualDaysInMonth}
                   readOnly
-                  className="block rounded-md border-0 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 sm:text-sm sm:leading-6 w-32 cursor-not-allowed"
+                  className="block rounded-md border-0 py-1.5 text-gray-500 dark:text-gray-400 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-gray-50 dark:bg-gray-700 sm:text-sm sm:leading-6 w-32 cursor-not-allowed"
                   title="Based on actual days in selected month"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="paid-up-to" className="block text-sm font-medium leading-6 text-gray-900">
+              <label htmlFor="paid-up-to" className="block text-sm font-medium leading-6 text-gray-900 dark:text-white">
                 Prev. month paid up to
               </label>
               <div className="mt-2">
@@ -441,33 +441,33 @@ export default function PayrollDashboard({
                     setPaidUpToDay(isNaN(val) ? null : Math.min(val, daysInPrevMonth))
                   }}
                   placeholder="e.g. 25"
-                  className="block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 w-28 px-3"
+                  className="block rounded-md border-0 py-1.5 text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 w-28 px-3"
                 />
               </div>
             </div>
           </div>
 
           {/* Dynamic Summary */}
-          <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 bg-gray-50 rounded-lg p-4 border border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
             <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Total Payable</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Payable</span>
               <span className="text-xl font-bold text-green-600">{formatINR(remainingTotals.totalRemaining)}</span>
             </div>
 
-            <div className="w-px bg-gray-200 hidden sm:block"></div>
+            <div className="w-px bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
 
             <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Total Recoverable</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Recoverable</span>
               <span className="text-xl font-bold text-red-600">
                 {remainingTotals.totalRecoverable > 0 ? `-${formatINR(remainingTotals.totalRecoverable)}` : formatINR(0)}
               </span>
             </div>
 
-            <div className="w-px bg-gray-200 hidden sm:block"></div>
+            <div className="w-px bg-gray-200 dark:bg-gray-700 hidden sm:block"></div>
 
             <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Remaining to Pay</span>
-              <span className={`text-2xl font-black ${remainingTotals.net < 0 ? 'text-red-700' : 'text-gray-900'}`}>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Remaining to Pay</span>
+              <span className={`text-2xl font-black ${remainingTotals.net < 0 ? 'text-red-700' : 'text-gray-900 dark:text-white'}`}>
                 {remainingTotals.net < 0 ? `-${formatINR(Math.abs(remainingTotals.net))}` : formatINR(remainingTotals.net)}
               </span>
             </div>
@@ -482,38 +482,38 @@ export default function PayrollDashboard({
           placeholder="Search employee…"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          className="block w-64 rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+          className="block w-64 rounded-md border-0 py-1.5 px-3 text-gray-900 dark:text-white dark:bg-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
         />
         <button
           onClick={() =>
             setSortOrder(s => s === 'default' ? 'asc' : s === 'asc' ? 'desc' : 'default')
           }
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+          className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           {sortOrder === 'default' ? 'Default sort' : sortOrder === 'asc' ? 'A → Z' : 'Z → A'}
         </button>
       </div>
 
       {/* Dynamic Table */}
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm mb-12">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="overflow-hidden rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm mb-12">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Overtime</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Advances</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Payable</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pay</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Days</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Earnings</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Overtime</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Deductions</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Advances</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Net Payable</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pay</th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PDF</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-900">
             {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                   {searchQuery.trim()
                     ? 'No employees match your search.'
                     : 'No active employees found to calculate payroll for.'}
@@ -521,13 +521,13 @@ export default function PayrollDashboard({
               </tr>
             ) : (
               filteredRows.map((row) => (
-                <tr key={row.employee_id} className="hover:bg-gray-50 transition-colors">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                    {row.full_name} <span className="text-gray-400 text-xs font-normal block">{row.display_id}</span>
+                <tr key={row.employee_id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                    {row.full_name} <span className="text-gray-400 dark:text-gray-500 text-xs font-normal block">{row.display_id}</span>
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500 font-medium">{row.total_worked_days}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-700 font-medium">{formatINR(row.earned_salary)}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500">{formatINR(row.total_overtime_amount)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500 dark:text-gray-400 font-medium">{row.total_worked_days}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-700 dark:text-gray-300 font-medium">{formatINR(row.earned_salary)}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500 dark:text-gray-400">{formatINR(row.total_overtime_amount)}</td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-red-500">
                     {row.total_deduction_amount > 0 ? `-${formatINR(row.total_deduction_amount)}` : '-'}
                   </td>
@@ -548,15 +548,15 @@ export default function PayrollDashboard({
                         return (
                           <span className="inline-flex items-center gap-1">
                             <span className="text-red-600 font-bold">{formatINR(Math.abs(remaining))}</span>
-                            <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">Overpaid</span>
+                            <span className="text-[10px] font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded-full">Overpaid</span>
                           </span>
                         )
                       }
                       if (remaining === 0) {
                         return (
                           <span className="inline-flex items-center gap-1">
-                            <span className="text-gray-400 line-through">{formatINR(row.final_payable_salary)}</span>
-                            <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Settled</span>
+                            <span className="text-gray-400 dark:text-gray-500 line-through">{formatINR(row.final_payable_salary)}</span>
+                            <span className="text-[10px] font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">Settled</span>
                           </span>
                         )
                       }
@@ -587,7 +587,7 @@ export default function PayrollDashboard({
                       onClick={() => handleExportEmployeePdf(row as PayrollRow)}
                       disabled={!!exportingEmployeeId}
                       title="Download employee PDF"
-                      className="text-gray-400 hover:text-indigo-600 disabled:opacity-40 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-indigo-600 disabled:opacity-40 transition-colors"
                     >
                       {exportingEmployeeId === row.employee_id ? '...' : '↓'}
                     </button>
