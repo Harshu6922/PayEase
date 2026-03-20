@@ -163,8 +163,13 @@ export default function ExpensesManager({
         note: t.note,
         template_id: t.id,
       }))
-      const { data: inserted } = await supabase
+      const { data: inserted, error: insertErr } = await supabase
         .from('expenses').insert(payload).select('*')
+      if (insertErr) {
+        setApplyResult(`Error applying templates: ${insertErr.message}`)
+        setApplying(false)
+        return
+      }
       if (inserted) {
         setExpenses(prev =>
           [...prev, ...inserted].sort((a, b) => b.date.localeCompare(a.date))

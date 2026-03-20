@@ -73,7 +73,12 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
 
   const handleDelete = async (id: string) => {
     setDeleting(id)
-    await supabase.from('expense_templates').delete().eq('id', id)
+    const { error: deleteErr } = await supabase.from('expense_templates').delete().eq('id', id)
+    if (deleteErr) {
+      setError(`Delete failed: ${deleteErr.message}`)
+      setDeleting(null)
+      return
+    }
     const next = templates.filter(t => t.id !== id)
     setTemplates(next); onChanged(next)
     setDeleting(null)
