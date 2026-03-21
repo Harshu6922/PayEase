@@ -1,62 +1,57 @@
 import { createClient } from '@/lib/supabase/server'
-import { Users, CalendarCheck, TrendingUp } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import DashboardNew from './components/DashboardNew'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
 
-  // Lightweight dashboard: Fetch essential counts only
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profileData } = await supabase
+    .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+  const companyId = (profileData as { company_id: string | null } | null)?.company_id
+  if (!companyId) redirect('/login')
+
+  const today = new Date().toISOString().split('T')[0]
+  const currentMonth = today.slice(0, 7)
+
   const [
-    { count: employeeCount },
-    { count: todaysAttendanceCount }
+    { count: totalEmployees },
+    { count: salaryEmployees },
+    { count: commissionEmployees },
+    { count: dailyEmployees },
+    { count: todaysAttendance },
+    { data: advancesData, count: advancesCount },
+    { data: expensesData },
+    { data: topEmployees },
   ] = await Promise.all([
-    supabase
-      .from('employees')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true),
-    
-    supabase
-      .from('attendance_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('date', new Date().toISOString().split('T')[0])
+    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true),
+    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).eq('worker_type', 'salaried'),
+    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).eq('worker_type', 'commission'),
+    supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).eq('worker_type', 'daily'),
+    supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('date', today),
+    supabase.from('advances').select('amount', { count: 'exact' }).eq('company_id', companyId).eq('status', 'outstanding'),
+    supabase.from('expenses').select('amount').eq('company_id', companyId).gte('date', `${currentMonth}-01`),
+    supabase.from('employees').select('id, name, worker_type').eq('company_id', companyId).eq('is_active', true).order('name').limit(4),
   ])
 
+  const totalAdvances = advancesData?.reduce((sum, a) => sum + ((a as { amount: number }).amount ?? 0), 0) ?? 0
+  const totalExpenses = expensesData?.reduce((sum, e) => sum + ((e as { amount: number }).amount ?? 0), 0) ?? 0
+  const currentMonthLabel = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Overview of your payroll system.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-indigo-50">
-              <Users className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Active Employees</p>
-              <p className="text-2xl font-bold text-gray-900">{employeeCount ?? 0}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-lg bg-green-50">
-              <CalendarCheck className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Today's Attendance</p>
-              <p className="text-2xl font-bold text-gray-900">{todaysAttendanceCount ?? 0}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DashboardNew
+      month={currentMonthLabel}
+      totalEmployees={totalEmployees ?? 0}
+      salaryEmployees={salaryEmployees ?? 0}
+      commissionEmployees={commissionEmployees ?? 0}
+      dailyEmployees={dailyEmployees ?? 0}
+      todaysAttendance={todaysAttendance ?? 0}
+      totalAdvances={totalAdvances}
+      advancesCount={advancesCount ?? 0}
+      totalExpenses={totalExpenses}
+      topEmployees={(topEmployees ?? []) as { id: string; name: string; worker_type: string }[]}
+    />
   )
 }

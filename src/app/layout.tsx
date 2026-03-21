@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, DM_Sans } from 'next/font/google'
 import './globals.css'
 import AppShell from '@/components/AppShell'
 import { ThemeProvider } from 'next-themes'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
 
 export const metadata: Metadata = {
   title: 'PayrollApp',
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     title: 'PayrollApp',
   },
   other: {
-    'theme-color': '#4f46e5',
+    'theme-color': '#1C2333',
   },
 }
 
@@ -26,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${dmSans.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AppShell>{children}</AppShell>
         </ThemeProvider>
