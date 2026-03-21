@@ -80,7 +80,7 @@ export default function WorkerListClient({ workers, companyName, companyId, user
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+    <div className="bg-white rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm divide-y divide-gray-100">
       {workers.map(worker => (
         <div key={worker.id} className="flex items-center px-5 py-4">
           <Link href={`/work-entries/${worker.id}`} className="flex-1 flex items-center justify-between hover:opacity-70 transition-opacity">
@@ -88,13 +88,13 @@ export default function WorkerListClient({ workers, companyName, companyId, user
               <p className="font-semibold text-gray-900">{worker.full_name}</p>
               <p className="text-sm text-gray-400">{worker.employee_id}</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-400 mr-3" />
+            <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
           </Link>
           <button
             onClick={() => handleDownload(worker)}
             disabled={downloadingId === worker.id}
             title="Download this month's payslip"
-            className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-40 transition-colors"
+            className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 hover:bg-blue-50 disabled:opacity-40 transition-colors"
           >
             {downloadingId === worker.id
               ? <span className="text-xs">...</span>

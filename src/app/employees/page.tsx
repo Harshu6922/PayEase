@@ -54,16 +54,16 @@ export default async function EmployeesPage() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Salary</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Monthly Salary</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
               {userRole === 'admin' && (
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white">
             {employees.length === 0 ? (
               <tr>
                 <td colSpan={userRole === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-sm text-gray-500">
@@ -78,7 +78,7 @@ export default async function EmployeesPage() {
                       {emp.full_name}
                     </Link>
                     {(emp as any).notes && (
-                      <p className="text-xs text-gray-400 mt-0.5 max-w-xs truncate">{(emp as any).notes}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 max-w-xs truncate">{(emp as any).notes}</p>
                     )}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{emp.employee_id}</td>

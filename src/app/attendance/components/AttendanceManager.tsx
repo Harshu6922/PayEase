@@ -268,7 +268,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
               type="date"
               value={globalDate}
               onChange={(e) => setGlobalDate(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm border px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -277,7 +277,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
               type="time" 
               value={globalStartTime}
               onChange={(e) => setGlobalStartTime(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm border px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
@@ -286,7 +286,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
               type="time" 
               value={globalEndTime}
               onChange={(e) => setGlobalEndTime(e.target.value)}
-              className="rounded-md border-gray-300 shadow-sm border px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -350,12 +350,12 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Overrides (Optional)</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Overrides (Optional)</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white">
             {!employees || employees.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500">
@@ -375,7 +375,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
                       <select
                         value={state.status}
                         onChange={(e) => handleStatusChange(emp.id, e.target.value as AttendanceStatus)}
-                        className={`rounded-md border-gray-300 text-sm font-semibold px-3 py-1.5 border shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                        className={`rounded-md border-gray-300 dark:border-gray-600 text-sm font-semibold px-3 py-1.5 border shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
                           state.status === 'Present' ? 'text-green-700 bg-green-50 border-green-200' :
                           state.status === 'Absent' ? 'text-red-700 bg-red-50 border-red-200' :
                           'text-orange-700 bg-orange-50 border-orange-200'
@@ -394,7 +394,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
                           onChange={(e) => handleTimeChange(emp.id, 'overrideStartTime', e.target.value)}
                           placeholder="Default"
                           disabled={isAbsent}
-                          className="rounded-md border-gray-300 shadow-sm text-sm px-2 py-1 border text-gray-900 disabled:opacity-50 disabled:bg-gray-100"
+                          className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm px-2 py-1 border text-gray-900 dark:text-white disabled:opacity-50 disabled:bg-gray-100"
                         />
                         <span>to</span>
                         <input 
@@ -403,7 +403,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
                           onChange={(e) => handleTimeChange(emp.id, 'overrideEndTime', e.target.value)}
                           placeholder="Default"
                           disabled={isAbsent}
-                          className="rounded-md border-gray-300 shadow-sm text-sm px-2 py-1 border text-gray-900 disabled:opacity-50 disabled:bg-gray-100"
+                          className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm px-2 py-1 border text-gray-900 dark:text-white disabled:opacity-50 disabled:bg-gray-100"
                         />
                         {(state.overrideStartTime || state.overrideEndTime) && (
                            <button 

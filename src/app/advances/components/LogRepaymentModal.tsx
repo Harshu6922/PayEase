@@ -68,48 +68,48 @@ export default function LogRepaymentModal({ advanceId, employeeId, companyId, re
       >
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Log Repayment</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Outstanding: {formatRs(remaining)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Outstanding: {formatRs(remaining)}</p>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount (Rs.) <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (Rs.) <span className="text-red-500">*</span></label>
             <input
               type="number" min="0.01" step="0.01" value={amount}
               onChange={e => setAmount(e.target.value)} placeholder="0.00"
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date <span className="text-red-500">*</span></label>
             <input
               type="date" value={date} onChange={e => setDate(e.target.value)}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Method <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Method <span className="text-red-500">*</span></label>
             <select
               value={method} onChange={e => setMethod(e.target.value as 'cash' | 'salary_deduction')}
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none"
+              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:border-indigo-500 focus:outline-none"
             >
               <option value="cash">Cash</option>
               <option value="salary_deduction">Salary Deduction</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Note <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
             <input
               type="text" value={note} onChange={e => setNote(e.target.value)}
               placeholder="Any details…"
-              className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} disabled={saving}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors">
               Cancel
             </button>
             <button type="submit" disabled={saving}

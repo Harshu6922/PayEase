@@ -73,10 +73,10 @@ export default function SetRateModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
           Set Rate — {item.name}
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {item.default_rate != null
             ? `Default rate: Rs. ${item.default_rate.toFixed(2)}`
             : 'No default rate'}
@@ -90,7 +90,7 @@ export default function SetRateModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Custom Rate (Rs. per unit) <span className="text-red-500">*</span>
             </label>
             <input
@@ -100,7 +100,7 @@ export default function SetRateModal({
               placeholder="e.g. 3.50"
               min="0"
               step="0.01"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -109,7 +109,7 @@ export default function SetRateModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>

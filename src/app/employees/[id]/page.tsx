@@ -60,7 +60,7 @@ export default async function EmployeeDetailPage({
       <div className="flex items-center gap-4 mb-6">
         <a href="/employees" className="text-blue-600 hover:text-blue-800">← Back to Employees</a>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">{employee.full_name}</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{employee.full_name}</h1>
       <p className="text-gray-500 mb-6">{employee.employee_id} · {employee.worker_type === 'commission' ? 'Commission Worker' : 'Salaried'}</p>
 
       {/* Basic info card */}

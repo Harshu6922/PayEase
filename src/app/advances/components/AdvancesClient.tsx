@@ -93,15 +93,15 @@ export default function AdvancesClient({
         {/* Date & note */}
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-500">{format(new Date(adv.advance_date + 'T00:00:00'), 'dd MMM yyyy')}</p>
-          {adv.note && <p className="text-xs text-gray-400 italic truncate">{adv.note}</p>}
+          {adv.note && <p className="text-xs text-gray-400 dark:text-gray-500 italic truncate">{adv.note}</p>}
         </div>
         {/* Progress */}
         <div className="w-32 flex-shrink-0">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
             <span>{formatRs(adv.repaid_total)}</span>
             <span>{pct}%</span>
           </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${isSettled ? 'bg-green-500' : 'bg-indigo-500'}`}
               style={{ width: `${pct}%` }}
@@ -133,7 +133,7 @@ export default function AdvancesClient({
     <>
       {/* Active advances */}
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
           Active — {active.length} advance{active.length !== 1 ? 's' : ''}
         </div>
         {active.length === 0 ? (
@@ -150,7 +150,7 @@ export default function AdvancesClient({
         <div className="mt-4">
           <button
             onClick={() => setShowSettled(s => !s)}
-            className="text-sm text-gray-500 hover:text-gray-700 font-medium mb-2"
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 font-medium mb-2"
           >
             {showSettled ? '▾' : '▸'} Settled ({settled.length})
           </button>

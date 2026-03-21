@@ -39,9 +39,9 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
         <table className="w-full border-collapse bg-white rounded-lg shadow">
           <thead>
             <tr className="border-b">
-              <th className="text-left p-4 text-gray-600 font-medium">Item Name</th>
-              <th className="text-right p-4 text-gray-600 font-medium">Default Rate</th>
-              <th className="text-right p-4 text-gray-600 font-medium">Actions</th>
+              <th className="text-left p-4 text-gray-600 dark:text-gray-400 font-medium">Item Name</th>
+              <th className="text-right p-4 text-gray-600 dark:text-gray-400 font-medium">Default Rate</th>
+              <th className="text-right p-4 text-gray-600 dark:text-gray-400 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
@@ -81,9 +82,21 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+      >
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {item ? 'Edit Commission Item' : 'Add Commission Item'}
         </h2>
 
@@ -95,7 +108,7 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Item Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -103,12 +116,12 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Stitching"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Default Rate (optional)
             </label>
             <input
@@ -118,7 +131,7 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
               placeholder="e.g. 2.50"
               min="0"
               step="0.01"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -127,7 +140,7 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -140,7 +153,7 @@ export default function CommissionItemModal({ item, companyId, onSave, onClose }
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -239,7 +239,7 @@ export default function BiometricImportModal({
                 accept=".csv"
                 onChange={handleFileChange}
                 disabled={isFetching}
-                className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 disabled:opacity-50"
+                className="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 disabled:opacity-50"
               />
               {isFetching && (
                 <p className="text-sm text-indigo-600">Parsing and checking for conflicts…</p>
@@ -264,16 +264,16 @@ export default function BiometricImportModal({
               </div>
 
               <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Biometric Name</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Matched Employee</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">In</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Out</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Biometric Name</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Matched Employee</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Date</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">In</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Out</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
@@ -294,7 +294,7 @@ export default function BiometricImportModal({
                                   action: emp ? 'import' : 'skip',
                                 });
                               }}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs"
+                              className="rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs"
                             >
                               <option value="">Select employee…</option>
                               {employees.map(e => (
@@ -308,7 +308,7 @@ export default function BiometricImportModal({
                           )}
                         </td>
 
-                        <td className="px-4 py-2 text-gray-700 whitespace-nowrap">{row.parsed.date}</td>
+                        <td className="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">{row.parsed.date}</td>
                         <td className="px-4 py-2 text-gray-700">{row.parsed.inTime ?? '—'}</td>
 
                         {/* Out time — editable if missing */}
@@ -335,7 +335,7 @@ export default function BiometricImportModal({
                             <select
                               value={row.action}
                               onChange={e => updateRow(idx, { action: e.target.value as ImportRow['action'] })}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs"
+                              className="rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-xs"
                             >
                               <option value="skip">Skip</option>
                               <option value="overwrite">Overwrite</option>
@@ -372,7 +372,7 @@ export default function BiometricImportModal({
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+            className="rounded-md px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900"
           >
             Cancel
           </button>

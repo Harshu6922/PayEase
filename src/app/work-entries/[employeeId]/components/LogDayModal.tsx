@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
+import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import type { AgentItemRate, WorkEntry } from '@/types'
 
@@ -62,6 +63,7 @@ export default function LogDayModal({
               item_id: rate.item_id,
               quantity: qty,
               rate: rate.commission_rate,
+              total_amount: qty * rate.commission_rate,
             },
             { onConflict: 'employee_id,item_id,date' }
           )
@@ -95,8 +97,22 @@ export default function LogDayModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative bg-white rounded-2xl shadow-xl w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+      >
         <div className="px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
             {editingDate ? 'Edit Entries' : 'Log Day'}
@@ -173,7 +189,7 @@ export default function LogDayModal({
             Cancel
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

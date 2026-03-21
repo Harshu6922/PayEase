@@ -105,7 +105,7 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
               className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
               <Plus className="h-3.5 w-3.5" /> Add Template
             </button>
-            <button onClick={onClose} className="p-1 rounded text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -125,42 +125,42 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
                 {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
                     <select value={form.category} onChange={e => set('category', e.target.value)}
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-indigo-500 focus:outline-none">
+                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:border-indigo-500 focus:outline-none">
                       {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Amount (Rs.) *</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (Rs.) *</label>
                     <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value)}
                       placeholder="0.00"
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Description *</label>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
                   <input type="text" value={form.description} onChange={e => set('description', e.target.value)}
                     placeholder="e.g. Monthly rent, Maid salary…"
-                    className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                    className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Paid To</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Paid To</label>
                     <input type="text" value={form.paid_to} onChange={e => set('paid_to', e.target.value)}
                       placeholder="Vendor / person"
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Note</label>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
                     <input type="text" value={form.note} onChange={e => set('note', e.target.value)}
                       placeholder="Optional"
-                      className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
                   </div>
                 </div>
                 <div className="flex gap-2 pt-1">
                   <button type="button" onClick={() => setFormOpen(false)} disabled={saving}
-                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50">
                     Cancel
                   </button>
                   <button type="submit" disabled={saving}
@@ -174,26 +174,26 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
 
           {/* Template list */}
           {templates.length === 0 && !formOpen ? (
-            <p className="text-center text-sm text-gray-400 py-8">No templates yet. Add one to get started.</p>
+            <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-8">No templates yet. Add one to get started.</p>
           ) : (
             <motion.div className="space-y-2">
               {templates.map(t => (
                 <motion.div key={t.id} variants={row}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 group hover:bg-white hover:shadow-sm transition-all">
+                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-3 group hover:bg-white hover:shadow-sm transition-all">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{t.description}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.description}</p>
                     <p className="text-xs text-gray-400">{t.category}{t.paid_to ? ` · ${t.paid_to}` : ''}</p>
                   </div>
-                  <span className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                  <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
                     Rs. {Number(t.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => openEdit(t)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+                      className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => handleDelete(t.id)} disabled={deleting === t.id}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
+                      className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
