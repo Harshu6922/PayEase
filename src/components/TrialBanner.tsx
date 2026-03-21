@@ -17,10 +17,11 @@ export default async function TrialBanner() {
       .eq('company_id', (profile as any).company_id)
       .maybeSingle()
 
-    if (!sub || sub.status !== 'trial' || !sub.trial_ends_at) return null
+    const row = sub as { status: string; trial_ends_at: string } | null
+    if (!row || row.status !== 'trial' || !row.trial_ends_at) return null
 
     const daysLeft = Math.max(0, Math.ceil(
-      (new Date(sub.trial_ends_at).getTime() - Date.now()) / 86400000
+      (new Date(row.trial_ends_at).getTime() - Date.now()) / 86400000
     ))
 
     if (daysLeft <= 0) return null
