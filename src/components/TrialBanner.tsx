@@ -11,17 +11,17 @@ export default async function TrialBanner() {
       .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
     if (!(profile as any)?.company_id) return null
 
-    const { data: sub } = await supabase
+    const { data: subData } = await supabase
       .from('subscriptions')
       .select('status, trial_ends_at')
       .eq('company_id', (profile as any).company_id)
       .maybeSingle()
 
-    const row = sub as { status: string; trial_ends_at: string } | null
-    if (!row || row.status !== 'trial' || !row.trial_ends_at) return null
+    const sub = subData as { status: string; trial_ends_at: string } | null
+    if (!sub || sub.status !== 'trial' || !sub.trial_ends_at) return null
 
     const daysLeft = Math.max(0, Math.ceil(
-      (new Date(row.trial_ends_at).getTime() - Date.now()) / 86400000
+      (new Date(sub.trial_ends_at).getTime() - Date.now()) / 86400000
     ))
 
     if (daysLeft <= 0) return null
