@@ -42,12 +42,13 @@ function formatRs(n: number) {
 }
 
 export default function ExpensesManager({
-  month, companyId, initialExpenses, initialTemplates
+  month, companyId, initialExpenses, initialTemplates, userRole = 'admin'
 }: {
   month: string
   companyId: string
   initialExpenses: Expense[]
   initialTemplates: ExpenseTemplate[]
+  userRole?: 'admin' | 'viewer'
 }) {
   const router = useRouter()
   const supabase = createClient() as unknown as any
@@ -229,7 +230,7 @@ export default function ExpensesManager({
           >
             {exportingPdf ? 'Generating…' : 'Export PDF'}
           </button>
-          {templates.length > 0 && (
+          {userRole === 'admin' && templates.length > 0 && (
             <button
               onClick={handleApplyTemplates}
               disabled={applying}
@@ -239,20 +240,24 @@ export default function ExpensesManager({
               {applying ? 'Applying…' : 'Apply Templates'}
             </button>
           )}
-          <button
-            onClick={() => setTemplatesOpen(true)}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-          >
-            <Settings2 className="h-4 w-4" />
-            Templates
-          </button>
-          <button
-            onClick={() => { setEditing(null); setModalOpen(true) }}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Expense
-          </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setTemplatesOpen(true)}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <Settings2 className="h-4 w-4" />
+              Templates
+            </button>
+          )}
+          {userRole === 'admin' && (
+            <button
+              onClick={() => { setEditing(null); setModalOpen(true) }}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </button>
+          )}
         </div>
       </div>
 
@@ -363,20 +368,22 @@ export default function ExpensesManager({
                   <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{formatRs(Number(expense.amount))}</span>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => { setEditing(expense); setModalOpen(true) }}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleting(expense)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  {userRole === 'admin' && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { setEditing(expense); setModalOpen(true) }}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleting(expense)}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </motion.div>

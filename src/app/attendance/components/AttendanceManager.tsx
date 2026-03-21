@@ -17,7 +17,7 @@ interface EmployeeState {
   overrideEndTime?: string;
 }
 
-export default function AttendanceManager({ employees }: { employees: Employee[] }) {
+export default function AttendanceManager({ employees, userRole = 'admin' }: { employees: Employee[]; userRole?: 'admin' | 'viewer' }) {
   const router = useRouter();
   const supabase = createClient() as unknown as SupabaseClient<Database>;
   
@@ -138,6 +138,16 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
       ...prev,
       [empId]: { ...prev[empId], [field]: value },
     }));
+  };
+
+  const handleBulkMark = (status: AttendanceStatus) => {
+    setRecords(prev => {
+      const updated = { ...prev }
+      employees.forEach(emp => {
+        updated[emp.id] = { ...prev[emp.id], status }
+      })
+      return updated
+    })
   };
 
   // Calculate total hours exactly
@@ -281,21 +291,41 @@ export default function AttendanceManager({ employees }: { employees: Employee[]
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsImportOpen(true)}
-            disabled={!companyId}
-            className="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition-colors"
-          >
-            Import Biometric
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={loading || fetching}
-            className="flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Saving securely...' : 'Save All Attendance'}
-          </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleBulkMark('Present')}
+              className="rounded-lg bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
+            >
+              Mark All Present
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBulkMark('Absent')}
+              className="rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+            >
+              Mark All Absent
+            </button>
+          </div>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setIsImportOpen(true)}
+              disabled={!companyId}
+              className="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition-colors"
+            >
+              Import Biometric
+            </button>
+          )}
+          {userRole === 'admin' && (
+            <button
+              onClick={handleSave}
+              disabled={loading || fetching}
+              className="flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Saving securely...' : 'Save All Attendance'}
+            </button>
+          )}
         </div>
       </div>
 

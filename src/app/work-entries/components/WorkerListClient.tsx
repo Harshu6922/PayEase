@@ -14,9 +14,10 @@ interface Props {
   workers: Worker[]
   companyName: string
   companyId: string
+  userRole?: 'admin' | 'viewer'
 }
 
-export default function WorkerListClient({ workers, companyName, companyId }: Props) {
+export default function WorkerListClient({ workers, companyName, companyId, userRole = 'admin' }: Props) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   const handleDownload = async (worker: Worker) => {

@@ -8,9 +8,10 @@ export default async function WorkEntriesPage() {
   if (!user) redirect('/login')
 
   const { data: profileData } = await supabase
-    .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
-  const companyId = (profileData as { company_id: string | null } | null)?.company_id
+    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
+  const companyId = (profileData as any)?.company_id
   if (!companyId) redirect('/login')
+  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
   const { data: companyData } = await supabase
     .from('companies').select('name').eq('id', companyId).maybeSingle()
@@ -27,9 +28,9 @@ export default async function WorkEntriesPage() {
   const commissionWorkers = (workers || []) as { id: string; full_name: string; employee_id: string }[]
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Work Entries</h1>
-      <WorkerListClient workers={commissionWorkers} companyName={companyName} companyId={companyId} />
+      <WorkerListClient workers={commissionWorkers} companyName={companyName} companyId={companyId} userRole={userRole} />
     </div>
   )
 }

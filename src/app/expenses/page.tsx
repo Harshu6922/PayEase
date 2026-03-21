@@ -13,9 +13,10 @@ export default async function ExpensesPage({
   if (!user) redirect('/login')
 
   const { data: profileData } = await supabase
-    .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
   const companyId = (profileData as any)?.company_id
   if (!companyId) redirect('/login')
+  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
   const today = new Date()
   const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
@@ -47,6 +48,7 @@ export default async function ExpensesPage({
         companyId={companyId}
         initialExpenses={(expenses || []) as any[]}
         initialTemplates={(templates || []) as any[]}
+        userRole={userRole}
       />
     </div>
   )

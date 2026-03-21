@@ -17,12 +17,13 @@ export default async function ReportsPage({
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('company_id')
+    .select('company_id, role')
     .eq('id', user.id)
     .single()
 
   const profile = profileData as any
   const companyId = profile?.company_id
+  const userRole: 'admin' | 'viewer' = profile?.role ?? 'viewer'
   if (!companyId) {
     return <div className="p-8 text-red-600">No company associated with this profile.</div>
   }
@@ -179,6 +180,7 @@ export default async function ReportsPage({
         companyId={companyId}
         monthPayments={(monthPayments || []) as any[]}
         generateAction={generatePayrollAction}
+        userRole={userRole}
       />
     </div>
   )

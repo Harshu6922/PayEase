@@ -16,13 +16,14 @@ export default async function CommissionPage() {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('company_id')
+    .select('company_id, role')
     .eq('id', userId)
     .maybeSingle()
 
-  const profile = profileData as { company_id: string | null } | null
+  const profile = profileData as any
   const companyId = profile?.company_id
   if (!companyId) redirect('/login')
+  const userRole: 'admin' | 'viewer' = profile?.role ?? 'viewer'
 
   const { data: items } = await supabase
     .from('commission_items')
@@ -33,6 +34,6 @@ export default async function CommissionPage() {
   const commissionItems: CommissionItem[] = (items || []) as CommissionItem[]
 
   return (
-    <CommissionItemsManager items={commissionItems} companyId={companyId} />
+    <CommissionItemsManager items={commissionItems} companyId={companyId} userRole={userRole} />
   )
 }

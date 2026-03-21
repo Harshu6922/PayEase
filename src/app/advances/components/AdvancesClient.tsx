@@ -28,9 +28,11 @@ const row = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0, transition
 export default function AdvancesClient({
   initialAdvances,
   companyId,
+  userRole = 'admin',
 }: {
   initialAdvances: AdvanceWithBalance[]
   companyId: string
+  userRole?: 'admin' | 'viewer'
 }) {
   const supabase = createClient() as unknown as any
   const [advances, setAdvances] = useState<AdvanceWithBalance[]>(initialAdvances)
@@ -114,7 +116,7 @@ export default function AdvancesClient({
           </p>
         </div>
         {/* Action */}
-        {!isSettled && (
+        {!isSettled && userRole === 'admin' && (
           <button
             onClick={() => setRepayingAdvance(adv)}
             className="flex-shrink-0 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors opacity-0 group-hover:opacity-100"

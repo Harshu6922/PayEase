@@ -11,12 +11,13 @@ export default async function DailyAttendancePage() {
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('company_id')
+    .select('company_id, role')
     .eq('id', user!.id)
     .maybeSingle()
 
-  const companyId = (profileData as { company_id: string | null } | null)?.company_id
+  const companyId = (profileData as any)?.company_id
   if (!companyId) redirect('/login')
+  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
   const { data: workers } = await supabase
     .from('employees')
@@ -30,6 +31,7 @@ export default async function DailyAttendancePage() {
     <DailyAttendanceManager
       workers={(workers || []) as Employee[]}
       companyId={companyId}
+      userRole={userRole}
     />
   )
 }

@@ -10,9 +10,10 @@ export default async function AdvancesPage() {
   if (!user) redirect('/login')
 
   const { data: profileData } = await supabase
-    .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
   const companyId = (profileData as any)?.company_id
   if (!companyId) redirect('/login')
+  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
   const { data: employees } = await supabase
     .from('employees')
@@ -56,9 +57,9 @@ export default async function AdvancesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Employee Advances</h1>
           <p className="mt-1 text-sm text-gray-500">Record and track salary advances given to employees.</p>
         </div>
-        <AddAdvanceModal employees={employees || []} />
+        {userRole === 'admin' && <AddAdvanceModal employees={employees || []} />}
       </div>
-      <AdvancesClient initialAdvances={advances} companyId={companyId} />
+      <AdvancesClient initialAdvances={advances} companyId={companyId} userRole={userRole} />
     </div>
   )
 }

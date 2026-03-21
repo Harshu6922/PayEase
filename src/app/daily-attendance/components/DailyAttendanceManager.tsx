@@ -9,6 +9,7 @@ import PaymentModal from '@/components/PaymentModal'
 interface Props {
   workers: Employee[]
   companyId: string
+  userRole?: 'admin' | 'viewer'
 }
 
 interface EditingCell {
@@ -19,7 +20,7 @@ interface EditingCell {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-export default function DailyAttendanceManager({ workers, companyId }: Props) {
+export default function DailyAttendanceManager({ workers, companyId, userRole = 'admin' }: Props) {
   const now = new Date()
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [year, setYear] = useState(now.getFullYear())
@@ -94,6 +95,7 @@ export default function DailyAttendanceManager({ workers, companyId }: Props) {
     `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
   const handleCellClick = async (worker: Employee, dateStr: string) => {
+    if (userRole !== 'admin') return
     const existing = recordMap.get(`${worker.id}_${dateStr}`)
     if (existing) {
       setEditingCell({ worker, date: dateStr, record: existing })

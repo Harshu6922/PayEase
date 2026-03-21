@@ -9,9 +9,10 @@ import DeleteConfirmModal from './DeleteConfirmModal';
 interface CommissionItemsManagerProps {
   items: CommissionItem[];
   companyId: string;
+  userRole?: 'admin' | 'viewer';
 }
 
-export default function CommissionItemsManager({ items: initialItems, companyId }: CommissionItemsManagerProps) {
+export default function CommissionItemsManager({ items: initialItems, companyId, userRole = 'admin' }: CommissionItemsManagerProps) {
   const [items, setItems] = useState<CommissionItem[]>(initialItems);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CommissionItem | null>(null);
@@ -22,12 +23,14 @@ export default function CommissionItemsManager({ items: initialItems, companyId 
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Commission Items</h1>
-        <button
-          onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-        >
-          + Add Item
-        </button>
+        {userRole === 'admin' && (
+          <button
+            onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            + Add Item
+          </button>
+        )}
       </div>
 
       {items.length === 0 ? (
@@ -48,20 +51,22 @@ export default function CommissionItemsManager({ items: initialItems, companyId 
                 <td className="p-4 text-right text-gray-600">
                   {item.default_rate != null ? `Rs. ${item.default_rate.toFixed(2)}` : '—'}
                 </td>
-                <td className="p-4 text-right">
-                  <button
-                    onClick={() => { setEditingItem(item); setIsModalOpen(true); }}
-                    className="text-blue-600 hover:text-blue-800 mr-4"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setDeleteItem(item)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
-                </td>
+                {userRole === 'admin' && (
+                  <td className="p-4 text-right">
+                    <button
+                      onClick={() => { setEditingItem(item); setIsModalOpen(true); }}
+                      className="text-blue-600 hover:text-blue-800 mr-4"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteItem(item)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
