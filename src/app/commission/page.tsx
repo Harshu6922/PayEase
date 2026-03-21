@@ -7,11 +7,8 @@ export default async function CommissionPage() {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
 
-  // user is guaranteed non-null here; redirect() throws above
   const userId = user!.id
 
   const { data: profileData } = await supabase
@@ -34,6 +31,8 @@ export default async function CommissionPage() {
   const commissionItems: CommissionItem[] = (items || []) as CommissionItem[]
 
   return (
-    <CommissionItemsManager items={commissionItems} companyId={companyId} userRole={userRole} />
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
+      <CommissionItemsManager items={commissionItems} companyId={companyId} userRole={userRole} />
+    </div>
   )
 }

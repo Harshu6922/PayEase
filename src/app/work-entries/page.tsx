@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import WorkerListClient from './components/WorkerListClient'
+import PageShell from '@/components/PageShell'
 
 export default async function WorkEntriesPage() {
   const supabase = await createClient()
@@ -28,9 +29,8 @@ export default async function WorkEntriesPage() {
   const commissionWorkers = (workers || []) as { id: string; full_name: string; employee_id: string }[]
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Work Entries</h1>
+    <PageShell title="Work Entries" subtitle="Commission">
       <WorkerListClient workers={commissionWorkers} companyName={companyName} companyId={companyId} userRole={userRole} />
-    </div>
+    </PageShell>
   )
 }

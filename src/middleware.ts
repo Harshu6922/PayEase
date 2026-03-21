@@ -1,19 +1,62 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
+import { createServerClient } from '@supabase/ssr'
+
+const PUBLIC_PATHS = ['/login', '/signup', '/billing', '/api/razorpay/webhook', '/api/auth/signup', '/onboarding', '/auth']
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request)
+  const response = await updateSession(request)
+  const { pathname } = request.nextUrl
+
+  // Skip public paths
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return response
+
+  // Check subscription status for protected routes
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name: string) => request.cookies.get(name)?.value,
+        set: () => {},
+        remove: () => {},
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return response
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('company_id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile?.company_id) return response
+
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('status, trial_ends_at')
+    .eq('company_id', profile.company_id)
+    .maybeSingle()
+
+  if (!sub) return response
+
+  let isLocked = sub.status === 'locked' || sub.status === 'cancelled'
+  if (sub.status === 'trial' && sub.trial_ends_at) {
+    if (new Date(sub.trial_ends_at) < new Date()) isLocked = true
+  }
+
+  if (isLocked && !pathname.startsWith('/billing')) {
+    return NextResponse.redirect(new URL('/billing', request.url))
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     '/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

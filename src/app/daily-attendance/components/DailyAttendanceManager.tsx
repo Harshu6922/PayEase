@@ -198,26 +198,29 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 dark:border-gray-700 px-4 py-4 md:px-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Daily Attendance</h1>
+    <div className="min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
+      {/* Header band */}
+      <div className="px-6 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
+        <div>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Workforce</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Daily Labourers</h1>
+        </div>
+        <div className="flex items-center gap-2 mb-1">
           {/* Desktop month picker */}
           <div className="hidden md:flex items-center gap-2">
-            <button onClick={prevMonth} className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-lg">‹</button>
-            <span className="text-lg font-semibold text-gray-800 w-44 text-center">{monthLabel}</span>
-            <button onClick={nextMonth} className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-lg">›</button>
+            <button onClick={prevMonth} className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg transition-colors">‹</button>
+            <span className="text-base font-semibold text-white w-40 text-center">{monthLabel}</span>
+            <button onClick={nextMonth} className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg transition-colors">›</button>
           </div>
           {/* Mobile week picker */}
           <div className="flex md:hidden items-center gap-1">
-            <button onClick={prevWeek} className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 active:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-lg">‹</button>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-36 text-center">{weekLabel}</span>
-            <button onClick={nextWeek} className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 active:bg-gray-100 text-gray-700 dark:text-gray-300 font-bold text-lg">›</button>
+            <button onClick={prevWeek} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg">‹</button>
+            <span className="text-sm font-medium text-white w-36 text-center">{weekLabel}</span>
+            <button onClick={nextWeek} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg">›</button>
           </div>
         </div>
-        {loading && <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">Loading...</div>}
       </div>
+      {loading && <div className="text-xs px-6 py-1 text-white/50" style={{ backgroundColor: '#1C2333' }}>Loading...</div>}
 
       {workers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
@@ -233,7 +236,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
             <table className="w-full border-collapse bg-white text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="text-left px-3 py-3 font-semibold text-gray-600 dark:text-gray-400 w-[110px]">Worker</th>
+                  <th className="text-left px-3 py-3 font-semibold text-gray-600 w-[110px]">Worker</th>
                   {weekDays.map((d, i) => {
                     const dateStr = format(d, 'yyyy-MM-dd')
                     const isToday = dateStr === today
@@ -249,7 +252,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
               <tbody>
                 {workers.map((worker, idx) => (
                   <tr key={worker.id} className={`border-b last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}>
-                    <td className="px-3 py-1 font-semibold text-gray-900 dark:text-white text-xs leading-tight">{worker.full_name}</td>
+                    <td className="px-3 py-1 font-semibold text-gray-900 text-xs leading-tight">{worker.full_name}</td>
                     {weekDays.map(d => renderCell(worker, format(d, 'yyyy-MM-dd')))}
                   </tr>
                 ))}
@@ -262,7 +265,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
             <table className="border-collapse bg-white text-sm min-w-full">
               <thead>
                 <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="sticky left-0 bg-gray-50 dark:bg-gray-800 text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-300 min-w-[180px] z-10 border-r border-gray-200">
+                  <th className="sticky left-0 bg-gray-50 text-left px-4 py-3 font-semibold text-gray-700 min-w-[180px] z-10 border-r border-gray-200">
                     Worker
                   </th>
                   {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -281,7 +284,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
               <tbody>
                 {workers.map((worker, idx) => (
                   <tr key={worker.id} className={`border-b last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                    <td className="sticky left-0 px-4 py-3 font-semibold text-gray-900 dark:text-white z-10 border-r border-gray-200 dark:border-gray-700 bg-inherit">
+                    <td className="sticky left-0 px-4 py-3 font-semibold text-gray-900 z-10 border-r border-gray-200 bg-inherit">
                       {worker.full_name}
                     </td>
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day =>
@@ -294,7 +297,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
           </div>
 
           {/* Monthly Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b bg-gray-50">
               <h2 className="text-base font-semibold text-gray-900">Monthly Summary — {monthLabel}</h2>
             </div>
@@ -302,11 +305,11 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Worker</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Days</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Hours</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Total Pay</th>
-                    <th className="text-right px-4 py-3 text-gray-500 dark:text-gray-400 font-medium">Pay</th>
+                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Worker</th>
+                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Days</th>
+                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Hours</th>
+                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Total Pay</th>
+                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Pay</th>
                   </tr>
                 </thead>
                 <tbody>

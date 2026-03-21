@@ -3,6 +3,8 @@ import { Inter, DM_Sans } from 'next/font/google'
 import './globals.css'
 import AppShell from '@/components/AppShell'
 import { ThemeProvider } from 'next-themes'
+import { Suspense } from 'react'
+import TrialBanner from '@/components/TrialBanner'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
@@ -29,7 +31,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${dmSans.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AppShell>{children}</AppShell>
+          <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
+            {children}
+          </AppShell>
         </ThemeProvider>
       </body>
     </html>

@@ -167,7 +167,7 @@ export default async function ReportsPage({
   }
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
       <PayrollDashboard
         initialMonth={selectedMonthStr}
         employees={(employees || []) as any[]}
@@ -185,3 +185,4 @@ export default async function ReportsPage({
     </div>
   )
 }
+

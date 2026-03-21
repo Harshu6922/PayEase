@@ -30,6 +30,8 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
     worker_type: employee.worker_type ?? ('salaried' as 'salaried' | 'commission' | 'daily'),
     daily_rate: employee.daily_rate?.toString() ?? '',
     notes: (employee as any).notes ?? '',
+    default_start_time: employee.default_start_time?.substring(0, 5) ?? '',
+    default_end_time: employee.default_end_time?.substring(0, 5) ?? '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -76,6 +78,8 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
           daily_rate: formData.worker_type === 'daily'
             ? parseFloat(formData.daily_rate)
             : null,
+          default_start_time: formData.default_start_time || null,
+          default_end_time: formData.default_end_time || null,
         })
         .eq('id', employee.id);
 
@@ -217,6 +221,30 @@ export default function EditEmployeeModal({ employee }: EditEmployeeModalProps) 
                         />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Default shift times — salaried and daily only */}
+                {(formData.worker_type === 'salaried' || formData.worker_type === 'daily') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Start Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_start_time}
+                        onChange={e => setFormData(prev => ({ ...prev, default_start_time: e.target.value }))}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default End Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_end_time}
+                        onChange={e => setFormData(prev => ({ ...prev, default_end_time: e.target.value }))}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 )}
 

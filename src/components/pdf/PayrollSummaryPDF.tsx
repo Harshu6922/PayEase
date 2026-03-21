@@ -64,6 +64,7 @@ export interface PayrollSummaryPDFProps {
   rows: PayrollRow[];
   prevBalances: Record<string, number>;
   totalNetPayout: number;
+  paidByEmployee?: Record<string, number>;
 }
 
 export default function PayrollSummaryPDF({
@@ -72,6 +73,7 @@ export default function PayrollSummaryPDF({
   rows,
   prevBalances,
   totalNetPayout,
+  paidByEmployee = {},
 }: PayrollSummaryPDFProps) {
   const monthLabel = format(parse(month, 'yyyy-MM', new Date()), 'MMMM yyyy');
   const hasPrevBalance = rows.some(r => (prevBalances[r.employee_id] ?? 0) > 0);
@@ -100,7 +102,9 @@ export default function PayrollSummaryPDF({
 
         {rows.map(row => {
           const prev = prevBalances[row.employee_id] ?? 0;
-          const netInPdf = row.final_payable_salary + prev;
+          const paid = paidByEmployee[row.employee_id] ?? 0;
+          const grossNet = row.final_payable_salary + prev;
+          const netInPdf = grossNet - paid;
           return (
             <View key={row.employee_id} style={styles.tableRow}>
               <View style={styles.colName}>
@@ -123,9 +127,9 @@ export default function PayrollSummaryPDF({
                   {prev > 0 ? `+${formatINR(prev)}` : '—'}
                 </Text>
               )}
-              <Text style={[styles.colNet, styles.td, { color: netInPdf < 0 ? '#dc2626' : '#16a34a' }]}>
-                {netInPdf < 0
-                  ? `(${formatINR(Math.abs(netInPdf))})`
+              <Text style={[styles.colNet, styles.td, { color: netInPdf <= 0 ? (paid >= grossNet ? '#16a34a' : '#dc2626') : '#16a34a' }]}>
+                {netInPdf <= 0
+                  ? (paid >= grossNet ? 'Paid' : `(${formatINR(Math.abs(netInPdf))})`)
                   : formatINR(netInPdf)}
               </Text>
             </View>

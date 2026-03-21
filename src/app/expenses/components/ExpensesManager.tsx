@@ -210,23 +210,26 @@ export default function ExpensesManager({
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header band */}
+      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
-          <p className="mt-1 text-sm text-gray-500">Track all outgoing expenses for {monthLabel}</p>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Finance</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Expenses</h1>
+          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>Track all outgoing expenses for {monthLabel}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-1">
           <input
             type="month"
             value={month}
             onChange={handleMonthChange}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
           />
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf || expenses.length === 0}
-            className="flex items-center gap-2 rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition-colors shadow-sm"
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 transition-opacity hover:opacity-80"
+            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
           >
             {exportingPdf ? 'Generating…' : 'Export PDF'}
           </button>
@@ -234,7 +237,8 @@ export default function ExpensesManager({
             <button
               onClick={handleApplyTemplates}
               disabled={applying}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
+              style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
             >
               <CalendarPlus className="h-4 w-4" />
               {applying ? 'Applying…' : 'Apply Templates'}
@@ -243,7 +247,8 @@ export default function ExpensesManager({
           {userRole === 'admin' && (
             <button
               onClick={() => setTemplatesOpen(true)}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
             >
               <Settings2 className="h-4 w-4" />
               Templates
@@ -252,7 +257,8 @@ export default function ExpensesManager({
           {userRole === 'admin' && (
             <button
               onClick={() => { setEditing(null); setModalOpen(true) }}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors shadow-sm"
+              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
+              style={{ backgroundColor: '#D4A847', color: '#1C2333' }}
             >
               <Plus className="h-4 w-4" />
               Add Expense
@@ -261,6 +267,7 @@ export default function ExpensesManager({
         </div>
       </div>
 
+      <div className="px-8 py-6">
       {applyResult && (
         <div className="mb-4 flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
           <span>✓ {applyResult}</span>
@@ -305,12 +312,12 @@ export default function ExpensesManager({
           placeholder="Search description, paid to…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
         <select
           value={categoryFilter}
           onChange={e => setCategoryFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:outline-none"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
         >
           <option value="all">All categories</option>
           {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -327,7 +334,7 @@ export default function ExpensesManager({
 
       {/* Expense list */}
       <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
           {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
           {filtered.length !== expenses.length && ` (filtered from ${expenses.length})`}
         </div>
@@ -356,8 +363,8 @@ export default function ExpensesManager({
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{expense.description}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{expense.description}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 flex-wrap">
                       <span>{format(new Date(expense.date + 'T00:00:00'), 'dd MMM yyyy')}</span>
                       {expense.paid_to && <><span>·</span><span>Paid to: <span className="text-gray-600">{expense.paid_to}</span></span></>}
                       {expense.note && <><span>·</span><span className="italic truncate">{expense.note}</span></>}
@@ -365,20 +372,20 @@ export default function ExpensesManager({
                   </div>
 
                   {/* Amount */}
-                  <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{formatRs(Number(expense.amount))}</span>
+                  <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{formatRs(Number(expense.amount))}</span>
 
                   {/* Actions */}
                   {userRole === 'admin' && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => { setEditing(expense); setModalOpen(true) }}
-                        className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleting(expense)}
-                        className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -420,6 +427,7 @@ export default function ExpensesManager({
           />
         )}
       </AnimatePresence>
+      </div>
     </>
   )
 }

@@ -12,7 +12,7 @@ function AttendanceBar({ pct }: { pct: number }) {
   const color = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-yellow-400' : 'bg-red-400'
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <motion.div
           className={`h-full rounded-full ${color}`}
           initial={{ width: 0 }}
@@ -20,7 +20,7 @@ function AttendanceBar({ pct }: { pct: number }) {
           transition={{ duration: 0.6, ease: 'easeOut' }}
         />
       </div>
-      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-10 text-right">{pct.toFixed(0)}%</span>
+      <span className="text-xs font-medium text-gray-600 w-10 text-right">{pct.toFixed(0)}%</span>
     </div>
   )
 }
@@ -50,22 +50,25 @@ export default function AttendanceSummaryClient({ month, employees, records }: {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
+      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Summary</h1>
-          <p className="mt-1 text-sm text-gray-500">{monthLabel} · {totalWorkingDays} days</p>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Workforce</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Attendance Summary</h1>
+          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>{monthLabel} · {totalWorkingDays} days</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-1">
           <input type="month" value={month}
             onChange={e => e.target.value && router.push(`/attendance/summary?month=${e.target.value}`)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg px-3 py-1.5 text-sm shadow-sm focus:outline-none"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
           />
-          <Link href="/attendance" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+          <Link href="/attendance" className="text-sm font-medium" style={{ color: '#6B7A99' }}>
             ← Attendance
           </Link>
         </div>
       </div>
 
+      <div className="px-8 py-6">
       {/* Summary cards */}
       <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
@@ -74,7 +77,7 @@ export default function AttendanceSummaryClient({ month, employees, records }: {
           { label: 'Low Attendance (<70%)', value: lowAttendance, color: lowAttendance > 0 ? 'text-red-600' : 'text-green-600' },
         ].map(card => (
           <motion.div key={card.label} variants={row} className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+            <p className="text-sm text-gray-500 font-medium">{card.label}</p>
             <p className={`text-2xl font-bold mt-1 ${card.color}`}>{card.value}</p>
           </motion.div>
         ))}
@@ -85,11 +88,11 @@ export default function AttendanceSummaryClient({ month, employees, records }: {
         <table className="min-w-full divide-y divide-gray-100">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Present</th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Half Day</th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Absent</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-48">Attendance</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Employee</th>
+              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Present</th>
+              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Half Day</th>
+              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Absent</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-48">Attendance</th>
             </tr>
           </thead>
           <motion.tbody variants={container} initial="hidden" animate="show" className="divide-y divide-gray-50 bg-white">
@@ -117,6 +120,7 @@ export default function AttendanceSummaryClient({ month, employees, records }: {
             ))}
           </motion.tbody>
         </table>
+      </div>
       </div>
     </>
   )

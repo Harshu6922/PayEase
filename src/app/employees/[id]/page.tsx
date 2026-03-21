@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { Employee, CommissionItem, AgentItemRate } from '@/types'
 import CommissionRatesSection from './components/CommissionRatesSection'
+import EmployeeAttendanceSection from './components/EmployeeAttendanceSection'
 
 export default async function EmployeeDetailPage({
   params,
@@ -81,6 +82,11 @@ export default async function EmployeeDetailPage({
           commissionItems={commissionItems}
           agentRates={agentRates}
         />
+      )}
+
+      {/* Attendance section — salaried and daily workers */}
+      {(employee.worker_type === 'salaried' || employee.worker_type === 'daily') && (
+        <EmployeeAttendanceSection employee={employee} companyId={companyId} />
       )}
     </div>
   )

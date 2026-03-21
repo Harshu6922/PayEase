@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import {
   Users, CalendarCheck, FileText, LayoutDashboard, LogOut, Banknote,
   Tag, CalendarDays, ClipboardList, WalletCards, Receipt, X, BarChart2,
-  TrendingUp, Settings, Sun, Moon, Monitor,
+  TrendingUp, Settings, Sun, Moon, Monitor, CreditCard, RotateCcw,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -22,8 +22,9 @@ const navigation = [
       { name: 'Employees', href: '/employees', icon: Users },
       { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
       { name: 'Att. Summary', href: '/attendance/summary', icon: BarChart2 },
-      { name: 'Daily Attendance', href: '/daily-attendance', icon: CalendarDays },
+      { name: 'Daily Labourers', href: '/daily-attendance', icon: CalendarDays },
       { name: 'Advances', href: '/advances', icon: Banknote },
+      { name: 'Repayments', href: '/advance-repayments', icon: RotateCcw },
     ],
   },
   {
@@ -44,7 +45,10 @@ const navigation = [
   },
   {
     group: 'Account',
-    items: [{ name: 'Settings', href: '/settings', icon: Settings }],
+    items: [
+      { name: 'Settings', href: '/settings', icon: Settings },
+      { name: 'Billing', href: '/billing', icon: CreditCard },
+    ],
   },
 ]
 
@@ -161,7 +165,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           title={`Theme: ${theme ?? 'system'}`}
         >
           <ThemeIcon className="h-[18px] w-[18px] transition-colors" style={{ color: '#6B7A99' }} />
-          <span className="capitalize">{theme ?? 'System'} theme</span>
+          <span className="capitalize" suppressHydrationWarning>{theme ?? 'system'} theme</span>
         </button>
         {/* Sign out */}
         <button

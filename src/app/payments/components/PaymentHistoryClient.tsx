@@ -83,20 +83,25 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      {/* Header band */}
+      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payment History</h1>
-          <p className="mt-1 text-sm text-gray-500">All salary payments and advances for {monthLabel}</p>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Finance</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Payment History</h1>
+          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>All salary payments and advances for {monthLabel}</p>
         </div>
-        <input
-          type="month"
-          value={month}
-          onChange={handleMonthChange}
-          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-        />
+        <div className="mb-1">
+          <input
+            type="month"
+            value={month}
+            onChange={handleMonthChange}
+            className="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
+          />
+        </div>
       </div>
 
+      <div className="px-8 py-6">
       {/* Summary cards */}
       <motion.div
         variants={container} initial="hidden" animate="show"
@@ -108,9 +113,9 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
           { label: 'Advances Given', value: formatRs(totalAdvances), color: 'text-amber-600', sub: 'Advance disbursements' },
         ].map(card => (
           <motion.div key={card.label} variants={row} className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{card.label}</p>
+            <p className="text-sm text-gray-500 font-medium">{card.label}</p>
             <p className={`text-2xl font-bold mt-1 ${card.color}`}>{card.value}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{card.sub}</p>
+            <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -144,12 +149,12 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
           placeholder="Search employee name or ID…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
         />
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
-          className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:outline-none"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
         >
           <option value="all">All types</option>
           <option value="salary">Salary only</option>
@@ -158,7 +163,7 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
         <select
           value={workerFilter}
           onChange={e => setWorkerFilter(e.target.value as typeof workerFilter)}
-          className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 shadow-sm focus:border-indigo-500 focus:outline-none"
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
         >
           <option value="all">All workers</option>
           <option value="salaried">Salaried</option>
@@ -231,14 +236,14 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
                         {entry.note && (
                           <>
                             <span className="text-xs text-gray-400">·</span>
-                            <span className="text-xs text-gray-400 dark:text-gray-500 italic truncate">{entry.note}</span>
+                            <span className="text-xs text-gray-400 italic truncate">{entry.note}</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <span className="text-sm font-bold text-gray-900 dark:text-white ml-4 whitespace-nowrap">
+                  <span className="text-sm font-bold text-gray-900 ml-4 whitespace-nowrap">
                     {formatRs(entry.amount)}
                   </span>
                 </motion.div>
@@ -246,6 +251,7 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
             })}
           </motion.div>
         )}
+      </div>
       </div>
     </>
   )

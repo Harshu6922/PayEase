@@ -7,7 +7,7 @@ import { Plus, X } from 'lucide-react';
 import type { Database } from '@/types/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export default function AddEmployeeModal() {
+export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 15 }: { atSeatLimit?: boolean; employeeLimit?: number }) {
   const router = useRouter();
   const supabase = createClient() as unknown as SupabaseClient<Database>;
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +24,8 @@ export default function AddEmployeeModal() {
     is_active: true,
     worker_type: 'salaried' as 'salaried' | 'commission' | 'daily',
     daily_rate: '',
+    default_start_time: '',
+    default_end_time: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -95,6 +97,8 @@ export default function AddEmployeeModal() {
         daily_rate: formData.worker_type === 'daily'
           ? parseFloat(formData.daily_rate)
           : null,
+        default_start_time: formData.default_start_time || null,
+        default_end_time: formData.default_end_time || null,
       });
 
       if (insertError) {
@@ -113,6 +117,8 @@ export default function AddEmployeeModal() {
         is_active: true,
         worker_type: 'salaried',
         daily_rate: '',
+        default_start_time: '',
+        default_end_time: '',
       });
 
       // Refresh list
@@ -128,6 +134,19 @@ export default function AddEmployeeModal() {
       setLoading(false);
     }
   };
+
+  if (atSeatLimit) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+          {employeeLimit}-employee limit reached.{' '}
+          <a href="/billing" className="font-semibold underline underline-offset-2 hover:text-orange-900">
+            Upgrade plan
+          </a>
+        </span>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -251,6 +270,30 @@ export default function AddEmployeeModal() {
                         />
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Default shift times — salaried and daily only */}
+                {(formData.worker_type === 'salaried' || formData.worker_type === 'daily') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Start Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_start_time}
+                        onChange={e => setFormData(prev => ({ ...prev, default_start_time: e.target.value }))}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default End Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_end_time}
+                        onChange={e => setFormData(prev => ({ ...prev, default_end_time: e.target.value }))}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 )}
 

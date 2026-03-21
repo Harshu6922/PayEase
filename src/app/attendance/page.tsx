@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Employee } from '@/types'
 import AttendanceManager from './components/AttendanceManager'
+import PageShell from '@/components/PageShell'
 
 export default async function AttendancePage() {
   const supabase = await createClient()
@@ -20,15 +21,8 @@ export default async function AttendancePage() {
   const employees: Employee[] = (data || []) as Employee[]
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Daily Attendance</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Manage employee attendance efficiently using global defaults.
-        </p>
-      </div>
-
+    <PageShell title="Attendance" subtitle="Workforce">
       <AttendanceManager employees={employees} userRole={userRole} />
-    </div>
+    </PageShell>
   )
 }

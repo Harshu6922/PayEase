@@ -57,27 +57,35 @@ export default function ChartsView({
     label: m.label,
   }))
 
-  const cardCls = 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'
-  const titleCls = 'text-base font-semibold text-gray-900 dark:text-white mb-4'
+  const cardCls = 'bg-white rounded-xl border border-gray-200 p-6'
+  const titleCls = 'text-base font-semibold text-gray-900 mb-4'
   const emptyState = (msg: string) => (
-    <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500 text-sm">{msg}</div>
+    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">{msg}</div>
   )
 
   return (
-    <div className="space-y-6">
-      {/* Month selector for pie/donut charts */}
-      <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Month:</label>
-        <select
-          value={selectedMonth}
-          onChange={e => setSelectedMonth(e.target.value)}
-          className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-          {monthOptions.map(o => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
+    <div>
+      {/* Header band */}
+      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
+        <div>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Analytics</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Charts</h1>
+        </div>
+        <div className="flex items-center gap-3 mb-1">
+          <label className="text-sm font-medium" style={{ color: '#6B7A99' }}>Month:</label>
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            className="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
+            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
+          >
+            {monthOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
+      <div className="px-8 py-6 space-y-6">
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Expense Bar — last 6 months */}
@@ -161,6 +169,7 @@ export default function ChartsView({
             </ResponsiveContainer>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

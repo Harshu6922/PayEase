@@ -21,6 +21,8 @@ export interface Employee {
   is_active: boolean;
   worker_type: 'salaried' | 'commission' | 'daily';
   daily_rate: number | null;
+  default_start_time?: string | null;
+  default_end_time?: string | null;
 }
 
 export interface AttendanceRecord {

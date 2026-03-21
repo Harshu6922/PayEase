@@ -6,7 +6,7 @@ import { Menu } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './Sidebar'
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children, banner }: { children: React.ReactNode; banner?: React.ReactNode }) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -14,7 +14,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     setSidebarOpen(false)
   }, [pathname])
 
-  const isAuthPage = pathname === '/login'
+  const isAuthPage = pathname === '/login' || pathname === '/signup'
   if (isAuthPage) return <>{children}</>
 
   return (
@@ -51,6 +51,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        {banner}
         {/* Mobile top bar */}
         <header className="md:hidden flex items-center gap-3 px-4 h-14 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <button

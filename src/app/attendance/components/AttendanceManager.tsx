@@ -126,10 +126,25 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
 
   // Handle Status Toggle
   const handleStatusChange = (empId: string, status: AttendanceStatus) => {
-    setRecords(prev => ({
-      ...prev,
-      [empId]: { ...prev[empId], status },
-    }));
+    const emp = employees.find(e => e.id === empId);
+    setRecords(prev => {
+      const current = prev[empId] || { status: 'Absent' };
+      // Auto-fill employee's default times when marking present/half-day for the first time
+      const wasAbsent = current.status === 'Absent';
+      const nowPresent = status === 'Present' || status === 'Half Day';
+      let overrideStartTime = current.overrideStartTime;
+      let overrideEndTime = current.overrideEndTime;
+      if (wasAbsent && nowPresent && emp?.default_start_time && !overrideStartTime) {
+        overrideStartTime = emp.default_start_time.substring(0, 5);
+      }
+      if (wasAbsent && nowPresent && emp?.default_end_time && !overrideEndTime) {
+        overrideEndTime = emp.default_end_time.substring(0, 5);
+      }
+      return {
+        ...prev,
+        [empId]: { status, overrideStartTime, overrideEndTime },
+      };
+    });
   };
 
   // Handle Time Override

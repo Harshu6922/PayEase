@@ -41,7 +41,7 @@ export default async function ExpensesPage({
     .order('created_at', { ascending: true })
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
       <ExpensesManager
         key={month}
         month={month}

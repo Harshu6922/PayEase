@@ -28,10 +28,12 @@ export default async function DailyAttendancePage() {
     .order('full_name')
 
   return (
-    <DailyAttendanceManager
-      workers={(workers || []) as Employee[]}
-      companyId={companyId}
-      userRole={userRole}
-    />
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
+      <DailyAttendanceManager
+        workers={(workers || []) as Employee[]}
+        companyId={companyId}
+        userRole={userRole}
+      />
+    </div>
   )
 }

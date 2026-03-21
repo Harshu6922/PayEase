@@ -20,18 +20,24 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Commission Items</h1>
+    <div>
+      {/* Header band */}
+      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
+        <div>
+          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Commission</p>
+          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Commission Items</h1>
+        </div>
         {userRole === 'admin' && (
           <button
             onClick={() => { setEditingItem(null); setIsModalOpen(true); }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold mb-1 transition-opacity hover:opacity-80"
+            style={{ backgroundColor: '#D4A847', color: '#1C2333' }}
           >
             + Add Item
           </button>
         )}
       </div>
+      <div className="px-8 py-6" style={{ backgroundColor: '#F7F6F3' }}>
 
       {items.length === 0 ? (
         <p className="text-gray-500 text-center py-12">No commission items yet. Add your first item.</p>
@@ -39,16 +45,16 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
         <table className="w-full border-collapse bg-white rounded-lg shadow">
           <thead>
             <tr className="border-b">
-              <th className="text-left p-4 text-gray-600 dark:text-gray-400 font-medium">Item Name</th>
-              <th className="text-right p-4 text-gray-600 dark:text-gray-400 font-medium">Default Rate</th>
-              <th className="text-right p-4 text-gray-600 dark:text-gray-400 font-medium">Actions</th>
+              <th className="text-left p-4 text-gray-600 font-medium">Item Name</th>
+              <th className="text-right p-4 text-gray-600 font-medium">Default Rate</th>
+              <th className="text-right p-4 text-gray-600 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {items.map(item => (
               <tr key={item.id} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="p-4 font-medium">{item.name}</td>
-                <td className="p-4 text-right text-gray-600">
+                <td className="p-4 font-medium text-gray-900">{item.name}</td>
+                <td className="p-4 text-right text-gray-700">
                   {item.default_rate != null ? `Rs. ${item.default_rate.toFixed(2)}` : '—'}
                 </td>
                 {userRole === 'admin' && (
@@ -107,6 +113,7 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
           onClose={() => { setDeleteItem(null); setDeleteError(null); }}
         />
       )}
+      </div>
     </div>
   );
 }

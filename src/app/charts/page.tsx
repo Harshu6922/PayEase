@@ -66,8 +66,7 @@ export default async function ChartsPage() {
   const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Charts</h1>
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
       <ChartsView
         expenseBarData={expenseBarData}
         expenseRawData={(expenses ?? []) as any[]}

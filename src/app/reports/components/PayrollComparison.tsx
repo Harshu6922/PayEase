@@ -66,7 +66,7 @@ export default function PayrollComparison(props: Props) {
           <input
             type="month" value={month}
             onChange={e => e.target.value && router.push(`/reports/comparison?month=${e.target.value}`)}
-            className="rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none"
           />
           <Link href="/reports" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
             ← Back to Reports
