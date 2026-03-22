@@ -73,7 +73,8 @@ function calculatePayroll(
   workEntries: WorkEntry[],
   agentRates: AgentRate[],
   dailyAttendance: DailyAttendanceRecord[],
-  workingDays: number
+  workingDays: number,
+  outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {}
 ) {
   let totalPayable = 0
   let totalRecoverable = 0
@@ -206,8 +207,8 @@ export default function PayrollDashboard({
 
   // Memoize calculation so it ONLY runs when these specific variables change
   const computedPayroll = useMemo(() => {
-    return calculatePayroll(employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth)
-  }, [employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth])
+    return calculatePayroll(employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee)
+  }, [employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee])
 
   const prevBalances = useMemo((): Record<string, number> => {
     if (!paidUpToDay) return {}
