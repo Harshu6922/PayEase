@@ -9,7 +9,19 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) return response
+  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+    // If logged-in user visits /login or /signup, send to dashboard
+    if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
+      const supabaseCheck = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { cookies: { get: (name: string) => request.cookies.get(name)?.value, set: () => {}, remove: () => {} } }
+      )
+      const { data: { user } } = await supabaseCheck.auth.getUser()
+      if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return response
+  }
 
   // Check subscription status for protected routes
   const supabase = createServerClient(
