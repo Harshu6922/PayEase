@@ -110,8 +110,9 @@ function calculatePayroll(
       earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
     }
 
-    const total_advances = 0  // advances now tracked via repayments; column shows outstanding balance
-    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount
+    const total_advances = outstandingByEmployee[emp.id]?.totalOutstanding ?? 0
+    const advance_deduction = Math.min(total_advances, earned_salary + total_overtime_amount - total_deduction_amount)
+    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction
 
     // Aggregate totals based on positive/negative
     if (final_payable_salary >= 0) {
