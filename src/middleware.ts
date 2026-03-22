@@ -45,7 +45,12 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile?.company_id) return response
+  if (!profile?.company_id) {
+    if (!pathname.startsWith('/onboarding')) {
+      return NextResponse.redirect(new URL('/onboarding', request.url))
+    }
+    return response
+  }
 
   const { data: sub } = await supabase
     .from('subscriptions')
