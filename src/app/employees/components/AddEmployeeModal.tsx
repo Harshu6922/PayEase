@@ -7,7 +7,7 @@ import { Plus, X } from 'lucide-react';
 import type { Database } from '@/types/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 15 }: { atSeatLimit?: boolean; employeeLimit?: number }) {
+export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 15, isSubscribed = true }: { atSeatLimit?: boolean; employeeLimit?: number; isSubscribed?: boolean }) {
   const router = useRouter();
   const supabase = createClient() as unknown as SupabaseClient<Database>;
   const [isOpen, setIsOpen] = useState(false);
@@ -151,7 +151,14 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          if (!isSubscribed && atSeatLimit) {
+            router.push('/billing')
+            return
+          }
+          if (atSeatLimit) return
+          setIsOpen(true)
+        }}
         className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
       >
         <Plus className="h-4 w-4" />

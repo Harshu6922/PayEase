@@ -22,7 +22,7 @@ export default async function EmployeesPage() {
   const [{ data, error }, { data: subData }] = await Promise.all([
     supabase.from('employees').select('*').order('created_at', { ascending: false }),
     companyId
-      ? supabase.from('subscriptions').select('plan').eq('company_id', companyId).maybeSingle()
+      ? supabase.from('subscriptions').select('plan, razorpay_subscription_id').eq('company_id', companyId).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
 
@@ -38,7 +38,8 @@ export default async function EmployeesPage() {
 
   const employees: Employee[] = (data || []) as Employee[]
   const planId: PlanId = ((subData as any)?.plan ?? 'starter') as PlanId
-  const employeeLimit = PLANS[planId]?.employeeLimit ?? 15
+  const isSubscribed = !!((subData as any)?.razorpay_subscription_id)
+  const employeeLimit = isSubscribed ? (PLANS[planId]?.employeeLimit ?? 15) : 1
   const activeEmployeeCount = employees.filter(e => e.is_active).length
   const atSeatLimit = activeEmployeeCount >= employeeLimit
 
@@ -46,7 +47,7 @@ export default async function EmployeesPage() {
     <PageShell
       title="Employees"
       subtitle="Workforce"
-      actions={userRole === 'admin' ? <AddEmployeeModal atSeatLimit={atSeatLimit} employeeLimit={employeeLimit} /> : undefined}
+      actions={userRole === 'admin' ? <AddEmployeeModal atSeatLimit={atSeatLimit} employeeLimit={employeeLimit} isSubscribed={isSubscribed} /> : undefined}
     >
       <div className="overflow-hidden rounded-xl border bg-white" style={{ borderColor: '#EDECEA' }}>
         <table className="min-w-full divide-y divide-gray-100">
