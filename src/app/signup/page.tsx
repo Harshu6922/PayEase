@@ -124,7 +124,7 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Creating account…' : 'Start free trial'}
+            {loading ? 'Creating account…' : 'Sign up'}
           </button>
         </form>
 
