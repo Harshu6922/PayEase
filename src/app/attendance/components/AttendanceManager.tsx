@@ -159,7 +159,21 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
     setRecords(prev => {
       const updated = { ...prev }
       employees.forEach(emp => {
-        updated[emp.id] = { ...prev[emp.id], status }
+        const current = prev[emp.id] || { status: 'Absent' }
+        const nowPresent = status === 'Present' || status === 'Half Day'
+        let overrideStartTime = current.overrideStartTime
+        let overrideEndTime = current.overrideEndTime
+        if (nowPresent && emp.default_start_time && !overrideStartTime) {
+          overrideStartTime = emp.default_start_time.substring(0, 5)
+        }
+        if (nowPresent && emp.default_end_time && !overrideEndTime) {
+          overrideEndTime = emp.default_end_time.substring(0, 5)
+        }
+        if (status === 'Absent') {
+          overrideStartTime = undefined
+          overrideEndTime = undefined
+        }
+        updated[emp.id] = { status, overrideStartTime, overrideEndTime }
       })
       return updated
     })
