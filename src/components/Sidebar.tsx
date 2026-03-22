@@ -47,7 +47,7 @@ const navigation = [
     group: 'Account',
     items: [
       { name: 'Settings', href: '/settings', icon: Settings },
-      { name: 'Billing', href: '/billing', icon: CreditCard },
+      { name: 'My Plan', href: '/billing', icon: CreditCard },
     ],
   },
 ]
