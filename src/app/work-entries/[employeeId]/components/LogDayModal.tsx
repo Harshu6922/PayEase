@@ -63,7 +63,6 @@ export default function LogDayModal({
               item_id: rate.item_id,
               quantity: qty,
               rate: rate.commission_rate,
-              total_amount: qty * rate.commission_rate,
             },
             { onConflict: 'employee_id,item_id,date' }
           )
