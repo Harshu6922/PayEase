@@ -144,30 +144,15 @@ export default function BillingClient({
                     Up to {plan.employeeLimit} employees
                   </p>
                   <ul className="mt-3 space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    {plan.id === 'starter' && <>
-                      <li>✓ Payroll in seconds, not hours</li>
-                      <li>✓ Attendance + overtime tracking</li>
-                      <li>✓ Advance & repayment management</li>
-                      <li>✓ PDF payslips for every employee</li>
-                      <li>✓ Expense tracking & templates</li>
-                      <li>✓ Works offline, syncs instantly</li>
-                    </>}
-                    {plan.id === 'growth' && <>
-                      <li>✓ Everything in Starter</li>
-                      <li>✓ Commission & daily wage workers</li>
-                      <li>✓ Team access with role controls</li>
-                      <li>✓ Charts & payroll analytics</li>
-                      <li>✓ Monthly payroll comparison</li>
-                      <li>✓ Priority support</li>
-                    </>}
-                    {plan.id === 'business' && <>
-                      <li>✓ Everything in Growth</li>
-                      <li>✓ Unlimited team members</li>
-                      <li>✓ Bulk payroll export (PDF + CSV)</li>
-                      <li>✓ Advanced reporting & charts</li>
-                      <li>✓ Dedicated account manager</li>
-                      <li>✓ SLA-backed uptime guarantee</li>
-                    </>}
+                    <li>✓ Full payroll — salary, OT & advances</li>
+                    <li>✓ Attendance & daily labour tracking</li>
+                    <li>✓ Commission & daily wage workers</li>
+                    <li>✓ PDF payslips & payroll reports</li>
+                    <li>✓ Expenses, charts & analytics</li>
+                    <li>✓ Team access with role controls</li>
+                    {plan.id === 'starter' && <li className="text-indigo-500 font-medium">Perfect for small teams</li>}
+                    {plan.id === 'growth' && <li className="text-indigo-500 font-medium">Built for growing businesses</li>}
+                    {plan.id === 'business' && <li className="text-indigo-500 font-medium">For large operations</li>}
                   </ul>
                   <button
                     onClick={() => handleSubscribe(plan.id)}
