@@ -80,7 +80,7 @@ export default function ChartsView({
             style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
           >
             {monthOptions.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value} style={{ backgroundColor: '#1C2333', color: '#fff' }}>{o.label}</option>
             ))}
           </select>
         </div>
