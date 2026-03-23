@@ -10,12 +10,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
 
 export const metadata: Metadata = {
-  title: 'PayrollApp',
+  title: 'PayEase',
   description: 'Manage employees, attendance, and payroll efficiently',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'PayrollApp',
+    title: 'PayEase',
   },
   other: {
     'theme-color': '#1C2333',

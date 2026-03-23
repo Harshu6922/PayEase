@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'PayrollApp',
-    short_name: 'PayrollApp',
+    name: 'PayEase',
+    short_name: 'PayEase',
     description: 'Payroll management for your company',
     start_url: '/',
     display: 'standalone',

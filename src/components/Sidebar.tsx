@@ -77,10 +77,8 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Brand header */}
       <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: '#D4A847' }}>
-            <span className="text-sm font-black" style={{ color: '#1C2333' }}>P</span>
-          </div>
-          <span className="font-bold text-white text-[15px] tracking-tight">PayrollApp</span>
+          <img src="/payease logo.png" alt="PayEase" className="h-8 w-8 rounded-lg object-cover" />
+          <span className="font-bold text-white text-[15px] tracking-tight">PayEase</span>
         </div>
         {onClose && (
           <button

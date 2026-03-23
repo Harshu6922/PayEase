@@ -22,12 +22,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-md space-y-6 rounded-xl bg-white dark:bg-gray-800 p-8 shadow-md">
         <div>
-          <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Sign in to PayEase
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
-            Manage your payroll with ease
-          </p>
+          <div className="flex flex-col items-center gap-3">
+            <img src="/payease logo.png" alt="PayEase" className="h-16 w-16 rounded-2xl object-cover shadow-md" />
+            <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+              Sign in to PayEase
+            </h2>
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+              Manage your payroll with ease
+            </p>
+          </div>
         </div>
 
         {error && (

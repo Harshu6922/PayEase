@@ -40,7 +40,7 @@ export default function BillingClient({
       const rzp = new window.Razorpay({
         key: data.key,
         subscription_id: data.subscriptionId,
-        name: 'PayrollApp',
+        name: 'PayEase',
         description: `${PLANS[plan as PlanId].name} Plan — ₹${PLANS[plan as PlanId].priceRs}/month`,
         handler: () => { window.location.reload() },
       })

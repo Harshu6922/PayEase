@@ -62,10 +62,8 @@ export default function AppShell({ children, banner }: { children: React.ReactNo
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-indigo-600 flex items-center justify-center">
-              <span className="text-white text-xs font-black">P</span>
-            </div>
-            <span className="font-bold text-gray-900 dark:text-white text-sm tracking-tight">PayrollApp</span>
+            <img src="/payease logo.png" alt="PayEase" className="h-6 w-6 rounded-md object-cover" />
+            <span className="font-bold text-gray-900 dark:text-white text-sm tracking-tight">PayEase</span>
           </div>
         </header>
 

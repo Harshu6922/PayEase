@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         name: `${PLANS[plan].name} (Referral Discount)`,
         amount: finalPricePaise,
         currency: 'INR',
-        description: `PayrollApp ${PLANS[plan].name} plan with ₹${discountRs} referral discount`,
+        description: `PayEase ${PLANS[plan].name} plan with ₹${discountRs} referral discount`,
       },
     } as any)
     planId = (tempPlan as any).id
