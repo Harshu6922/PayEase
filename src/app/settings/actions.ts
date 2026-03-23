@@ -52,6 +52,19 @@ export async function changeRole(userId: string, newRole: 'admin' | 'viewer', co
   return { error: null }
 }
 
+export async function updateMyName(name: string): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+  const { error } = await (supabase as any)
+    .from('profiles')
+    .update({ full_name: name.trim() })
+    .eq('id', user.id)
+  if (error) return { error: error.message }
+  revalidatePath('/settings')
+  return { error: null }
+}
+
 export async function removeMember(userId: string): Promise<{ error: string | null }> {
   // Deleting the auth user cascades to profiles via FK.
   // Do NOT delete profiles row directly.

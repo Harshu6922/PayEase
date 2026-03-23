@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { inviteUser, changeRole, removeMember } from './actions'
+import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
 
 interface Member {
   id: string
@@ -23,6 +23,20 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
   const [inviteStatus, setInviteStatus] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [editingName, setEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState(initialMembers.find(m => m.id === currentUserId)?.full_name ?? '')
+  const [nameSaving, setNameSaving] = useState(false)
+
+  const handleSaveName = async () => {
+    if (!nameInput.trim()) return
+    setNameSaving(true)
+    const { error } = await updateMyName(nameInput.trim())
+    if (error) { setActionError(error) } else {
+      setMembers(prev => prev.map(m => m.id === currentUserId ? { ...m, full_name: nameInput.trim() } : m))
+      setEditingName(false)
+    }
+    setNameSaving(false)
+  }
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,13 +105,30 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
             <ul className="divide-y divide-gray-200 dark:divide-gray-700">
               {members.map(member => (
                 <li key={member.id} className="flex items-center justify-between px-4 py-3 bg-white">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {member.full_name ?? '(no name)'}
-                      {member.id === currentUserId && (
-                        <span className="ml-2 text-xs text-gray-400">(you)</span>
-                      )}
-                    </p>
+                  <div className="flex-1">
+                    {member.id === currentUserId && editingName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          autoFocus
+                          value={nameInput}
+                          onChange={e => setNameInput(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
+                          className="border border-gray-300 rounded px-2 py-0.5 text-sm text-gray-900 w-40 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <button onClick={handleSaveName} disabled={nameSaving} className="text-xs text-indigo-600 hover:underline disabled:opacity-50">{nameSaving ? 'Saving…' : 'Save'}</button>
+                        <button onClick={() => setEditingName(false)} className="text-xs text-gray-400 hover:underline">Cancel</button>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                        {member.full_name ?? '(no name)'}
+                        {member.id === currentUserId && (
+                          <>
+                            <span className="text-xs text-gray-400">(you)</span>
+                            <button onClick={() => { setNameInput(member.full_name ?? ''); setEditingName(true) }} className="text-xs text-indigo-500 hover:underline ml-1">Edit</button>
+                          </>
+                        )}
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500">{member.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
