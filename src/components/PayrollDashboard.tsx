@@ -114,7 +114,7 @@ function calculatePayroll(
 
     const total_advances = outstandingByEmployee[emp.id]?.totalOutstanding ?? 0
     const advance_deduction = total_advances
-    const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction
+    const final_payable_salary = Math.round((earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction) * 100) / 100
 
     // Aggregate totals based on positive/negative
     if (final_payable_salary >= 0) {
@@ -249,7 +249,7 @@ export default function PayrollDashboard({
         totalRecoverable += Math.abs(row.final_payable_salary)
       } else {
         const paid = paidByEmployee[row.employee_id] ?? 0
-        const remaining = row.final_payable_salary - paid
+        const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
         if (remaining > 0) totalRemaining += remaining
       }
     })

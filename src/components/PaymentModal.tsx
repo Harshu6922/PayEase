@@ -78,13 +78,13 @@ export default function PaymentModal({
   }, [employee.id])
 
   // Auto-deduct advances from payable
-  const advanceDeduction = Math.min(outstandingAdvances.totalOutstanding, currentMonthPayable)
-  const netMonthPayable = currentMonthPayable - advanceDeduction
+  const advanceDeduction = Math.min(outstandingAdvances?.totalOutstanding ?? 0, currentMonthPayable)
+  const netMonthPayable = Math.round((currentMonthPayable - advanceDeduction) * 100) / 100
 
   const paymentsThisMonth = payments
     .filter(p => p.month === month)
     .reduce((sum, p) => sum + Number(p.amount), 0)
-  const remainingThisMonth = netMonthPayable - paymentsThisMonth - advanceRepaidThisMonth
+  const remainingThisMonth = Math.round((netMonthPayable - paymentsThisMonth - advanceRepaidThisMonth) * 100) / 100
 
   async function recordPayment(cashAmount: number, date: string, noteText: string, autoRepayAdvances: boolean) {
     setSaving(true)

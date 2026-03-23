@@ -62,6 +62,8 @@ export default async function WorkerDetailPage({
 
   // Build agentRates: use custom rate if set, else fall back to item's default_rate
   const agentRates: AgentItemRate[] = (allItems || []).map((item: any) => ({
+    id: item.id,
+    created_at: '',
     item_id: item.id,
     employee_id: params.employeeId,
     commission_rate: customRateMap[item.id] ?? item.default_rate,
