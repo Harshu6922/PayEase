@@ -112,7 +112,7 @@ function calculatePayroll(
     }
 
     const total_advances = outstandingByEmployee[emp.id]?.totalOutstanding ?? 0
-    const advance_deduction = Math.min(total_advances, earned_salary + total_overtime_amount - total_deduction_amount)
+    const advance_deduction = total_advances
     const final_payable_salary = earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction
 
     // Aggregate totals based on positive/negative
