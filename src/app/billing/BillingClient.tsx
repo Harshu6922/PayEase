@@ -143,7 +143,32 @@ export default function BillingClient({
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Up to {plan.employeeLimit} employees
                   </p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">All features included</p>
+                  <ul className="mt-3 space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {plan.id === 'starter' && <>
+                      <li>✓ Payroll in seconds, not hours</li>
+                      <li>✓ Attendance + overtime tracking</li>
+                      <li>✓ Advance & repayment management</li>
+                      <li>✓ PDF payslips for every employee</li>
+                      <li>✓ Expense tracking & templates</li>
+                      <li>✓ Works offline, syncs instantly</li>
+                    </>}
+                    {plan.id === 'growth' && <>
+                      <li>✓ Everything in Starter</li>
+                      <li>✓ Commission & daily wage workers</li>
+                      <li>✓ Team access with role controls</li>
+                      <li>✓ Charts & payroll analytics</li>
+                      <li>✓ Monthly payroll comparison</li>
+                      <li>✓ Priority support</li>
+                    </>}
+                    {plan.id === 'business' && <>
+                      <li>✓ Everything in Growth</li>
+                      <li>✓ Unlimited team members</li>
+                      <li>✓ Bulk payroll export (PDF + CSV)</li>
+                      <li>✓ Advanced reporting & charts</li>
+                      <li>✓ Dedicated account manager</li>
+                      <li>✓ SLA-backed uptime guarantee</li>
+                    </>}
+                  </ul>
                   <button
                     onClick={() => handleSubscribe(plan.id)}
                     disabled={loading || isCurrent}
