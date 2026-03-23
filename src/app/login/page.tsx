@@ -2,27 +2,11 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
   const supabase = createClient()
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) { setError(error.message); setLoading(false); return }
-    router.push('/dashboard')
-    router.refresh()
-  }
 
   async function handleGoogle() {
     setGoogleLoading(true)
@@ -41,17 +25,19 @@ export default function LoginPage() {
           <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
             Sign in to PayEase
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            Manage your payroll with ease
+          </p>
         </div>
 
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">{error}</div>
         )}
 
-        {/* Google */}
         <button
           onClick={handleGoogle}
           disabled={googleLoading}
-          className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 transition-colors"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -61,48 +47,6 @@ export default function LoginPage() {
           </svg>
           {googleLoading ? 'Redirecting…' : 'Continue with Google'}
         </button>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200 dark:border-gray-700" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">or</span>
-          </div>
-        </div>
-
-        <form className="space-y-4" onSubmit={handleLogin}>
-          <input
-            type="email"
-            required
-            placeholder="Email address"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-          <input
-            type="password"
-            required
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-indigo-600 hover:text-indigo-500">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   )
