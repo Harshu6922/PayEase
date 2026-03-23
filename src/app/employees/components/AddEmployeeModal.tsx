@@ -19,7 +19,7 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
     employee_id: '',
     monthly_salary: '',
     standard_working_hours: '8', // default
-    overtime_multiplier: '1.5', // default 1.5x (common labor law standard)
+    overtime_multiplier: '1.0',
     joining_date: new Date().toISOString().split('T')[0], // today
     is_active: true,
     worker_type: 'salaried' as 'salaried' | 'commission' | 'daily',
@@ -112,7 +112,7 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
         employee_id: '',
         monthly_salary: '',
         standard_working_hours: '8',
-        overtime_multiplier: '1.5',
+        overtime_multiplier: '1.0',
         joining_date: new Date().toISOString().split('T')[0],
         is_active: true,
         worker_type: 'salaried',
