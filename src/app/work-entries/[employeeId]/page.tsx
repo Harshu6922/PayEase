@@ -45,12 +45,28 @@ export default async function WorkerDetailPage({
   if (!empData) redirect('/work-entries')
   const employee = empData as unknown as Employee
 
-  // Fetch agent rates with item details
-  const { data: ratesData } = await supabase
+  // Fetch all commission items for this company
+  const { data: allItems } = await supabase
+    .from('commission_items')
+    .select('id, name, default_rate')
+    .eq('company_id', companyId)
+
+  // Fetch any custom rates set for this employee
+  const { data: customRates } = await supabase
     .from('agent_item_rates')
     .select('*, commission_items(id, name, default_rate)')
     .eq('employee_id', params.employeeId)
-  const agentRates = (ratesData || []) as unknown as AgentItemRate[]
+
+  const customRateMap: Record<string, number> = {}
+  ;(customRates || []).forEach((r: any) => { customRateMap[r.item_id] = r.commission_rate })
+
+  // Build agentRates: use custom rate if set, else fall back to item's default_rate
+  const agentRates: AgentItemRate[] = (allItems || []).map((item: any) => ({
+    item_id: item.id,
+    employee_id: params.employeeId,
+    commission_rate: customRateMap[item.id] ?? item.default_rate,
+    commission_items: { id: item.id, name: item.name, default_rate: item.default_rate },
+  }))
 
   // Fetch work entries for the month
   const { data: entriesData } = await supabase
