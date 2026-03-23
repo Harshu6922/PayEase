@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import {
   Users, CalendarCheck, FileText, LayoutDashboard, LogOut, Banknote,
   Tag, CalendarDays, ClipboardList, WalletCards, Receipt, X, BarChart2,
-  TrendingUp, Settings, Sun, Moon, Monitor, CreditCard, RotateCcw,
+  TrendingUp, Settings, Sun, Moon, Monitor, CreditCard, RotateCcw, MessageCircle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -48,6 +48,7 @@ const navigation = [
     items: [
       { name: 'Settings', href: '/settings', icon: Settings },
       { name: 'My Plan', href: '/billing', icon: CreditCard },
+      { name: 'Contact Us', href: '/contact', icon: MessageCircle },
     ],
   },
 ]
