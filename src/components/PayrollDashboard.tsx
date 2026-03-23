@@ -63,6 +63,7 @@ interface PayrollDashboardProps {
   companyName: string
   companyId: string
   monthPayments: Payment[]
+  advanceRepaidThisMonth?: Record<string, number>
   userRole?: 'admin' | 'viewer'
 }
 
@@ -174,6 +175,7 @@ export default function PayrollDashboard({
   companyName,
   companyId,
   monthPayments,
+  advanceRepaidThisMonth = {},
   userRole = 'admin',
 }: PayrollDashboardProps) {
   const router = useRouter()
@@ -226,14 +228,17 @@ export default function PayrollDashboard({
     }, 0)
   }, [computedPayroll.rows, prevBalances])
 
-  // Compute paid-this-month per employee from localPayments
+  // Compute paid-this-month per employee: cash payments + advance repayments via salary deduction
   const paidByEmployee = useMemo(() => {
     const map: Record<string, number> = {}
     localPayments.forEach(p => {
       map[p.employee_id] = (map[p.employee_id] ?? 0) + Number(p.amount)
     })
+    Object.entries(advanceRepaidThisMonth).forEach(([empId, amount]) => {
+      map[empId] = (map[empId] ?? 0) + amount
+    })
     return map
-  }, [localPayments])
+  }, [localPayments, advanceRepaidThisMonth])
 
   // Summary totals after subtracting recorded payments
   const remainingTotals = useMemo(() => {

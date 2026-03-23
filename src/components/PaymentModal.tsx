@@ -35,6 +35,7 @@ export default function PaymentModal({
 
   const [payments, setPayments] = useState<Payment[]>([])
   const [advances, setAdvances] = useState<EmployeeAdvance[]>([])
+  const [advanceRepaidThisMonth, setAdvanceRepaidThisMonth] = useState(0)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'full' | 'parts' | null>(null)
   const [partialAmount, setPartialAmount] = useState('')
@@ -48,7 +49,7 @@ export default function PaymentModal({
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [paymentsRes, advancesRes] = await Promise.all([
+      const [paymentsRes, advancesRes, repaidRes] = await Promise.all([
         supabase
           .from('payments')
           .select('*')
@@ -59,9 +60,18 @@ export default function PaymentModal({
           .select('*')
           .eq('employee_id', employee.id)
           .order('advance_date', { ascending: false }),
+        supabase
+          .from('advance_repayments')
+          .select('amount')
+          .eq('employee_id', employee.id)
+          .eq('method', 'salary_deduction')
+          .like('repayment_date', `${month}%`),
       ])
       if (paymentsRes.data) setPayments(paymentsRes.data)
       if (advancesRes.data) setAdvances(advancesRes.data)
+      setAdvanceRepaidThisMonth(
+        (repaidRes.data || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+      )
       setLoading(false)
     }
     fetchData()
@@ -74,7 +84,7 @@ export default function PaymentModal({
   const paymentsThisMonth = payments
     .filter(p => p.month === month)
     .reduce((sum, p) => sum + Number(p.amount), 0)
-  const remainingThisMonth = netMonthPayable - paymentsThisMonth
+  const remainingThisMonth = netMonthPayable - paymentsThisMonth - advanceRepaidThisMonth
 
   async function recordPayment(cashAmount: number, date: string, noteText: string, autoRepayAdvances: boolean) {
     setSaving(true)

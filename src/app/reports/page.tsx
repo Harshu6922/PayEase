@@ -129,6 +129,20 @@ export default async function ReportsPage({
     .eq('company_id', companyId)
     .eq('month', selectedMonthStr)
 
+  // Fetch advance repayments made this month via salary deduction
+  const { data: monthAdvanceRepayments } = await supabase
+    .from('advance_repayments')
+    .select('employee_id, amount')
+    .eq('company_id', companyId)
+    .eq('method', 'salary_deduction')
+    .gte('repayment_date', startDate)
+    .lte('repayment_date', endDate)
+
+  const advanceRepaidThisMonth: Record<string, number> = {}
+  ;(monthAdvanceRepayments || []).forEach((r: any) => {
+    advanceRepaidThisMonth[r.employee_id] = (advanceRepaidThisMonth[r.employee_id] ?? 0) + Number(r.amount)
+  })
+
   // Action for saving the computed dashboard 
   async function generatePayrollAction(payload: { month: number, year: number, computedRows: any[] }) {
     'use server'
@@ -179,6 +193,7 @@ export default async function ReportsPage({
         companyName={companyName}
         companyId={companyId}
         monthPayments={(monthPayments || []) as any[]}
+        advanceRepaidThisMonth={advanceRepaidThisMonth}
         generateAction={generatePayrollAction}
         userRole={userRole}
       />
