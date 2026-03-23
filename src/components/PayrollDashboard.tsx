@@ -578,7 +578,7 @@ export default function PayrollDashboard({
                       const remaining = row.final_payable_salary - paid
                       return (
                         <button
-                          onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary })}
+                          onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary + row.total_advances })}
                           disabled={remaining <= 0}
                           className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
                             remaining <= 0
