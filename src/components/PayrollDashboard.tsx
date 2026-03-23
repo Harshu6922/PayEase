@@ -554,7 +554,7 @@ export default function PayrollDashboard({
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-bold">
                     {(() => {
                       const paid = paidByEmployee[row.employee_id] ?? 0
-                      const remaining = row.final_payable_salary - paid
+                      const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
                       if (row.final_payable_salary < 0) {
                         return <span className="text-red-600">Recover ({formatINR(Math.abs(row.final_payable_salary))})</span>
                       }
@@ -580,7 +580,7 @@ export default function PayrollDashboard({
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                     {userRole === 'admin' && row.final_payable_salary > 0 && (() => {
                       const paid = paidByEmployee[row.employee_id] ?? 0
-                      const remaining = row.final_payable_salary - paid
+                      const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
                       return (
                         <button
                           onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary + row.total_advances })}
