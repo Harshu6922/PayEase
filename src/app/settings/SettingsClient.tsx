@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
 
 interface Member {
@@ -193,6 +193,84 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
         </p>
       </section>
       </div>
+
+      <ViewersSection companyId={companyId} />
     </div>
+  )
+}
+
+function ViewersSection({ companyId }: { companyId: string }) {
+  const [viewers, setViewers] = useState<{ phone: string; role: string }[]>([])
+  const [phone, setPhone] = useState('')
+  const [role, setRole] = useState('ca')
+  const [password, setPassword] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/viewers').then(r => r.json()).then(d => setViewers(d.viewers ?? []))
+  }, [])
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault()
+    setBusy(true); setErr(null); setStatus(null)
+    const res = await fetch('/api/viewers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, role, password }),
+    })
+    const d = await res.json()
+    if (!res.ok) { setErr(d.error); setBusy(false); return }
+    setViewers(v => [...v, { phone, role }])
+    setPhone(''); setPassword(''); setStatus('Viewer added.')
+    setBusy(false)
+  }
+
+  async function remove(p: string) {
+    if (!confirm('Remove this viewer?')) return
+    await fetch(`/api/viewers/${encodeURIComponent(p)}`, { method: 'DELETE' })
+    setViewers(v => v.filter(x => x.phone !== p))
+  }
+
+  return (
+    <section className="space-y-4">
+      <h2 className="text-base font-semibold text-gray-900">External Viewers</h2>
+      <p className="text-xs text-gray-500">
+        Give read-only access to CAs, managers, or partners. They log in at <span className="font-mono">/viewer/dashboard</span> using your company ID (<span className="font-mono text-indigo-600">{companyId}</span>), their phone, and the password you set.
+      </p>
+
+      {err && <p className="text-sm text-red-600">{err}</p>}
+      {status && <p className="text-sm text-green-600">{status}</p>}
+
+      {viewers.length > 0 && (
+        <div className="rounded-xl border border-gray-200 overflow-hidden">
+          <ul className="divide-y divide-gray-200">
+            {viewers.map(v => (
+              <li key={v.phone} className="flex items-center justify-between px-4 py-3 bg-white text-sm">
+                <div>
+                  <p className="font-medium text-gray-900">{v.phone}</p>
+                  <p className="text-xs text-gray-500 capitalize">{v.role}</p>
+                </div>
+                <button onClick={() => remove(v.phone)} className="text-xs text-red-500 hover:underline">Remove</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <input required value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone" className="sm:col-span-1 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <select value={role} onChange={e => setRole(e.target.value)} className="rounded-lg border border-gray-300 bg-white text-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="ca">CA (full access)</option>
+          <option value="manager">Manager (payroll + attendance)</option>
+          <option value="partner">Partner (payroll + employees)</option>
+        </select>
+        <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Set password" className="rounded-lg border border-gray-300 bg-white text-gray-900 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <button disabled={busy} type="submit" className="rounded-lg bg-indigo-600 text-white text-sm font-medium px-4 py-2 hover:bg-indigo-500 disabled:opacity-50">
+          {busy ? 'Adding…' : 'Add Viewer'}
+        </button>
+      </form>
+    </section>
   )
 }

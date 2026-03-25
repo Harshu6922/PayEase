@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/login', '/signup', '/billing', '/api/razorpay/webhook', '/api/auth/signup', '/api/auth/setup-company', '/onboarding', '/auth', '/contact', '/api/contact']
+const PUBLIC_PATHS = ['/login', '/signup', '/billing', '/api/razorpay/webhook', '/api/auth/signup', '/api/auth/setup-company', '/onboarding', '/auth', '/contact', '/api/contact', '/viewer', '/api/viewers', '/api/cron']
 
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request)
