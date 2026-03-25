@@ -5,6 +5,7 @@ import AppShell from '@/components/AppShell'
 import { ThemeProvider } from 'next-themes'
 import { Suspense } from 'react'
 import TrialBanner from '@/components/TrialBanner'
+import InstallPrompt from '@/components/InstallPrompt'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
@@ -12,6 +13,7 @@ const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
 export const metadata: Metadata = {
   title: 'PayEase',
   description: 'Manage employees, attendance, and payroll efficiently',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -34,6 +36,7 @@ export default function RootLayout({
           <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
             {children}
           </AppShell>
+          <InstallPrompt />
         </ThemeProvider>
       </body>
     </html>
