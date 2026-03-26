@@ -15,7 +15,7 @@ export default function InstallPrompt() {
 
     // iOS detection
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
-    const standalone = (navigator.standalone as boolean | undefined) ?? false
+    const standalone = ('standalone' in navigator ? (navigator as any).standalone : false) as boolean
     if (ios && !standalone) { setIsIos(true); setShow(true); return }
 
     // Android / Chrome
