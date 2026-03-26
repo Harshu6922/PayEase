@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Skip public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
+  if (PUBLIC_PATHS.some(p => p === '/' ? pathname === '/' : pathname.startsWith(p))) {
     // If logged-in user visits /login or /signup, send to dashboard
     if (pathname.startsWith('/login') || pathname.startsWith('/signup')) {
       const supabaseCheck = createServerClient(
