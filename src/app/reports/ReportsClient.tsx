@@ -101,7 +101,7 @@ export default function ReportsClient({
           emp?.employee_id ?? r.employee_id,
           r.full_name ?? '',
           emp?.worker_type ?? '',
-          r.gross_salary ?? '',
+          r.earned_salary ?? '',
           r.total_deduction_amount ?? '',
           r.total_overtime_amount ?? '',
           r.final_payable_salary ?? '',
