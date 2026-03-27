@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { format, getDaysInMonth, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Employee, DailyAttendance } from '@/types'
 import PaymentModal from '@/components/PaymentModal'
+import WorkerTypeBadge from '@/components/WorkerTypeBadge'
 
 interface Props {
   workers: Employee[]
@@ -162,6 +164,13 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
   const totalPay = Array.from(summaryMap.values()).reduce((sum, s) => sum + s.pay, 0)
   const monthLabel = format(new Date(year, month - 1, 1), 'MMMM yyyy')
 
+  // Get initials from name
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    return name.substring(0, 2).toUpperCase()
+  }
+
   // Shared cell renderer
   const renderCell = (worker: Employee, dateStr: string) => {
     const isFuture = dateStr > today
@@ -172,87 +181,104 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
       <td
         key={dateStr}
         onClick={isFuture ? undefined : () => handleCellClick(worker, dateStr)}
-        className={`text-center border border-gray-100 transition-colors align-middle
+        className={`text-center border border-[#7C3AED]/10 transition-colors align-middle
           md:h-14 md:w-12 h-16 w-full
           ${isFuture
-            ? 'bg-gray-100 cursor-not-allowed'
+            ? 'bg-white/2 cursor-not-allowed opacity-30'
             : isPresent
-            ? 'bg-green-500 cursor-pointer active:bg-green-700'
+            ? 'bg-success/20 cursor-pointer'
             : isToday
-            ? 'bg-blue-50 cursor-pointer active:bg-blue-100'
-            : 'cursor-pointer active:bg-green-50'
+            ? 'bg-primary/10 cursor-pointer'
+            : 'cursor-pointer hover:bg-white/5'
           }`}
       >
         {isPresent ? (
           <div className="flex flex-col items-center justify-center h-full px-1">
-            <span className="text-white text-lg font-bold leading-none">✓</span>
-            <span className="text-white text-xs font-semibold mt-1 leading-none">
+            <span className="text-success text-base font-bold leading-none">✓</span>
+            <span className="text-success text-xs font-mono font-semibold mt-0.5 leading-none">
               {Math.round(record!.pay_amount)}
             </span>
           </div>
         ) : !isFuture ? (
-          <span className="text-gray-300 text-xl">·</span>
+          <span className="text-text-muted text-xl">·</span>
         ) : null}
       </td>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
-      {/* Header band */}
-      <div className="px-6 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
-        <div>
-          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Workforce</p>
-          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Daily Labourers</h1>
-        </div>
-        <div className="flex items-center gap-2 mb-1">
-          {/* Desktop month picker */}
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-[#7C3AED]/10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {/* Desktop month nav */}
           <div className="hidden md:flex items-center gap-2">
-            <button onClick={prevMonth} className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg transition-colors">‹</button>
-            <span className="text-base font-semibold text-white w-40 text-center">{monthLabel}</span>
-            <button onClick={nextMonth} className="px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg transition-colors">›</button>
+            <button onClick={prevMonth} className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-text font-semibold w-36 text-center">{monthLabel}</span>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-          {/* Mobile week picker */}
+          {/* Mobile week nav */}
           <div className="flex md:hidden items-center gap-1">
-            <button onClick={prevWeek} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg">‹</button>
-            <span className="text-sm font-medium text-white w-36 text-center">{weekLabel}</span>
-            <button onClick={nextWeek} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 font-bold text-lg">›</button>
+            <button onClick={prevWeek} className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-text text-sm font-medium w-36 text-center">{weekLabel}</span>
+            <button onClick={nextWeek} className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
+          {loading && <span className="text-text-muted text-xs">Loading...</span>}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <h1 className="hidden md:block text-text font-bold text-lg">Daily Labourers</h1>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => {
+                workers.forEach(w => handleCellClick(w, today))
+              }}
+              className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-sm px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Mark All Present
+            </button>
+          )}
         </div>
       </div>
-      {loading && <div className="text-xs px-6 py-1 text-white/50" style={{ backgroundColor: '#1C2333' }}>Loading...</div>}
 
       {workers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="text-5xl mb-4">👷</div>
-          <p className="text-gray-600 font-medium">No daily workers yet</p>
-          <p className="text-gray-400 text-sm mt-1">Add employees with Worker Type = Daily</p>
+          <p className="text-text-muted font-medium text-lg">No daily workers yet</p>
+          <p className="text-text-muted text-sm mt-1 opacity-60">Add employees with Worker Type = Daily</p>
         </div>
       ) : (
-        <div className="p-4 md:p-6">
+        <div className="p-4 md:p-6 space-y-4">
 
-          {/* ── MOBILE: week view ── */}
-          <div className="block md:hidden mb-6 rounded-xl overflow-hidden shadow-sm border border-gray-200">
-            <table className="w-full border-collapse bg-white text-sm">
+          {/* Mobile: week view */}
+          <div className="block md:hidden mb-6 rounded-xl overflow-hidden border border-[#7C3AED]/20">
+            <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="text-left px-3 py-3 font-semibold text-gray-600 w-[110px]">Worker</th>
+                <tr className="border-b border-[#7C3AED]/20 bg-surface">
+                  <th className="text-left px-3 py-3 font-semibold text-text-muted w-[100px] text-xs uppercase tracking-wide">Worker</th>
                   {weekDays.map((d, i) => {
                     const dateStr = format(d, 'yyyy-MM-dd')
                     const isToday = dateStr === today
                     return (
-                      <th key={i} className={`py-2 text-center ${isToday ? 'bg-blue-50' : ''}`}>
-                        <div className={`text-[11px] font-medium uppercase ${isToday ? 'text-blue-500' : 'text-gray-400'}`}>{DAY_LABELS[i]}</div>
-                        <div className={`text-base font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{format(d, 'd')}</div>
+                      <th key={i} className={`py-2 text-center ${isToday ? 'bg-primary/10' : ''}`}>
+                        <div className={`text-[10px] font-medium uppercase ${isToday ? 'text-primary-light' : 'text-text-muted'}`}>{DAY_LABELS[i]}</div>
+                        <div className={`text-sm font-bold ${isToday ? 'text-primary-light' : 'text-text'}`}>{format(d, 'd')}</div>
                       </th>
                     )
                   })}
                 </tr>
               </thead>
               <tbody>
-                {workers.map((worker, idx) => (
-                  <tr key={worker.id} className={`border-b last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}`}>
-                    <td className="px-3 py-1 font-semibold text-gray-900 text-xs leading-tight">{worker.full_name}</td>
+                {workers.map((worker) => (
+                  <tr key={worker.id} className="border-b border-[#7C3AED]/10 last:border-0 bg-surface/50">
+                    <td className="px-3 py-1 font-semibold text-text text-xs leading-tight">{worker.full_name}</td>
                     {weekDays.map(d => renderCell(worker, format(d, 'yyyy-MM-dd')))}
                   </tr>
                 ))}
@@ -260,12 +286,12 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
             </table>
           </div>
 
-          {/* ── DESKTOP: full month grid ── */}
-          <div className="hidden md:block overflow-x-auto mb-8 rounded-xl shadow-sm border border-gray-200">
-            <table className="border-collapse bg-white text-sm min-w-full">
+          {/* Desktop: full month grid */}
+          <div className="hidden md:block overflow-x-auto mb-8 rounded-xl border border-[#7C3AED]/20">
+            <table className="border-collapse text-sm min-w-full">
               <thead>
-                <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="sticky left-0 bg-gray-50 text-left px-4 py-3 font-semibold text-gray-700 min-w-[180px] z-10 border-r border-gray-200">
+                <tr className="border-b border-[#7C3AED]/20 bg-surface">
+                  <th className="sticky left-0 bg-surface text-left px-4 py-3 font-semibold text-text-muted min-w-[180px] z-10 border-r border-[#7C3AED]/20 text-xs uppercase tracking-wide">
                     Worker
                   </th>
                   {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -273,18 +299,18 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
                     const isToday = dateStr === today
                     const dayOfWeek = new Date(dateStr).toLocaleDateString('en', { weekday: 'short' })
                     return (
-                      <th key={day} className={`px-1 py-2 font-medium text-center w-12 min-w-[48px] ${isToday ? 'bg-blue-50' : ''}`}>
-                        <div className={`text-base font-bold ${isToday ? 'text-blue-600' : 'text-gray-800'}`}>{day}</div>
-                        <div className={`text-[10px] uppercase tracking-wide ${isToday ? 'text-blue-400' : 'text-gray-400'}`}>{dayOfWeek}</div>
+                      <th key={day} className={`px-1 py-2 font-medium text-center w-12 min-w-[48px] ${isToday ? 'bg-primary/10' : ''}`}>
+                        <div className={`text-sm font-bold ${isToday ? 'text-primary-light' : 'text-text'}`}>{day}</div>
+                        <div className={`text-[10px] uppercase tracking-wide ${isToday ? 'text-primary-light' : 'text-text-muted'}`}>{dayOfWeek}</div>
                       </th>
                     )
                   })}
                 </tr>
               </thead>
               <tbody>
-                {workers.map((worker, idx) => (
-                  <tr key={worker.id} className={`border-b last:border-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                    <td className="sticky left-0 px-4 py-3 font-semibold text-gray-900 z-10 border-r border-gray-200 bg-inherit">
+                {workers.map((worker) => (
+                  <tr key={worker.id} className="border-b border-[#7C3AED]/10 last:border-0 bg-surface/50 hover:bg-surface transition-colors">
+                    <td className="sticky left-0 px-4 py-3 font-semibold text-text z-10 border-r border-[#7C3AED]/20 bg-surface">
                       {worker.full_name}
                     </td>
                     {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day =>
@@ -297,35 +323,42 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
           </div>
 
           {/* Monthly Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 border-b bg-gray-50">
-              <h2 className="text-base font-semibold text-gray-900">Monthly Summary — {monthLabel}</h2>
+          <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#7C3AED]/20 bg-surface">
+              <h2 className="text-sm font-semibold text-text uppercase tracking-wide">Monthly Summary — {monthLabel}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left px-4 py-3 text-gray-500 font-medium">Worker</th>
-                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Days</th>
-                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Hours</th>
-                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Total Pay</th>
-                    <th className="text-right px-4 py-3 text-gray-500 font-medium">Pay</th>
+                  <tr className="border-b border-[#7C3AED]/10">
+                    <th className="text-left px-4 py-3 text-text-muted font-medium text-xs uppercase tracking-wide">Worker</th>
+                    <th className="text-right px-4 py-3 text-text-muted font-medium text-xs uppercase tracking-wide">Days</th>
+                    <th className="text-right px-4 py-3 text-text-muted font-medium text-xs uppercase tracking-wide">Hours</th>
+                    <th className="text-right px-4 py-3 text-text-muted font-medium text-xs uppercase tracking-wide">Total Pay</th>
+                    <th className="text-right px-4 py-3 text-text-muted font-medium text-xs uppercase tracking-wide">Pay</th>
                   </tr>
                 </thead>
                 <tbody>
                   {workers.map(worker => {
                     const s = summaryMap.get(worker.id)!
                     return (
-                      <tr key={worker.id} className="border-b last:border-0">
-                        <td className="px-4 py-3 font-medium text-gray-900">{worker.full_name}</td>
-                        <td className="px-4 py-3 text-right text-gray-700">{s.days}</td>
-                        <td className="px-4 py-3 text-right text-gray-700">{s.hours}h</td>
-                        <td className="px-4 py-3 text-right font-semibold text-gray-900">Rs. {s.pay.toLocaleString()}</td>
+                      <tr key={worker.id} className="border-b border-[#7C3AED]/10 last:border-0 hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 font-medium text-text">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-primary/20 text-primary-light text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                              {getInitials(worker.full_name)}
+                            </div>
+                            {worker.full_name}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-text">{s.days}</td>
+                        <td className="px-4 py-3 text-right font-mono text-text">{s.hours}h</td>
+                        <td className="px-4 py-3 text-right font-mono font-semibold text-rupee-gold">Rs. {s.pay.toLocaleString()}</td>
                         <td className="px-4 py-3 text-right">
                           {s.pay > 0 && (
                             <button
                               onClick={() => setPaymentWorker(worker)}
-                              className="rounded px-2 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
+                              className="rounded-lg px-3 py-1 text-xs font-semibold bg-primary text-white hover:bg-primary/80 transition-colors"
                             >
                               Pay
                             </button>
@@ -334,11 +367,11 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
                       </tr>
                     )
                   })}
-                  <tr className="bg-gray-50 border-t-2 border-gray-200">
-                    <td className="px-4 py-3 font-bold text-gray-900">Total</td>
-                    <td className="px-4 py-3 text-right text-gray-400">—</td>
-                    <td className="px-4 py-3 text-right text-gray-400">—</td>
-                    <td className="px-4 py-3 text-right font-bold text-gray-900">Rs. {totalPay.toLocaleString()}</td>
+                  <tr className="border-t-2 border-[#7C3AED]/20 bg-surface">
+                    <td className="px-4 py-3 font-bold text-text">Total</td>
+                    <td className="px-4 py-3 text-right text-text-muted font-mono">—</td>
+                    <td className="px-4 py-3 text-right text-text-muted font-mono">—</td>
+                    <td className="px-4 py-3 text-right font-bold font-mono text-rupee-gold">Rs. {totalPay.toLocaleString()}</td>
                     <td />
                   </tr>
                 </tbody>
@@ -367,19 +400,19 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
 
       {/* Edit popup */}
       {editingCell && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50">
-          <div className="bg-white rounded-t-2xl md:rounded-2xl shadow-xl w-full md:w-96 p-6 pb-8 md:pb-6">
-            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4 md:hidden" />
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg">{editingCell.worker.full_name}</h3>
-            <p className="text-gray-400 text-sm mb-5">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="backdrop-blur-md bg-surface border border-[#7C3AED]/30 rounded-t-2xl md:rounded-2xl shadow-xl w-full md:w-96 p-6 pb-8 md:pb-6">
+            <div className="w-10 h-1 bg-[#7C3AED]/30 rounded-full mx-auto mb-4 md:hidden" />
+            <h3 className="font-bold text-text text-lg">{editingCell.worker.full_name}</h3>
+            <p className="text-text-muted text-sm mb-5">
               {format(new Date(editingCell.date), 'EEEE, MMMM d yyyy')}
             </p>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Hours Worked</label>
+            <label className="block text-sm font-medium text-text-muted mb-2">Hours Worked</label>
             <input
               type="number"
               value={editHours}
               onChange={e => setEditHours(e.target.value)}
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-lg mb-5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-lg font-mono text-text mb-5 focus:outline-none focus:border-primary/50"
               min="0.5"
               step="0.5"
               autoFocus
@@ -388,14 +421,14 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
               <button
                 onClick={handleEditSave}
                 disabled={saving}
-                className="bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50"
+                className="bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary/80 disabled:opacity-50 transition-colors"
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
               <button
                 onClick={handleEditRemove}
                 disabled={saving}
-                className="bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 active:bg-red-700 disabled:opacity-50"
+                className="bg-danger/20 text-danger border border-danger/30 py-3 rounded-xl font-semibold hover:bg-danger/30 disabled:opacity-50 transition-colors"
               >
                 Remove
               </button>
@@ -403,7 +436,7 @@ export default function DailyAttendanceManager({ workers, companyId, userRole = 
             <button
               onClick={() => setEditingCell(null)}
               disabled={saving}
-              className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-medium hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+              className="w-full py-3 rounded-xl border border-[#7C3AED]/20 text-text-muted font-medium hover:bg-white/5 disabled:opacity-50 transition-colors"
             >
               Cancel
             </button>

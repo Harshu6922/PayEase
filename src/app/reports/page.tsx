@@ -25,7 +25,11 @@ export default async function ReportsPage({
   const companyId = profile?.company_id
   const userRole: 'admin' | 'viewer' = profile?.role ?? 'viewer'
   if (!companyId) {
-    return <div className="p-8 text-red-600">No company associated with this profile.</div>
+    return (
+      <div className="min-h-screen bg-[#0F0A1E] flex items-center justify-center">
+        <p className="text-[#EF4444] text-sm">No company associated with this profile.</p>
+      </div>
+    )
   }
 
   const { data: companyData } = await supabase
@@ -143,7 +147,7 @@ export default async function ReportsPage({
     advanceRepaidThisMonth[r.employee_id] = (advanceRepaidThisMonth[r.employee_id] ?? 0) + Number(r.amount)
   })
 
-  // Action for saving the computed dashboard 
+  // Action for saving the computed dashboard
   async function generatePayrollAction(payload: { month: number, year: number, computedRows: any[] }) {
     'use server'
     const supabaseAction = await createClient()
@@ -157,7 +161,7 @@ export default async function ReportsPage({
       .select('company_id')
       .eq('id', user.id)
       .single()
-    
+
     if (!prof?.company_id) return
 
     const summariesToUpsert = payload.computedRows.map(row => ({
@@ -181,7 +185,7 @@ export default async function ReportsPage({
   }
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
+    <div className="flex flex-col min-h-screen bg-[#0F0A1E]">
       <PayrollDashboard
         initialMonth={selectedMonthStr}
         employees={(employees || []) as any[]}
@@ -200,4 +204,3 @@ export default async function ReportsPage({
     </div>
   )
 }
-

@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageCircle, CheckCircle } from 'lucide-react'
+import { CheckCircle, MessageCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { springScaleIn } from '@/lib/animations'
 
 const ISSUE_TYPES = [
   'Payroll calculation issue',
@@ -35,102 +37,150 @@ export default function ContactPage() {
     setLoading(false)
   }
 
+  const inputClass =
+    'block w-full bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-colors'
+  const labelClass = 'block text-xs uppercase tracking-wider text-text-muted font-semibold mb-1.5'
+
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-        <div className="text-center space-y-4">
-          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Message Sent!</h2>
-          <p className="text-gray-500 dark:text-gray-400 max-w-sm">
-            We've received your message and will get back to you as soon as possible.
-          </p>
+      <div className="relative min-h-screen bg-background flex items-center justify-center px-4 overflow-hidden">
+        {/* Purple orb */}
+        <div
+          className="fixed top-0 right-0 w-[480px] h-[480px] rounded-full pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+            transform: 'translate(30%, -30%)',
+          }}
+        />
+        <motion.div
+          variants={springScaleIn}
+          initial="hidden"
+          animate="visible"
+          className="relative w-full max-w-lg backdrop-blur-xl bg-[rgba(28,22,46,0.8)] border border-[#7C3AED]/20 rounded-2xl p-8 md:p-10 text-center space-y-4"
+        >
+          <CheckCircle className="mx-auto h-12 w-12 text-success" />
+          <h2 className="text-text font-bold text-3xl">Message sent!</h2>
+          <p className="text-text-muted text-sm">We'll get back to you shortly.</p>
           <button
             onClick={() => { setSuccess(false); setForm({ name: '', email: '', issueType: '', message: '' }) }}
-            className="text-sm text-indigo-600 hover:underline"
+            className="text-sm text-primary hover:text-primary-light underline underline-offset-2 transition-colors"
           >
             Send another message
           </button>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div>
-      <div className="px-8 pt-8 pb-7" style={{ backgroundColor: '#1C2333' }}>
-        <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Support</p>
-        <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Contact Us</h1>
-        <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>We're here to help. Describe your issue and we'll get back to you.</p>
-      </div>
+    <div className="relative min-h-screen bg-background flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* Purple orb */}
+      <div
+        className="fixed top-0 right-0 w-[480px] h-[480px] rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          transform: 'translate(30%, -30%)',
+        }}
+      />
 
-      <div className="px-8 py-8 max-w-2xl">
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-5">
+      <motion.div
+        variants={springScaleIn}
+        initial="hidden"
+        animate="visible"
+        className="relative w-full max-w-lg space-y-6"
+      >
+        {/* Card */}
+        <div className="backdrop-blur-xl bg-[rgba(28,22,46,0.8)] border border-[#7C3AED]/20 rounded-2xl p-8 md:p-10 space-y-6">
+          {/* Header */}
+          <div className="space-y-1">
+            <h1 className="text-text font-bold text-3xl">Contact Us</h1>
+            <p className="text-text-muted text-sm">We typically respond within 24 hours.</p>
+          </div>
 
+          {/* Error */}
           {error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+            <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl px-4 py-3 text-sm">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Your Name</label>
-              <input
-                required
-                value={form.name}
-                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="Rahul Sharma"
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name + Email grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Your Name</label>
+                <input
+                  required
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Rahul Sharma"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                  placeholder="you@company.com"
+                  className={inputClass}
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                placeholder="you@company.com"
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Issue Type</label>
-            <select
-              required
-              value={form.issueType}
-              onChange={e => setForm(p => ({ ...p, issueType: e.target.value }))}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            {/* Issue type */}
+            <div>
+              <label className={labelClass}>Issue Type</label>
+              <select
+                required
+                value={form.issueType}
+                onChange={e => setForm(p => ({ ...p, issueType: e.target.value }))}
+                className={inputClass + ' appearance-none cursor-pointer'}
+                style={{ backgroundColor: '#0F0A1E' }}
+              >
+                <option value="" disabled>Select an issue type…</option>
+                {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className={labelClass}>Describe your issue</label>
+              <textarea
+                required
+                rows={5}
+                value={form.message}
+                onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
+                placeholder="Please describe what happened, what you expected, and any steps to reproduce the issue…"
+                className={inputClass + ' resize-none'}
+              />
+            </div>
+
+            {/* Submit */}
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileTap={{ scale: 0.97 }}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-4 rounded-xl shadow-[0_10px_30px_-10px_rgba(124,58,237,0.5)] hover:bg-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">Select an issue type…</option>
-              {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
+              <MessageCircle className="h-4 w-4" />
+              {loading ? 'Sending…' : 'Send Message'}
+            </motion.button>
+          </form>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Describe your issue</label>
-            <textarea
-              required
-              rows={5}
-              value={form.message}
-              onChange={e => setForm(p => ({ ...p, message: e.target.value }))}
-              placeholder="Please describe what happened, what you expected, and any steps to reproduce the issue…"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-          >
-            <MessageCircle className="h-4 w-4" />
-            {loading ? 'Sending…' : 'Send Message'}
-          </button>
-        </form>
-      </div>
+        {/* Support email note */}
+        <p className="text-center text-xs text-text-muted">
+          Or email us at{' '}
+          <a href="mailto:support@payease.in" className="text-primary hover:text-primary-light transition-colors">
+            support@payease.in
+          </a>
+        </p>
+      </motion.div>
     </div>
   )
 }

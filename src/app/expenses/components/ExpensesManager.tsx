@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, parse } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Settings2, CalendarPlus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Settings2, CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { downloadPdf } from '@/lib/pdf-utils'
 import ExpenseModal from './ExpenseModal'
@@ -26,19 +26,25 @@ export interface Expense {
 export const CATEGORIES = ['Factory', 'Household', 'Utilities', 'Salary', 'Maintenance', 'Other']
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Factory:     'bg-blue-50   text-blue-700',
-  Household:   'bg-purple-50 text-purple-700',
-  Utilities:   'bg-yellow-50 text-yellow-700',
-  Salary:      'bg-green-50  text-green-700',
-  Maintenance: 'bg-orange-50 text-orange-700',
-  Other:       'bg-gray-50   text-gray-600',
+  Factory:     'bg-blue-500/15 text-blue-400 border-blue-500/20',
+  Household:   'bg-purple-500/15 text-purple-400 border-purple-500/20',
+  Utilities:   'bg-yellow-500/15 text-yellow-400 border-yellow-500/20',
+  Salary:      'bg-success/15 text-success border-success/20',
+  Maintenance: 'bg-warning/15 text-warning border-warning/20',
+  Other:       'bg-white/10 text-text-muted border-white/10',
 }
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } }
 const row = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' as const } } }
 
 function formatRs(n: number) {
-  return 'Rs. ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function navigateMonth(month: string, direction: 1 | -1): string {
+  const [year, mon] = month.split('-').map(Number)
+  const d = new Date(year, mon - 1 + direction, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
 export default function ExpensesManager({
@@ -210,26 +216,17 @@ export default function ExpensesManager({
 
   return (
     <>
-      {/* Header band */}
-      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
+      {/* Page header */}
+      <div className="px-4 md:px-6 pt-6 pb-4 flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Finance</p>
-          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Expenses</h1>
-          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>Track all outgoing expenses for {monthLabel}</p>
+          <h1 className="text-text font-bold text-2xl">Expenses</h1>
+          <p className="text-text-muted text-sm mt-0.5">Track all outgoing expenses for {monthLabel}</p>
         </div>
-        <div className="flex items-center gap-3 mb-1">
-          <input
-            type="month"
-            value={month}
-            onChange={handleMonthChange}
-            className="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-          />
+        <div className="flex items-center gap-2">
           <button
             onClick={handleExportPdf}
             disabled={exportingPdf || expenses.length === 0}
-            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 transition-opacity hover:opacity-80"
-            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
+            className="hidden sm:flex items-center gap-2 border border-[#7C3AED]/30 text-text-muted hover:text-text rounded-xl px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
           >
             {exportingPdf ? 'Generating…' : 'Export PDF'}
           </button>
@@ -237,8 +234,7 @@ export default function ExpensesManager({
             <button
               onClick={handleApplyTemplates}
               disabled={applying}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-80"
-              style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
+              className="hidden sm:flex items-center gap-2 border border-[#7C3AED]/30 text-text-muted hover:text-text rounded-xl px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
             >
               <CalendarPlus className="h-4 w-4" />
               {applying ? 'Applying…' : 'Apply Templates'}
@@ -247,8 +243,7 @@ export default function ExpensesManager({
           {userRole === 'admin' && (
             <button
               onClick={() => setTemplatesOpen(true)}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-              style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
+              className="hidden sm:flex items-center gap-2 border border-[#7C3AED]/30 text-text-muted hover:text-text rounded-xl px-3 py-2 text-sm font-medium transition-colors"
             >
               <Settings2 className="h-4 w-4" />
               Templates
@@ -257,8 +252,7 @@ export default function ExpensesManager({
           {userRole === 'admin' && (
             <button
               onClick={() => { setEditing(null); setModalOpen(true) }}
-              className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80"
-              style={{ backgroundColor: '#D4A847', color: '#1C2333' }}
+              className="flex items-center gap-2 bg-primary text-white rounded-xl px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
             >
               <Plus className="h-4 w-4" />
               Add Expense
@@ -267,166 +261,199 @@ export default function ExpensesManager({
         </div>
       </div>
 
-      <div className="px-8 py-6">
-      {applyResult && (
-        <div className="mb-4 flex items-center justify-between rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">
-          <span>✓ {applyResult}</span>
-          <button onClick={() => setApplyResult(null)} className="text-green-600 hover:text-green-800 font-bold ml-4">×</button>
-        </div>
-      )}
-
-      {/* Category summary cards */}
-      <motion.div
-        variants={container} initial="hidden" animate="show"
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6"
-      >
-        {CATEGORIES.map(cat => (
-          <motion.button
-            key={cat}
-            variants={row}
-            onClick={() => setCategoryFilter(f => f === cat ? 'all' : cat)}
-            className={`rounded-xl border p-4 text-left transition-all shadow-sm hover:shadow-md ${
-              categoryFilter === cat ? 'ring-2 ring-indigo-500 border-indigo-300' : 'bg-white border-gray-200'
-            }`}
-          >
-            <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-2 ${CATEGORY_COLORS[cat]}`}>
-              {cat}
-            </span>
-            <p className="text-base font-bold text-gray-900">
-              {categoryTotals[cat] ? formatRs(categoryTotals[cat]) : '—'}
-            </p>
-          </motion.button>
-        ))}
-      </motion.div>
-
-      {/* Total bar */}
-      <div className="flex items-center justify-between rounded-xl bg-gray-900 text-white px-6 py-4 mb-6 shadow-sm">
-        <span className="text-sm font-medium text-gray-300">Total Expenses — {monthLabel}</span>
-        <span className="text-xl font-black">{formatRs(grandTotal)}</span>
-      </div>
-
-      {/* Search + filter */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search description, paid to…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-        <select
-          value={categoryFilter}
-          onChange={e => setCategoryFilter(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
-        >
-          <option value="all">All categories</option>
-          {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        {(search || categoryFilter !== 'all') && (
-          <button
-            onClick={() => { setSearch(''); setCategoryFilter('all') }}
-            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium whitespace-nowrap"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Expense list */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
-          {filtered.length !== expenses.length && ` (filtered from ${expenses.length})`}
-        </div>
-
-        {filtered.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-gray-400">
-            {expenses.length === 0
-              ? `No expenses recorded for ${monthLabel}. Add your first one.`
-              : 'No entries match your filters.'}
+      <div className="px-4 md:px-6 pb-8">
+        {/* Apply result banner */}
+        {applyResult && (
+          <div className="mb-4 flex items-center justify-between backdrop-blur-md bg-success/10 border border-success/20 rounded-xl px-4 py-3 text-sm text-success">
+            <span>✓ {applyResult}</span>
+            <button onClick={() => setApplyResult(null)} className="text-success/70 hover:text-success font-bold ml-4 transition-colors">×</button>
           </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            <motion.div variants={container} initial="hidden" animate="show">
-              {filtered.map(expense => (
-                <motion.div
-                  key={expense.id}
-                  variants={row}
-                  layout
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-4 px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group"
-                >
-                  {/* Category badge */}
-                  <span className={`hidden sm:inline-block text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 ${CATEGORY_COLORS[expense.category] ?? CATEGORY_COLORS['Other']}`}>
-                    {expense.category}
-                  </span>
+        )}
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{expense.description}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 flex-wrap">
-                      <span>{format(new Date(expense.date + 'T00:00:00'), 'dd MMM yyyy')}</span>
-                      {expense.paid_to && <><span>·</span><span>Paid to: <span className="text-gray-600">{expense.paid_to}</span></span></>}
-                      {expense.note && <><span>·</span><span className="italic truncate">{expense.note}</span></>}
+        {/* Monthly total glass card with month nav */}
+        <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-text-muted text-sm">{monthLabel} Expenses</p>
+            {/* Month navigation */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => router.push(`/expenses?month=${navigateMonth(month, -1)}`)}
+                className="p-1.5 rounded-lg border border-[#7C3AED]/20 text-text-muted hover:text-text hover:border-[#7C3AED]/40 transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <input
+                type="month"
+                value={month}
+                onChange={handleMonthChange}
+                className="bg-transparent border-0 text-text-muted text-sm text-center focus:outline-none cursor-pointer px-1 w-32"
+              />
+              <button
+                onClick={() => router.push(`/expenses?month=${navigateMonth(month, 1)}`)}
+                className="p-1.5 rounded-lg border border-[#7C3AED]/20 text-text-muted hover:text-text hover:border-[#7C3AED]/40 transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <p className="font-mono font-bold text-3xl text-rupee-gold">{formatRs(grandTotal)}</p>
+        </div>
+
+        {/* Category summary cards */}
+        <motion.div
+          variants={container} initial="hidden" animate="show"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6"
+        >
+          {CATEGORIES.map(cat => (
+            <motion.button
+              key={cat}
+              variants={row}
+              onClick={() => setCategoryFilter(f => f === cat ? 'all' : cat)}
+              className={`backdrop-blur-md bg-white/5 border rounded-xl p-4 text-left transition-all hover:bg-white/10 ${
+                categoryFilter === cat
+                  ? 'border-primary/60 ring-1 ring-primary/30'
+                  : 'border-[#7C3AED]/20'
+              }`}
+            >
+              <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-2 border ${CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['Other']}`}>
+                {cat}
+              </span>
+              <p className="text-sm font-bold font-mono text-text">
+                {categoryTotals[cat] ? formatRs(categoryTotals[cat]) : '—'}
+              </p>
+            </motion.button>
+          ))}
+        </motion.div>
+
+        {/* Search + filter */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <input
+            type="text"
+            placeholder="Search description, paid to…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 text-sm"
+          />
+          <select
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-text-muted focus:outline-none focus:border-primary/50 text-sm"
+          >
+            <option value="all">All categories</option>
+            {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {(search || categoryFilter !== 'all') && (
+            <button
+              onClick={() => { setSearch(''); setCategoryFilter('all') }}
+              className="text-sm text-primary-light hover:text-text font-medium whitespace-nowrap transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Expense list */}
+        <div className="space-y-2">
+          {/* Count header */}
+          <div className="px-1 pb-1 text-xs font-semibold text-text-muted uppercase tracking-wider">
+            {filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}
+            {filtered.length !== expenses.length && ` (filtered from ${expenses.length})`}
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl px-6 py-12 text-center text-sm text-text-muted">
+              {expenses.length === 0
+                ? `No expenses recorded for ${monthLabel}. Add your first one.`
+                : 'No entries match your filters.'}
+            </div>
+          ) : (
+            <AnimatePresence initial={false}>
+              <motion.div variants={container} initial="hidden" animate="show" className="space-y-2">
+                {filtered.map(expense => (
+                  <motion.div
+                    key={expense.id}
+                    variants={row}
+                    layout
+                    exit={{ opacity: 0, height: 0 }}
+                    className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl px-4 py-3 flex items-center gap-4 group hover:bg-white/10 transition-colors"
+                  >
+                    {/* Category badge */}
+                    <span className={`hidden sm:inline-block text-[10px] font-semibold px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0 border ${CATEGORY_COLORS[expense.category] ?? CATEGORY_COLORS['Other']}`}>
+                      {expense.category}
+                    </span>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-text text-sm font-medium truncate">{expense.description}</p>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-text-muted flex-wrap">
+                        <span>{format(new Date(expense.date + 'T00:00:00'), 'dd MMM yyyy')}</span>
+                        {expense.paid_to && (
+                          <><span>·</span><span>Paid to: <span className="text-text">{expense.paid_to}</span></span></>
+                        )}
+                        {expense.note && (
+                          <><span>·</span><span className="italic truncate">{expense.note}</span></>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Amount */}
-                  <span className="text-sm font-bold text-gray-900 whitespace-nowrap">{formatRs(Number(expense.amount))}</span>
+                    {/* Amount */}
+                    <span className="font-mono text-rupee-gold font-semibold text-sm whitespace-nowrap">
+                      {formatRs(Number(expense.amount))}
+                    </span>
 
-                  {/* Actions */}
-                  {userRole === 'admin' && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => { setEditing(expense); setModalOpen(true) }}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeleting(expense)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        )}
-      </div>
+                    {/* Actions */}
+                    {userRole === 'admin' && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => { setEditing(expense); setModalOpen(true) }}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-primary-light hover:bg-primary/10 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleting(expense)}
+                          className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
 
-      {/* Modals */}
-      <AnimatePresence>
-        {modalOpen && (
-          <ExpenseModal
-            expense={editing}
-            companyId={companyId}
-            defaultMonth={month}
-            onSave={handleSaved}
-            onClose={() => { setModalOpen(false); setEditing(null) }}
-          />
-        )}
-        {deleting && (
-          <DeleteConfirm
-            description={deleting.description}
-            onConfirm={handleDelete}
-            onClose={() => setDeleting(null)}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {templatesOpen && (
-          <TemplatesModal
-            companyId={companyId}
-            initialTemplates={templates}
-            onClose={() => setTemplatesOpen(false)}
-            onChanged={setTemplates}
-          />
-        )}
-      </AnimatePresence>
+        {/* Modals */}
+        <AnimatePresence>
+          {modalOpen && (
+            <ExpenseModal
+              expense={editing}
+              companyId={companyId}
+              defaultMonth={month}
+              onSave={handleSaved}
+              onClose={() => { setModalOpen(false); setEditing(null) }}
+            />
+          )}
+          {deleting && (
+            <DeleteConfirm
+              description={deleting.description}
+              onConfirm={handleDelete}
+              onClose={() => setDeleting(null)}
+            />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {templatesOpen && (
+            <TemplatesModal
+              companyId={companyId}
+              initialTemplates={templates}
+              onClose={() => setTemplatesOpen(false)}
+              onChanged={setTemplates}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </>
   )

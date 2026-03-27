@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { calculateRates } from '@/lib/payroll-utils';
 import type { Database } from '@/types/supabase';
@@ -20,12 +21,12 @@ interface EmployeeState {
 export default function AttendanceManager({ employees, userRole = 'admin' }: { employees: Employee[]; userRole?: 'admin' | 'viewer' }) {
   const router = useRouter();
   const supabase = createClient() as unknown as SupabaseClient<Database>;
-  
+
   // App State
   const [globalDate, setGlobalDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [globalStartTime, setGlobalStartTime] = useState('09:00');
   const [globalEndTime, setGlobalEndTime] = useState('17:00');
-  
+
   // Attendance State mapping employee_id to their local modifications
   const [records, setRecords] = useState<Record<string, EmployeeState>>(() => {
     const initial: Record<string, EmployeeState> = {};
@@ -47,18 +48,18 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
     setFetching(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       // Get User Auth
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) return; // Silent return for now, handled on save 
-      
+      if (userError || !user) return; // Silent return for now, handled on save
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
         .maybeSingle();
-      
+
       if (!profile?.company_id) return;
 
       const { data: existing, error: fetchErr } = await supabase
@@ -71,7 +72,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
 
       // Map back to dictionary
       const newRecords: Record<string, EmployeeState> = {};
-      
+
       // Initialize everyone to Absent by default if no saved record exists
       employees.forEach(emp => {
         newRecords[emp.id] = { status: 'Absent' };
@@ -84,7 +85,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
             // Read status directly from database record
             // Fallback to Absent if undefined for older records
             const savedStatus = (record.status as AttendanceStatus) || 'Absent';
-            
+
             newRecords[record.employee_id] = {
               status: savedStatus,
               overrideStartTime: record.start_time.substring(0, 5) !== globalStartTime ? record.start_time.substring(0, 5) : undefined,
@@ -204,7 +205,7 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
         .maybeSingle();
 
       if (profileErr || !profile?.company_id) throw new Error('Could not verify company association.');
-      
+
       const verifiedCompanyId = profile.company_id;
 
       // 2. Build full payload for all employees (upsert handles insert vs update automatically)
@@ -287,173 +288,244 @@ export default function AttendanceManager({ employees, userRole = 'admin' }: { e
     }
   };
 
+  // Date navigation helpers
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const d = new Date(globalDate);
+    d.setDate(d.getDate() + (direction === 'next' ? 1 : -1));
+    setGlobalDate(d.toISOString().split('T')[0]);
+  };
+
+  const formattedDate = (() => {
+    const d = new Date(globalDate + 'T00:00:00');
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  })();
+
+  const isToday = globalDate === new Date().toISOString().split('T')[0];
+
+  // Get initials
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-wrap items-end gap-6 text-sm text-gray-700">
-          <div>
-            <label className="block font-semibold mb-1">Global Date</label>
-            <input 
-              type="date"
-              value={globalDate}
-              onChange={(e) => setGlobalDate(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-[#7C3AED]/10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigateDate('prev')}
+            className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-text font-semibold">{formattedDate}</span>
+            {isToday && (
+              <span className="bg-primary/20 text-primary-light text-xs px-2 py-0.5 rounded-full">Today</span>
+            )}
           </div>
-          <div>
-            <label className="block font-semibold mb-1">Default Start Time</label>
-            <input 
-              type="time" 
-              value={globalStartTime}
-              onChange={(e) => setGlobalStartTime(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block font-semibold mb-1">Default End Time</label>
-            <input 
-              type="time" 
-              value={globalEndTime}
-              onChange={(e) => setGlobalEndTime(e.target.value)}
-              className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm border px-3 py-2 text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-          </div>
+          <button
+            onClick={() => navigateDate('next')}
+            className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-white/5 transition-colors"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          {fetching && <span className="text-text-muted text-xs">Loading...</span>}
         </div>
-        
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-2">
+
+        <div className="flex items-center gap-2">
+          {userRole === 'admin' && (
+            <>
+              <button
+                type="button"
+                onClick={() => handleBulkMark('Present')}
+                className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-sm px-3 py-1.5 rounded-lg transition-colors hidden md:block"
+              >
+                Mark All Present
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkMark('Absent')}
+                className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-sm px-3 py-1.5 rounded-lg transition-colors hidden md:block"
+              >
+                Mark All Absent
+              </button>
+              {companyId && (
+                <button
+                  onClick={() => setIsImportOpen(true)}
+                  className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-sm px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Import Biometric
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Global time defaults */}
+      <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-4 border-b border-[#7C3AED]/10">
+        <div className="flex items-center gap-2">
+          <label className="text-text-muted text-xs uppercase tracking-wide font-medium">Default Start</label>
+          <input
+            type="time"
+            value={globalStartTime}
+            onChange={(e) => setGlobalStartTime(e.target.value)}
+            className="bg-background border border-[#7C3AED]/30 rounded-lg px-2 py-1 text-sm text-text font-mono focus:outline-none focus:border-primary/50"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-text-muted text-xs uppercase tracking-wide font-medium">Default End</label>
+          <input
+            type="time"
+            value={globalEndTime}
+            onChange={(e) => setGlobalEndTime(e.target.value)}
+            className="bg-background border border-[#7C3AED]/30 rounded-lg px-2 py-1 text-sm text-text font-mono focus:outline-none focus:border-primary/50"
+          />
+        </div>
+        {/* Mobile bulk actions */}
+        {userRole === 'admin' && (
+          <div className="flex gap-2 md:hidden">
             <button
               type="button"
               onClick={() => handleBulkMark('Present')}
-              className="rounded-lg bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-100 transition-colors"
+              className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-xs px-2 py-1 rounded-lg transition-colors"
             >
-              Mark All Present
+              All Present
             </button>
             <button
               type="button"
               onClick={() => handleBulkMark('Absent')}
-              className="rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+              className="border border-[#7C3AED]/30 text-text-muted hover:text-text text-xs px-2 py-1 rounded-lg transition-colors"
             >
-              Mark All Absent
+              All Absent
             </button>
-          </div>
-          {userRole === 'admin' && (
-            <button
-              onClick={() => setIsImportOpen(true)}
-              disabled={!companyId}
-              className="flex items-center gap-2 rounded-md bg-gray-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-600 disabled:opacity-50 transition-colors"
-            >
-              Import Biometric
-            </button>
-          )}
-          {userRole === 'admin' && (
-            <button
-              onClick={handleSave}
-              disabled={loading || fetching}
-              className="flex items-center justify-center gap-2 rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Saving securely...' : 'Save All Attendance'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-md bg-red-50 p-4 border border-red-200">
-          <p className="text-sm font-medium text-red-800">{error}</p>
-        </div>
-      )}
-      
-      {success && (
-        <div className="rounded-md bg-green-50 p-4 border border-green-200">
-          <p className="text-sm font-medium text-green-800">{success}</p>
-        </div>
-      )}
-
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm relative">
-        {fetching && (
-          <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center backdrop-blur-sm">
-            <span className="text-indigo-600 font-medium">Fetching existing records...</span>
           </div>
         )}
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Employee</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Time Overrides (Optional)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white">
-            {!employees || employees.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-sm text-gray-500">
-                  No active employees found to mark attendance.
-                </td>
-              </tr>
-            ) : (
-              employees.map((emp) => {
-                const state = records[emp.id] || { status: 'Absent' };
-                const isAbsent = state.status === 'Absent';
-                return (
-                  <tr key={emp.id} className={isAbsent ? 'bg-gray-50' : ''}>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                      {emp.full_name} <span className="text-gray-400 text-xs font-normal block">{emp.employee_id}</span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm">
-                      <select
-                        value={state.status}
-                        onChange={(e) => handleStatusChange(emp.id, e.target.value as AttendanceStatus)}
-                        className={`rounded-md border-gray-300 dark:border-gray-600 text-sm font-semibold px-3 py-1.5 border shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
-                          state.status === 'Present' ? 'text-green-700 bg-green-50 border-green-200' :
-                          state.status === 'Absent' ? 'text-red-700 bg-red-50 border-red-200' :
-                          'text-orange-700 bg-orange-50 border-orange-200'
+      </div>
+
+      {/* Status / Error messages */}
+      {error && (
+        <div className="mx-4 md:mx-6 mt-4 rounded-xl bg-danger/10 border border-danger/30 p-4">
+          <p className="text-sm font-medium text-danger">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="mx-4 md:mx-6 mt-4 rounded-xl bg-success/10 border border-success/30 p-4">
+          <p className="text-sm font-medium text-success">{success}</p>
+        </div>
+      )}
+
+      {/* Employee list */}
+      <div className="space-y-2 px-4 md:px-6 py-4 relative">
+        {fetching && (
+          <div className="absolute inset-0 bg-background/60 z-10 flex items-center justify-center backdrop-blur-sm rounded-xl">
+            <span className="text-primary-light font-medium text-sm">Fetching records...</span>
+          </div>
+        )}
+
+        {!employees || employees.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="text-text-muted font-medium">No active employees found.</p>
+            <p className="text-text-muted text-sm mt-1 opacity-60">Add employees to mark attendance.</p>
+          </div>
+        ) : (
+          employees.map((emp) => {
+            const state = records[emp.id] || { status: 'Absent' };
+            const isAbsent = state.status === 'Absent';
+
+            return (
+              <div
+                key={emp.id}
+                className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl px-4 py-3 flex flex-col md:flex-row md:items-center gap-3"
+              >
+                {/* Avatar + Name */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 text-primary-light text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                    {getInitials(emp.full_name)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-text font-semibold text-sm truncate">{emp.full_name}</p>
+                    <p className="text-text-muted text-xs">{emp.employee_id}</p>
+                  </div>
+                </div>
+
+                {/* Status pills */}
+                <div className="flex items-center gap-1.5">
+                  {(['Present', 'Half Day', 'Absent'] as AttendanceStatus[]).map((s) => {
+                    const active = state.status === s;
+                    const colors =
+                      s === 'Present'  ? 'bg-success/20 text-success border-success/30' :
+                      s === 'Half Day' ? 'bg-warning/20 text-warning border-warning/30' :
+                                         'bg-danger/20 text-danger border-danger/30';
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => handleStatusChange(emp.id, s)}
+                        disabled={userRole !== 'admin'}
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors ${
+                          active
+                            ? colors
+                            : 'bg-white/5 text-text-muted border-[#7C3AED]/20 hover:bg-white/10'
                         }`}
                       >
-                        <option value="Present">Present</option>
-                        <option value="Half Day">Half Day</option>
-                        <option value="Absent">Absent</option>
-                      </select>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <input 
-                          type="time" 
-                          value={state.overrideStartTime || ''}
-                          onChange={(e) => handleTimeChange(emp.id, 'overrideStartTime', e.target.value)}
-                          placeholder="Default"
-                          disabled={isAbsent}
-                          className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm px-2 py-1 border text-gray-900 dark:text-white disabled:opacity-50 disabled:bg-gray-100"
-                        />
-                        <span>to</span>
-                        <input 
-                          type="time" 
-                          value={state.overrideEndTime || ''}
-                          onChange={(e) => handleTimeChange(emp.id, 'overrideEndTime', e.target.value)}
-                          placeholder="Default"
-                          disabled={isAbsent}
-                          className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm text-sm px-2 py-1 border text-gray-900 dark:text-white disabled:opacity-50 disabled:bg-gray-100"
-                        />
-                        {(state.overrideStartTime || state.overrideEndTime) && (
-                           <button 
-                             onClick={() => {
-                               handleTimeChange(emp.id, 'overrideStartTime', '');
-                               handleTimeChange(emp.id, 'overrideEndTime', '');
-                             }}
-                             className="text-xs text-indigo-600 hover:text-indigo-800 ml-2 font-medium"
-                           >
-                              Clear
-                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                        {s === 'Half Day' ? 'Half' : s}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Time overrides */}
+                {!isAbsent && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <input
+                      type="time"
+                      value={state.overrideStartTime || ''}
+                      onChange={(e) => handleTimeChange(emp.id, 'overrideStartTime', e.target.value)}
+                      placeholder={globalStartTime}
+                      className="bg-background border border-[#7C3AED]/30 rounded-lg px-2 py-1 text-sm text-text font-mono focus:outline-none focus:border-primary/50 w-[100px]"
+                    />
+                    <span className="text-text-muted">–</span>
+                    <input
+                      type="time"
+                      value={state.overrideEndTime || ''}
+                      onChange={(e) => handleTimeChange(emp.id, 'overrideEndTime', e.target.value)}
+                      placeholder={globalEndTime}
+                      className="bg-background border border-[#7C3AED]/30 rounded-lg px-2 py-1 text-sm text-text font-mono focus:outline-none focus:border-primary/50 w-[100px]"
+                    />
+                    {(state.overrideStartTime || state.overrideEndTime) && (
+                      <button
+                        onClick={() => {
+                          handleTimeChange(emp.id, 'overrideStartTime', '');
+                          handleTimeChange(emp.id, 'overrideEndTime', '');
+                        }}
+                        className="text-xs text-primary-light hover:text-text-muted transition-colors font-medium"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
+
+      {/* Sticky save button */}
+      {userRole === 'admin' && (
+        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 md:left-60 p-4 bg-background/90 backdrop-blur-md border-t border-[#7C3AED]/10">
+          <button
+            onClick={handleSave}
+            disabled={loading || fetching}
+            className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/80 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Saving...' : 'Save Attendance'}
+          </button>
+        </div>
+      )}
 
       {isImportOpen && companyId && (
         <BiometricImportModal

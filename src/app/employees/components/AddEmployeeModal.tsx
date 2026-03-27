@@ -3,9 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { Database } from '@/types/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 15, isSubscribed = true }: { atSeatLimit?: boolean; employeeLimit?: number; isSubscribed?: boolean }) {
   const router = useRouter();
@@ -18,9 +26,9 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
     full_name: '',
     employee_id: '',
     monthly_salary: '',
-    standard_working_hours: '8', // default
+    standard_working_hours: '8',
     overtime_multiplier: '1.0',
-    joining_date: new Date().toISOString().split('T')[0], // today
+    joining_date: new Date().toISOString().split('T')[0],
     is_active: true,
     worker_type: 'salaried' as 'salaried' | 'commission' | 'daily',
     daily_rate: '',
@@ -135,17 +143,21 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
     }
   };
 
+  const inputClass =
+    'bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 w-full text-sm';
+  const labelClass = 'text-xs font-semibold uppercase tracking-wider text-text-muted mb-1 block';
+
   if (atSeatLimit) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-sm text-orange-700 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+        <span className="text-sm text-warning bg-warning/10 border border-warning/30 rounded-xl px-4 py-2">
           {employeeLimit}-employee limit reached.{' '}
-          <a href="/billing" className="font-semibold underline underline-offset-2 hover:text-orange-900">
+          <a href="/billing" className="font-semibold underline underline-offset-2 hover:text-text">
             Upgrade plan
           </a>
         </span>
       </div>
-    )
+    );
   }
 
   return (
@@ -153,192 +165,253 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
       <button
         onClick={() => {
           if (!isSubscribed && atSeatLimit) {
-            router.push('/billing')
-            return
+            router.push('/billing');
+            return;
           }
-          if (atSeatLimit) return
-          setIsOpen(true)
+          if (atSeatLimit) return;
+          setIsOpen(true);
         }}
-        className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
+        className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition-opacity"
       >
         <Plus className="h-4 w-4" />
         Add Employee
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">Add New Employee</h2>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-500">
-                <X className="h-5 w-5" />
-              </button>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="bg-surface-elevated border border-[#7C3AED]/20 text-text max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-text font-bold text-lg">Add Employee</DialogTitle>
+            <DialogDescription className="text-text-muted text-sm">
+              Fill in the details below to add a new employee to your company.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+            {error && (
+              <div className="bg-danger/10 border border-danger/30 text-danger rounded-xl px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Full Name */}
+            <div>
+              <label className={labelClass}>Full Name</label>
+              <input
+                type="text"
+                name="full_name"
+                required
+                value={formData.full_name}
+                onChange={handleChange}
+                placeholder="e.g. Ramesh Kumar"
+                className={inputClass}
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6">
-              {error && (
-                <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
+            {/* Employee ID */}
+            <div>
+              <label className={labelClass}>Employee ID</label>
+              <input
+                type="text"
+                name="employee_id"
+                required
+                value={formData.employee_id}
+                onChange={handleChange}
+                placeholder="e.g. EMP-001"
+                className={inputClass}
+              />
+            </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input
-                    type="text"
-                    name="full_name"
-                    required
-                    value={formData.full_name}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Employee ID</label>
-                  <input
-                    type="text"
-                    name="employee_id"
-                    required
-                    value={formData.employee_id}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Worker Type</label>
-                  <select
-                    name="worker_type"
-                    value={formData.worker_type}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
+            {/* Worker Type Tabs */}
+            <div>
+              <label className={labelClass}>Worker Type</label>
+              <Tabs
+                value={formData.worker_type}
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, worker_type: val as 'salaried' | 'commission' | 'daily' }))
+                }
+              >
+                <TabsList className="bg-surface border border-[#7C3AED]/20 w-full">
+                  <TabsTrigger
+                    value="salaried"
+                    className="flex-1 data-[state=active]:text-primary-light data-[state=active]:bg-white/5"
                   >
-                    <option value="salaried">Salaried</option>
-                    <option value="commission">Commission</option>
-                    <option value="daily">Daily</option>
-                  </select>
-                </div>
+                    Salaried
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="daily"
+                    className="flex-1 data-[state=active]:text-primary-light data-[state=active]:bg-white/5"
+                  >
+                    Daily
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="commission"
+                    className="flex-1 data-[state=active]:text-primary-light data-[state=active]:bg-white/5"
+                  >
+                    Commission
+                  </TabsTrigger>
+                </TabsList>
 
-                {/* Monthly Salary - only salaried */}
-                {formData.worker_type === 'salaried' && (
+                {/* Salaried fields */}
+                <TabsContent value="salaried" className="mt-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Salary (INR)</label>
+                    <label className={labelClass}>Monthly Salary (INR)</label>
                     <input
                       type="number"
                       value={formData.monthly_salary}
-                      onChange={e => setFormData(prev => ({ ...prev, monthly_salary: e.target.value }))}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2"
+                      onChange={(e) => setFormData((prev) => ({ ...prev, monthly_salary: e.target.value }))}
+                      placeholder="e.g. 25000"
+                      className={inputClass}
                       required
                     />
                   </div>
-                )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Working Hours/Day</label>
+                      <input
+                        type="number"
+                        value={formData.standard_working_hours}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, standard_working_hours: e.target.value }))}
+                        className={inputClass}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>OT Multiplier</label>
+                      <input
+                        type="number"
+                        value={formData.overtime_multiplier}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, overtime_multiplier: e.target.value }))}
+                        className={inputClass}
+                        step="0.1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelClass}>Default Start Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_start_time}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, default_start_time: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Default End Time</label>
+                      <input
+                        type="time"
+                        value={formData.default_end_time}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, default_end_time: e.target.value }))}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
 
-                {/* Daily Rate - only daily */}
-                {formData.worker_type === 'daily' && (
+                {/* Daily fields */}
+                <TabsContent value="daily" className="mt-4 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Daily Rate (INR)</label>
+                    <label className={labelClass}>Daily Rate (INR)</label>
                     <input
                       type="number"
                       value={formData.daily_rate}
-                      onChange={e => setFormData(prev => ({ ...prev, daily_rate: e.target.value }))}
-                      className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2"
+                      onChange={(e) => setFormData((prev) => ({ ...prev, daily_rate: e.target.value }))}
+                      placeholder="e.g. 800"
+                      className={inputClass}
                       min="0.01"
                       step="0.01"
                       required
                     />
                   </div>
-                )}
-
-                {/* Working Hours + OT Multiplier - salaried and daily only */}
-                {(formData.worker_type === 'salaried' || formData.worker_type === 'daily') && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Working Hours/Day</label>
-                      <input
-                        type="number"
-                        value={formData.standard_working_hours}
-                        onChange={e => setFormData(prev => ({ ...prev, standard_working_hours: e.target.value }))}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2"
-                        required
-                      />
-                    </div>
-                    {formData.worker_type === 'salaried' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">OT Multiplier</label>
-                        <input
-                          type="number"
-                          value={formData.overtime_multiplier}
-                          onChange={e => setFormData(prev => ({ ...prev, overtime_multiplier: e.target.value }))}
-                          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2"
-                          step="0.1"
-                          required
-                        />
-                      </div>
-                    )}
+                  <div>
+                    <label className={labelClass}>Working Hours/Day</label>
+                    <input
+                      type="number"
+                      value={formData.standard_working_hours}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, standard_working_hours: e.target.value }))}
+                      className={inputClass}
+                      required
+                    />
                   </div>
-                )}
-
-                {/* Default shift times — salaried and daily only */}
-                {(formData.worker_type === 'salaried' || formData.worker_type === 'daily') && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default Start Time</label>
+                      <label className={labelClass}>Default Start Time</label>
                       <input
                         type="time"
                         value={formData.default_start_time}
-                        onChange={e => setFormData(prev => ({ ...prev, default_start_time: e.target.value }))}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                        onChange={(e) => setFormData((prev) => ({ ...prev, default_start_time: e.target.value }))}
+                        className={inputClass}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Default End Time</label>
+                      <label className={labelClass}>Default End Time</label>
                       <input
                         type="time"
                         value={formData.default_end_time}
-                        onChange={e => setFormData(prev => ({ ...prev, default_end_time: e.target.value }))}
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white"
+                        onChange={(e) => setFormData((prev) => ({ ...prev, default_end_time: e.target.value }))}
+                        className={inputClass}
                       />
                     </div>
                   </div>
-                )}
+                </TabsContent>
 
-                <div className="flex items-center pt-2">
-                  <input
-                    type="checkbox"
-                    name="is_active"
-                    id="is_active"
-                    checked={formData.is_active}
-                    onChange={handleChange}
-                    className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-                    Active Employee
-                  </label>
-                </div>
-              </div>
+                {/* Commission fields — no extra fields needed */}
+                <TabsContent value="commission" className="mt-4">
+                  <p className="text-sm text-text-muted">
+                    Commission-based employees have no fixed salary or daily rate. Earnings are logged separately.
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </div>
 
-              <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-md border border-gray-300 dark:border-gray-600 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
-                >
-                  {loading ? 'Saving...' : 'Save Employee'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            {/* Joining Date */}
+            <div>
+              <label className={labelClass}>Joining Date</label>
+              <input
+                type="date"
+                name="joining_date"
+                value={formData.joining_date}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            {/* Active toggle */}
+            <div className="flex items-center gap-3 pt-1">
+              <input
+                type="checkbox"
+                name="is_active"
+                id="is_active"
+                checked={formData.is_active}
+                onChange={handleChange}
+                className="h-4 w-4 rounded border-[#7C3AED]/30 bg-background text-primary focus:ring-primary/50 accent-primary"
+              />
+              <label htmlFor="is_active" className="text-sm text-text">
+                Active Employee
+              </label>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 pt-2 border-t border-[#7C3AED]/10 mt-4">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#7C3AED]/30 text-text-muted hover:text-text text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Add Employee'}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
