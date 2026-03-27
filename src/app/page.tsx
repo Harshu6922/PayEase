@@ -277,8 +277,8 @@ export default function LandingPage() {
           </motion.div>
 
           <div className="relative">
-            {/* Animated connector line */}
-            <div className="absolute left-6 top-6 bottom-6 w-px bg-[#7C3AED]/10 hidden sm:block">
+            {/* Animated connector line — centered on desktop */}
+            <div className="absolute left-6 sm:left-1/2 top-0 bottom-0 w-px bg-[#7C3AED]/10 hidden sm:block -translate-x-1/2">
               <motion.div
                 className="w-full bg-primary origin-top"
                 style={{ height: lineHeight }}
@@ -293,13 +293,33 @@ export default function LandingPage() {
               className="space-y-16"
             >
               {STEPS.map((step, i) => (
-                <motion.div key={step.n} variants={fadeInUp} className="flex items-start gap-8">
+                <motion.div key={step.n} variants={fadeInUp} className="flex flex-col sm:flex-row items-center gap-8 relative">
+                  {/* Left side — odd steps show content here on desktop */}
+                  <div className={`sm:flex-1 text-left sm:text-right ${i % 2 === 0 ? 'hidden sm:block' : 'hidden sm:block invisible'}`}>
+                    {i % 2 === 0 && (
+                      <>
+                        <h4 className="text-xl font-bold text-text">{step.title}</h4>
+                        <p className="text-sm text-text-muted mt-1">{step.desc}</p>
+                      </>
+                    )}
+                  </div>
+                  {/* Number bubble */}
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold z-10 shadow-[0_0_15px_rgba(124,58,237,0.5)]">
                     {step.n}
                   </div>
-                  <div className="pt-2">
-                    <h4 className="text-xl font-bold text-text">{step.title}</h4>
-                    <p className="text-sm text-text-muted mt-1">{step.desc}</p>
+                  {/* Right side — even steps show content here on desktop; mobile always shows */}
+                  <div className="sm:flex-1 text-left">
+                    {i % 2 !== 0 ? (
+                      <>
+                        <h4 className="text-xl font-bold text-text">{step.title}</h4>
+                        <p className="text-sm text-text-muted mt-1">{step.desc}</p>
+                      </>
+                    ) : (
+                      <div className="sm:hidden">
+                        <h4 className="text-xl font-bold text-text">{step.title}</h4>
+                        <p className="text-sm text-text-muted mt-1">{step.desc}</p>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -320,7 +340,7 @@ export default function LandingPage() {
             <h2 className="font-sans font-bold text-3xl md:text-4xl text-text mb-4">Pricing Plans</h2>
             <p className="text-text-muted">Scalable pricing for startups and established businesses.</p>
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             {PLANS.map((plan) => (
               <motion.div
                 key={plan.name}
