@@ -2,7 +2,7 @@
 **Date:** 2026-03-26
 **Scope:** Complete redesign of all 21 screens — landing page, dashboard, and all inner app screens
 **Stack:** Next.js 14 (App Router), React, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Recharts
-**Existing deps (already installed):** framer-motion, recharts, lucide-react, tailwind-merge, clsx
+**Existing deps (already installed):** framer-motion, recharts, lucide-react, tailwind-merge, clsx, @react-pdf/renderer, @supabase/supabase-js, razorpay, date-fns, next-themes
 **To install:** shadcn/ui, JetBrains Mono font
 
 ---
@@ -444,4 +444,7 @@ npx shadcn@latest init
 npx shadcn@latest add button input dialog tabs switch select textarea badge skeleton sonner
 ```
 
-No additional npm packages needed (framer-motion, recharts, lucide-react already installed).
+No additional npm packages needed beyond shadcn. All other required packages are already installed:
+- framer-motion, recharts, lucide-react, tailwind-merge, clsx
+- @react-pdf/renderer (used in Reports screen for PDF generation)
+- @supabase/supabase-js, razorpay, date-fns, next-themes
