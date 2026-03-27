@@ -4,9 +4,15 @@
 
 **Goal:** Redesign all 21 screens of PayEase with a dark glass morphism aesthetic — `#0F0A1E` background, `#7C3AED` purple primary, shadcn/ui + Framer Motion — mobile-first, responsive, professional.
 
-**Architecture:** Shared design tokens in `tailwind.config.ts` + `globals.css`. Reusable primitives (`GlassCard`, `MetricCard`, `StatusBadge`, `WorkerTypeBadge`) built first. Shared layout (`AppShell`, `Sidebar`, `Navbar`) rewired second. Then screens rewritten batch by batch using the primitives.
+**Architecture:** Stitch MCP generates visual HTML/CSS designs for every screen. Those designs are then translated into Next.js + Tailwind + shadcn/ui + Framer Motion. Shared design tokens in `tailwind.config.ts` + `globals.css`. Reusable primitives (`GlassCard`, `MetricCard`, `StatusBadge`, `WorkerTypeBadge`) built first. Shared layout rewired second. Screens implemented batch by batch — each screen starts with a Stitch generation step.
 
-**Tech Stack:** Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Recharts, lucide-react
+**Tech Stack:** Next.js 14 App Router, React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, Recharts, lucide-react, **Stitch MCP** (visual design generation)
+
+**Stitch Workflow per screen:**
+1. `mcp__stitch__generate_screen_from_text` — generate HTML/CSS visual design from prompt
+2. `mcp__stitch__get_screen` — retrieve the generated design output
+3. Use the Stitch HTML/CSS as the pixel-accurate visual reference when writing Next.js code
+4. Translate layout, spacing, colors, and component structure from Stitch into Tailwind classes
 
 ---
 
@@ -51,6 +57,54 @@
 | `src/app/viewer/page.tsx` | Rewrite | Read-only dashboard |
 | `src/app/signup/` | Delete | Replaced by Google OAuth |
 | `src/app/attendance/summary/` | Delete | Merged into `/attendance` |
+
+---
+
+## Task 0: Stitch Project + Design System Setup
+
+**Files:** None (Stitch cloud project — save returned IDs for use in all subsequent screen tasks)
+
+- [ ] **Step 1: Create Stitch project**
+
+Call `mcp__stitch__create_project` with:
+```json
+{ "title": "PayEase Redesign" }
+```
+**Save the returned `projectId`** — needed for every subsequent Stitch call.
+
+- [ ] **Step 2: Create design system**
+
+Call `mcp__stitch__create_design_system` with:
+```json
+{
+  "designSystem": {
+    "displayName": "PayEase Dark",
+    "theme": {
+      "colorMode": "DARK",
+      "customColor": "#7C3AED",
+      "overridePrimaryColor": "#7C3AED",
+      "overrideSecondaryColor": "#A855F7",
+      "overrideNeutralColor": "#1A1035",
+      "headlineFont": "INTER",
+      "bodyFont": "INTER",
+      "roundness": "ROUND_TWELVE",
+      "colorVariant": "VIBRANT",
+      "designMd": "Dark glass morphism SaaS app. Background: #0F0A1E. Surface cards: bg-white/5 with backdrop-blur and border border-[#7C3AED]/20. Primary: #7C3AED. Accent: #A855F7. Currency values in gold: #D4A847. Success green: #10B981. Warning amber: #F59E0B. Danger red: #EF4444. Muted text: #7B7A8E. All cards use rounded-xl with subtle purple glow on hover. Buttons use whileTap scale animation. Indian payroll SaaS — rupee symbol ₹ on all currency values."
+    }
+  }
+}
+```
+**Save the returned design system `assetId`** — needed for `apply_design_system` calls.
+
+- [ ] **Step 3: Update design system** (required by Stitch after create)
+
+Call `mcp__stitch__update_design_system` immediately after Step 2 with the same payload to apply it to the project.
+
+- [ ] **Step 4: Record IDs**
+
+Save both values — you'll use them in every screen task:
+- `STITCH_PROJECT_ID` = (from Step 1)
+- `STITCH_DS_ASSET_ID` = (from Step 2)
 
 ---
 
@@ -885,7 +939,23 @@ git commit -m "feat: restyle TrialBanner and InstallPrompt for dark theme"
 **Files:**
 - Modify: `src/app/page.tsx`
 
-- [ ] **Step 1: Rewrite `src/app/page.tsx`**
+- [ ] **Step 1: Generate landing page in Stitch**
+
+Call `mcp__stitch__generate_screen_from_text` with:
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase payroll SaaS landing page. Dark background #0F0A1E. Sticky glass nav: logo 'P' in purple gradient square + 'PayEase' brand name, nav links (Features, How it works, Pricing, Contact), Sign In link + 'Start Free Trial' purple CTA button. Hero section: two large animated radial purple blur orbs, headline 'Payroll, Simplified.' with 'Simplified' in purple gradient text, subheading 'Manage employees, track attendance, and run payroll in minutes', two CTA buttons side by side, small footnote 'No credit card required'. Stats band below hero: dark bg, 3 animated counters (500+ Businesses, ₹2Cr+ Processed Monthly, 14 Day Free Trial). Features section: 6 glass cards in 3-col grid each with purple icon, bold title, description text. How it works section: 3-step vertical timeline with SVG purple connector line, numbered dark squares. Testimonials: 3 glass cards with star ratings and customer quotes. Pricing: 3 plan cards on dark bg, middle 'Growth' plan has purple glow border and 'Most Popular' badge. Final CTA section with large heading. Footer with logo and links."
+}
+```
+
+- [ ] **Step 2: Get Stitch landing page design**
+
+Call `mcp__stitch__get_screen` with the screen name returned from Step 1. Study the generated HTML/CSS for layout, spacing, and visual details.
+
+- [ ] **Step 3: Rewrite `src/app/page.tsx`** using Stitch output as the visual reference:
 
 ```tsx
 'use client'
@@ -1209,7 +1279,7 @@ export default function LandingPage() {
 
 - [ ] **Step 2: Verify in browser** — `http://localhost:3000`. Dark bg, purple orbs, all sections render. Mobile view: single column.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/app/page.tsx
@@ -1224,7 +1294,33 @@ git commit -m "feat: rewrite landing page with dark glass morphism design"
 - Modify: `src/app/login/page.tsx`
 - Modify: `src/app/onboarding/page.tsx`
 
-- [ ] **Step 1: Read existing `src/app/login/page.tsx`** to understand current Google OAuth handler, then rewrite the UI only (preserve logic):
+- [ ] **Step 1: Generate login + onboarding screens in Stitch** (run both in parallel)
+
+Call `mcp__stitch__generate_screen_from_text` twice:
+
+**Login:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase login screen. Dark background #0F0A1E. Centered glass card (backdrop-blur, bg-white/5, border border-purple/20, rounded-2xl, max-w-sm). Large floating purple blur orb behind card. Inside card: PayEase 'P' logo mark (purple gradient square, 48px), heading 'Sign in to PayEase', tagline 'Your payroll, simplified.', single full-width 'Continue with Google' button with Google logo icon (outline style, dark), footnote 'No credit card required · 14-day free trial' in muted text."
+}
+```
+
+**Onboarding:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase onboarding screen. Dark background #0F0A1E. Centered glass card (backdrop-blur, bg-white/5, border border-purple/20, rounded-2xl). Purple orb blur in background. Inside: PayEase 'P' logo mark, heading 'Welcome to PayEase', subtitle 'Let us set up your company first.', label 'Company name', dark styled text input with placeholder 'e.g. Verma Industries', full-width 'Get Started' button in purple with arrow icon, disabled state when input empty."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** via `mcp__stitch__get_screen`. Use the generated layouts as visual reference.
+
+- [ ] **Step 3: Read existing `src/app/login/page.tsx`** to understand current Google OAuth handler, then rewrite the UI only (preserve logic):
 
 ```tsx
 'use client'
@@ -1356,7 +1452,7 @@ export default function OnboardingPage() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/app/login/page.tsx src/app/onboarding/page.tsx
@@ -1370,7 +1466,33 @@ git commit -m "feat: rewrite Login and Onboarding pages with dark glass design"
 **Files:**
 - Modify: `src/app/dashboard/page.tsx`
 
-- [ ] **Step 1: Read existing `src/app/dashboard/page.tsx`** to understand data fetching pattern (Supabase calls, month state), then rewrite with new design preserving all data logic.
+- [ ] **Step 1: Generate dashboard in Stitch**
+
+Call `mcp__stitch__generate_screen_from_text` with:
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase payroll dashboard. Dark background #0F0A1E. Top bar: left company name in muted text, center month selector with left/right chevron arrows and 'March 2026' label, right user avatar circle. Below: 4 metric cards in a row (glass morphism, backdrop-blur, border purple/20): 'Total Payable' with wallet icon and large gold ₹82,000 value, 'Paid' with checkmark icon and green ₹45,000 value, 'Remaining' with clock icon and purple ₹37,000 value, 'Employees' with users icon and white 12 value. Below metrics: dark glass table with columns Employee (avatar + name), Worker Type (colored badge: Salaried/Daily/Commission), Earned (mono font), Advance (mono muted), Net Payable (mono gold), Status (Paid/Pending/Partial badge), Pay button. 3 sample rows of data."
+}
+```
+
+- [ ] **Step 2: Also generate mobile dashboard variant**
+
+Call `mcp__stitch__generate_screen_from_text` with:
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase dashboard mobile view. Dark background #0F0A1E. Month selector row at top. 2x2 grid of metric cards (glass, compact): Total Payable gold, Paid green, Remaining purple, Employees white. Below: stack of employee payroll cards each showing name + type badge + earned/advance/net in a 3-col row + status badge + Record Payment button full width."
+}
+```
+
+- [ ] **Step 3: Get both Stitch screens** via `mcp__stitch__get_screen`. Use as visual reference for desktop table and mobile card layouts.
+
+- [ ] **Step 4: Read existing `src/app/dashboard/page.tsx`** to understand data fetching pattern (Supabase calls, month state), then rewrite with new design preserving all data logic.
 
 The UI wrapper should be:
 
@@ -1496,9 +1618,9 @@ return (
 
 Read the existing file carefully and merge the new UI structure around the existing data logic. Do not remove any Supabase queries or state.
 
-- [ ] **Step 2: Verify in browser** — navigate to `/dashboard`. Metric cards animate on load, dark theme, gold rupee values.
+- [ ] **Step 5: Verify in browser** — navigate to `/dashboard`. Metric cards animate on load, dark theme, gold rupee values.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/app/dashboard/page.tsx
@@ -1513,7 +1635,33 @@ git commit -m "feat: rewrite Dashboard with dark glass design and animated metri
 - Modify: `src/app/employees/page.tsx`
 - Create: `src/components/AddEmployeeModal.tsx`
 
-- [ ] **Step 1: Create `src/components/AddEmployeeModal.tsx`**
+- [ ] **Step 1: Generate employees screen + modal in Stitch**
+
+Call `mcp__stitch__generate_screen_from_text` twice:
+
+**Employees list:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase employees page. Dark background #0F0A1E. Page header 'Employees'. Search input with search icon (dark glass style) + segmented filter control 'All / Salaried / Daily / Commission'. 3-column grid of employee glass cards: each card has avatar circle with initials (purple bg), employee name bold, phone number muted, worker type badge (Salaried=violet, Daily=sky, Commission=orange), join date small muted, 'View' link. Floating purple '+' FAB button bottom-right corner."
+}
+```
+
+**Add Employee modal:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase Add Employee modal dialog. Dark glass style (bg surface #1A1035, border purple/20, rounded-2xl). Title 'Add Employee'. Form fields: Full Name input, Phone input side by side. Worker Type segmented control (Salaried / Daily / Commission) — selected tab is solid purple. Monthly Salary input + OT Multiplier input side by side. Join Date input. Bottom row: Cancel ghost button + Add Employee solid purple button."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Create `src/components/AddEmployeeModal.tsx`**
 
 ```tsx
 'use client'
@@ -1620,9 +1768,9 @@ export default function AddEmployeeModal({ open, onClose, onAdd }: AddEmployeeMo
 }
 ```
 
-- [ ] **Step 2: Read existing `src/app/employees/page.tsx`**, preserve data logic, rewrite UI using `GlassCard`, `WorkerTypeBadge`, and `AddEmployeeModal`.
+- [ ] **Step 4: Read existing `src/app/employees/page.tsx`**, preserve data logic, rewrite UI using `GlassCard`, `WorkerTypeBadge`, and `AddEmployeeModal`.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/components/AddEmployeeModal.tsx src/app/employees/page.tsx
@@ -1637,9 +1785,33 @@ git commit -m "feat: rewrite Employees page and AddEmployeeModal with dark glass
 - Modify: `src/app/daily-attendance/page.tsx`
 - Modify: `src/app/attendance/page.tsx`
 
-- [ ] **Step 1: Read both existing pages** to understand data fetching and state.
+- [ ] **Step 1: Generate both attendance screens in Stitch**
 
-- [ ] **Step 2: Rewrite `src/app/daily-attendance/page.tsx`** — preserve all Supabase logic. New UI pattern:
+**Daily Attendance:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase daily attendance screen. Dark background #0F0A1E. Date navigation row: left chevron, 'Mon 27 Mar 2026' center, right chevron, 'Today' pill button. 'Mark All Present' ghost button top right. List of employee rows as glass cards: each row has avatar circle with initials, employee name, worker type badge, then a 3-pill attendance toggle (Present=green, Half-Day=amber, Absent=red — one is always selected), and OT hours number input visible only when Present selected. Sticky 'Save Attendance' solid purple button fixed at bottom."
+}
+```
+
+**Attendance Calendar:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase attendance calendar screen. Dark background #0F0A1E. Employee dropdown selector at top (dark glass style). Month navigation row with arrows. 7-column calendar grid: day cells showing date number + colored dot indicators (green dot=present, red=absent, amber=half-day, blue=OT). Color legend row below calendar with 4 dots and labels. 3 small glass summary cards at bottom: Total Present (green number), Total Absent (red number), Total OT (blue number)."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Read both existing pages** to understand data fetching and state.
+
+- [ ] **Step 4: Rewrite `src/app/daily-attendance/page.tsx`** — preserve all Supabase logic. New UI pattern:
 
 ```
 Dark page wrapper.
@@ -1652,7 +1824,7 @@ Employee list: each row is a GlassCard with p-4:
 Sticky bottom bar (fixed bottom-20 md:bottom-0): "Save Attendance" full-width primary button.
 ```
 
-- [ ] **Step 3: Rewrite `src/app/attendance/page.tsx`** — include the summary data that was in the now-deleted `/attendance/summary` route. New UI pattern:
+- [ ] **Step 5: Rewrite `src/app/attendance/page.tsx`** — include the summary data that was in the now-deleted `/attendance/summary` route. New UI pattern:
 
 ```
 Employee Select at top (shadcn Select, dark styled).
@@ -1662,7 +1834,7 @@ Legend row: 4 dots + labels.
 3 small GlassCards below: Total Present / Total Absent / Total OT (with useCountUp).
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/app/daily-attendance/page.tsx src/app/attendance/page.tsx
@@ -1677,9 +1849,33 @@ git commit -m "feat: rewrite Daily Attendance and Attendance Calendar pages"
 - Modify: `src/app/work-entries/page.tsx`
 - Modify: `src/app/commission/page.tsx`
 
-- [ ] **Step 1: Read both existing pages**, preserve data logic.
+- [ ] **Step 1: Generate both screens in Stitch**
 
-- [ ] **Step 2: Rewrite `src/app/work-entries/page.tsx`**:
+**Work Entries:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase work entries screen. Dark background #0F0A1E. Date navigation row + employee dropdown selector. List of commission items as glass rows: item name on left, numeric quantity input on right with unit label (e.g. 'pieces'). Sticky 'Save Entries' purple button at bottom."
+}
+```
+
+**Commission:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase commission items manager. Dark background #0F0A1E. Header 'Commission Items' with 'Add Item' button top right. List of items as glass rows: item name, rate in monospace font (e.g. ₹12.50/piece), toggle switch for active/inactive, trash delete icon. One expanded inline add-item form at bottom: item name input + rate input + confirm/cancel buttons."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Read both existing pages**, preserve data logic.
+
+- [ ] **Step 4: Rewrite `src/app/work-entries/page.tsx`**:
 
 ```
 Dark page. Date header + employee Select.
@@ -1687,7 +1883,7 @@ List of commission items: each row GlassCard p-4, item name left, numeric input 
 "Save Entries" button sticky bottom.
 ```
 
-- [ ] **Step 3: Rewrite `src/app/commission/page.tsx`**:
+- [ ] **Step 5: Rewrite `src/app/commission/page.tsx`**:
 
 ```
 Header row: "Commission Items" h1 + "Add Item" button (top right).
@@ -1695,7 +1891,7 @@ Item list: each row GlassCard p-4 → item name, font-mono rate, shadcn Switch, 
 "Add Item" expands an inline form row (AnimatePresence height animation): item name + rate inputs + confirm/cancel.
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/app/work-entries/page.tsx src/app/commission/page.tsx
@@ -1710,16 +1906,40 @@ git commit -m "feat: rewrite Work Entries and Commission pages"
 - Modify: `src/app/advances/page.tsx`
 - Modify: `src/app/advance-repayments/page.tsx`
 
-- [ ] **Step 1: Read both existing pages**, preserve data logic.
+- [ ] **Step 1: Generate both screens in Stitch**
 
-- [ ] **Step 2: Rewrite `src/app/advances/page.tsx`**:
+**Advances:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase advances page. Dark background #0F0A1E. Page header 'Advances'. Grid of employee glass cards: each card shows employee name, large monospace outstanding balance in red if >0 or muted if zero, 'Give Advance' button. One card shows expanded inline form below the button: Amount input, Date input, Note input, Confirm button."
+}
+```
+
+**Advance Repayments:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase advance repayments page. Dark background #0F0A1E. Table with glass header row: Employee, Advance Date, Original Amount (monospace), Total Repaid (monospace green), Outstanding (monospace red), History toggle button. One row is expanded showing a nested list of repayment records (date + amount each). Mobile: each advance as a stacked glass card."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Read both existing pages**, preserve data logic.
+
+- [ ] **Step 4: Rewrite `src/app/advances/page.tsx`**:
 
 ```
 Per-employee GlassCards: name + outstanding balance (font-mono, text-danger if >0, text-muted if 0) + "Give Advance" button.
 "Give Advance" expands inline form (AnimatePresence) with amount/date/note inputs + Confirm button.
 ```
 
-- [ ] **Step 3: Rewrite `src/app/advance-repayments/page.tsx`**:
+- [ ] **Step 5: Rewrite `src/app/advance-repayments/page.tsx`**:
 
 ```
 Table (desktop) / cards (mobile):
@@ -1727,7 +1947,7 @@ Table (desktop) / cards (mobile):
 Expanded row shows list of repayment entries.
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/app/advances/page.tsx src/app/advance-repayments/page.tsx
@@ -1743,7 +1963,41 @@ git commit -m "feat: rewrite Advances and Advance Repayments pages"
 - Modify: `src/components/PaymentModal.tsx`
 - Modify: `src/app/expenses/page.tsx`
 
-- [ ] **Step 1: Rewrite `src/components/PaymentModal.tsx`** — read existing file first, preserve submit logic:
+- [ ] **Step 1: Generate all three screens in Stitch**
+
+**Payments list:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase payments page. Dark background #0F0A1E. Page header 'Payments'. List of employee rows as glass cards: avatar circle with initials, employee name, net payable in large gold monospace font (e.g. ₹14,500), status badge (Paid=green, Pending=amber, Partial=blue), 'Record Payment' button on right."
+}
+```
+
+**Payment modal:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase payment modal dialog. Dark glass surface #1A1035, border purple/20, rounded-2xl. Title 'Record Payment' + employee name. Breakdown section: rows for Earned Salary, OT Earned, Deductions, Advance Deducted — each label left + monospace amount right in muted text. Horizontal divider. Net Payable label + large gold monospace bold amount (e.g. ₹14,500). Below divider: Amount input pre-filled, Date input, Note textarea optional. 'Record Payment' full-width purple CTA button."
+}
+```
+
+**Expenses:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase expenses page. Dark background #0F0A1E. Glass summary card at top: 'March 2026 Expenses' label + large gold monospace total amount. 'Add Expense' button top right. List of expense rows: category badge (color-coded: Food=green, Travel=blue, Office=purple, etc.), description text, monospace amount right, date small muted, trash icon. Mobile: card layout."
+}
+```
+
+- [ ] **Step 2: Get all three Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Rewrite `src/components/PaymentModal.tsx`** — read existing file first, preserve submit logic:
 
 ```tsx
 // shadcn Dialog + springScaleIn
@@ -1754,11 +2008,11 @@ git commit -m "feat: rewrite Advances and Advance Repayments pages"
 // "Record Payment" full-width primary button
 ```
 
-- [ ] **Step 2: Rewrite `src/app/payments/page.tsx`** — employee rows with avatar + name + gold mono net payable + StatusBadge + "Record Payment" button opening PaymentModal.
+- [ ] **Step 4: Rewrite `src/app/payments/page.tsx`** — employee rows with avatar + name + gold mono net payable + StatusBadge + "Record Payment" button opening PaymentModal.
 
-- [ ] **Step 3: Rewrite `src/app/expenses/page.tsx`** — monthly total GlassCard (gold mono), expense list with category badges, "Add Expense" Dialog.
+- [ ] **Step 5: Rewrite `src/app/expenses/page.tsx`** — monthly total GlassCard (gold mono), expense list with category badges, "Add Expense" Dialog.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add src/components/PaymentModal.tsx src/app/payments/page.tsx src/app/expenses/page.tsx
@@ -1773,15 +2027,39 @@ git commit -m "feat: rewrite Payments, PaymentModal, and Expenses pages"
 - Modify: `src/app/reports/page.tsx`
 - Modify: `src/app/charts/page.tsx`
 
-- [ ] **Step 1: Rewrite `src/app/reports/page.tsx`** — two GlassCards side by side (stacked mobile): Payslip PDFs card + Export Payroll card. Preserve existing PDF generation logic from `@react-pdf/renderer`.
+- [ ] **Step 1: Generate both screens in Stitch**
 
-- [ ] **Step 2: Rewrite `src/app/charts/page.tsx`** — shadcn Tabs (Salary Trends / Attendance / Summary). Preserve existing Recharts data. Update chart colors to purple/gold theme:
+**Reports:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase reports page. Dark background #0F0A1E. Page header 'Reports'. Two large glass action cards side by side: Left card 'Payslip PDFs' with document icon, month selector dropdown, employee multi-select (or All toggle), 'Download PDF' purple button with spinner state. Right card 'Export Payroll' with table icon, month selector, 'Export CSV' button. Both cards have animated purple border glow on hover."
+}
+```
+
+**Charts:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase charts/analytics page. Dark background #0F0A1E. Tab navigation: 'Salary Trends / Attendance / Summary'. Salary Trends tab active: bar chart with purple bars, current month bar highlighted gold, x-axis months, y-axis rupee amounts. Dark chart background, white grid lines subtle. Custom dark tooltip with glass card style. Chart fills most of the page width."
+}
+```
+
+- [ ] **Step 2: Get both Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Rewrite `src/app/reports/page.tsx`** — two GlassCards side by side (stacked mobile): Payslip PDFs card + Export Payroll card. Preserve existing PDF generation logic from `@react-pdf/renderer`.
+
+- [ ] **Step 4: Rewrite `src/app/charts/page.tsx`** — shadcn Tabs (Salary Trends / Attendance / Summary). Preserve existing Recharts data. Update chart colors to purple/gold theme:
   - BarChart: `fill="#7C3AED"`, current month `fill="#D4A847"`
   - LineChart: `stroke="#7C3AED"`
   - PieChart: `["#7C3AED", "#10B981", "#F59E0B"]`
   - Custom dark tooltip: `bg-[#1A1035] border border-[#7C3AED]/20 rounded-lg px-3 py-2`
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/app/reports/page.tsx src/app/charts/page.tsx
@@ -1798,15 +2076,59 @@ git commit -m "feat: rewrite Reports and Charts pages with dark purple theme"
 - Modify: `src/app/contact/page.tsx`
 - Modify: `src/app/viewer/page.tsx`
 
-- [ ] **Step 1: Rewrite `src/app/billing/page.tsx`** — 3 plan GlassCards (same layout as landing pricing), current plan badge (success green), Growth plan glow border. Preserve Razorpay upgrade logic.
+- [ ] **Step 1: Generate all four screens in Stitch**
 
-- [ ] **Step 2: Rewrite `src/app/settings/page.tsx`** — 4 stacked GlassCards (Profile, Company, Viewers, Referral). Preserve all Supabase save logic. Add shadcn Sonner toast on save. Referral "Copy" button uses `navigator.clipboard.writeText()`.
+**Billing:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase billing page. Dark background #0F0A1E. Page header 'My Plan'. 3 plan cards in a row: Starter ₹299/mo (5 employees), Growth ₹499/mo (15 employees) with purple glow border and 'Most Popular' pill badge at top, Business ₹999/mo (Unlimited). Each card: plan name muted, large monospace price, employee limit, feature checklist with green checkmarks, CTA button (solid purple for popular, ghost for others). Current plan card has 'Current Plan' green badge."
+}
+```
 
-- [ ] **Step 3: Rewrite `src/app/contact/page.tsx`** — centered GlassCard (max-w-lg). Form: Name, Email, Message Textarea, Submit. On submit: AnimatePresence swaps form for success state (springScaleIn CheckCircle + "Message sent!"). Preserve existing form submit logic.
+**Settings:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase settings page. Dark background #0F0A1E. Page header 'Settings'. Stack of 4 glass section cards: 1) Profile — display name input + Save button. 2) Company — company name input + Save button. 3) Viewers — list of viewer email rows (email + role badge + Remove button) + Add Viewer inline form (email input + role select + Add button). 4) Referral — read-only code input in monospace + Copy button."
+}
+```
 
-- [ ] **Step 4: Rewrite `src/app/viewer/page.tsx`** — reuse Dashboard UI structure. Add amber "View Only" banner at very top. Remove all action buttons. Add "Powered by PayEase" footer.
+**Contact:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "MOBILE",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase contact us page. Dark background #0F0A1E. Centered glass card max-w-lg. Heading 'Contact Us', subtitle 'We will get back to you within 24 hours'. Form: Name input, Email input, Message textarea 4 rows, Send Message purple button. Support email below form in muted text with mail icon."
+}
+```
 
-- [ ] **Step 5: Commit**
+**Viewer dashboard:**
+```json
+{
+  "projectId": "STITCH_PROJECT_ID",
+  "deviceType": "DESKTOP",
+  "modelId": "GEMINI_3_1_PRO",
+  "prompt": "PayEase viewer dashboard. Dark background #0F0A1E. Amber 'View Only' banner at very top with lock icon and text 'View Only — You have read-only access'. Below: same 4 metric cards as dashboard (Total Payable gold, Paid green, Remaining purple, Employees white). Payroll table without any action buttons or Pay buttons — all columns visible but last column removed. 'Powered by PayEase' small footer note."
+}
+```
+
+- [ ] **Step 2: Get all four Stitch screens** and use as visual reference.
+
+- [ ] **Step 3: Rewrite `src/app/billing/page.tsx`** — 3 plan GlassCards (same layout as landing pricing), current plan badge (success green), Growth plan glow border. Preserve Razorpay upgrade logic.
+
+- [ ] **Step 4: Rewrite `src/app/settings/page.tsx`** — 4 stacked GlassCards (Profile, Company, Viewers, Referral). Preserve all Supabase save logic. Add shadcn Sonner toast on save. Referral "Copy" button uses `navigator.clipboard.writeText()`.
+
+- [ ] **Step 5: Rewrite `src/app/contact/page.tsx`** — centered GlassCard (max-w-lg). Form: Name, Email, Message Textarea, Submit. On submit: AnimatePresence swaps form for success state (springScaleIn CheckCircle + "Message sent!"). Preserve existing form submit logic.
+
+- [ ] **Step 6: Rewrite `src/app/viewer/page.tsx`** — reuse Dashboard UI structure. Add amber "View Only" banner at very top. Remove all action buttons. Add "Powered by PayEase" footer.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/app/billing/page.tsx src/app/settings/page.tsx src/app/contact/page.tsx src/app/viewer/page.tsx
