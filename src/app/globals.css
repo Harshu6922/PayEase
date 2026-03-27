@@ -68,9 +68,6 @@
     --sidebar-border: oklch(1 0 0 / 8%);
     --sidebar-ring: oklch(0.54 0.22 275);
   }
-  * {
-    @apply border-border outline-ring/50;
-  }
   body {
     background: #0F0A1E;
     color: #F1F0F5;
