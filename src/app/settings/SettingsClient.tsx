@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
 import { createClient } from '@/lib/supabase/client'
-import { Copy, Check, LogOut, Trash2, Shield, UserPlus } from 'lucide-react'
+import { Copy, Check, LogOut, Trash2, Shield, UserPlus, MessageCircle, Eye, EyeOff } from 'lucide-react'
 import { staggerContainer, fadeInUp } from '@/lib/animations'
 
 interface Member {
@@ -280,6 +280,11 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
             </div>
           </motion.section>
 
+          {/* WhatsApp Notifications */}
+          <motion.section variants={fadeInUp}>
+            <WhatsAppSection />
+          </motion.section>
+
           {/* External Viewers */}
           <motion.section variants={fadeInUp}>
             <ViewersSection companyId={companyId} />
@@ -330,6 +335,182 @@ function CopyField({ value }: { value: string }) {
         {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
       </button>
     </div>
+  )
+}
+
+function WhatsAppSection() {
+  const [enabled, setEnabled] = useState(false)
+  const [token, setToken] = useState('')
+  const [phoneNumberId, setPhoneNumberId] = useState('')
+  const [templateName, setTemplateName] = useState('daily_employee_update')
+  const [sendTime, setSendTime] = useState('18:00')
+  const [showToken, setShowToken] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/notifications/settings')
+      .then(r => r.json())
+      .then(d => {
+        if (d.settings) {
+          setEnabled(d.settings.enabled ?? false)
+          setToken(d.settings.whatsapp_token ?? '')
+          setPhoneNumberId(d.settings.whatsapp_phone_number_id ?? '')
+          setTemplateName(d.settings.template_name ?? 'daily_employee_update')
+          setSendTime(d.settings.send_time ?? '18:00')
+        }
+        setLoaded(true)
+      })
+  }, [])
+
+  async function save() {
+    setSaving(true); setErr(null)
+    const res = await fetch('/api/notifications/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enabled,
+        whatsapp_token: token.trim() || null,
+        whatsapp_phone_number_id: phoneNumberId.trim() || null,
+        template_name: templateName.trim() || 'daily_employee_update',
+        send_time: sendTime,
+      }),
+    })
+    const d = await res.json()
+    if (!res.ok) { setErr(d.error); setSaving(false); return }
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+    setSaving(false)
+  }
+
+  if (!loaded) return null
+
+  return (
+    <>
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#afa7c2] mb-4 block">
+        WhatsApp Notifications
+      </span>
+      <div className="p-8 rounded-2xl space-y-6" style={glassCard}>
+
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <MessageCircle className="h-4 w-4" style={{ color: '#25D366' }} />
+              <p className="text-sm font-semibold text-[#ebe1fe]">Daily Employee Updates</p>
+            </div>
+            <p className="text-xs text-[#afa7c2] max-w-md">
+              Send each employee a WhatsApp message daily with their hours worked today, this month&apos;s earnings, and advance balance. Requires a Meta WhatsApp Business API setup.
+            </p>
+          </div>
+          {/* Toggle */}
+          <button
+            onClick={() => setEnabled(v => !v)}
+            className="flex-shrink-0 w-12 h-6 rounded-full transition-all relative"
+            style={{ background: enabled ? '#25D366' : 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.2)' }}
+          >
+            <span
+              className="absolute top-0.5 w-5 h-5 rounded-full transition-all shadow"
+              style={{ background: '#fff', left: enabled ? '26px' : '2px' }}
+            />
+          </button>
+        </div>
+
+        {/* Credentials */}
+        <div className="space-y-4">
+          <div>
+            <label className={labelCls}>WhatsApp Access Token</label>
+            <div className="flex gap-2">
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={token}
+                onChange={e => setToken(e.target.value)}
+                placeholder="EAAxxxxxxx…"
+                className={`${inputCls} ${inputFocusStyle} flex-1 font-mono text-xs`}
+                style={inputStyle}
+              />
+              <button onClick={() => setShowToken(v => !v)}
+                className="px-3 rounded-xl flex-shrink-0 transition-colors"
+                style={{ background: 'rgba(189,157,255,0.08)', border: '1px solid rgba(189,157,255,0.15)', color: '#afa7c2' }}>
+                {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>Phone Number ID</label>
+              <input
+                value={phoneNumberId}
+                onChange={e => setPhoneNumberId(e.target.value)}
+                placeholder="1234567890123"
+                className={`${inputCls} ${inputFocusStyle} font-mono text-xs`}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Send Time (IST)</label>
+              <input
+                type="time"
+                value={sendTime}
+                onChange={e => setSendTime(e.target.value)}
+                className={`${inputCls} ${inputFocusStyle}`}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={labelCls}>Template Name</label>
+            <input
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              placeholder="daily_employee_update"
+              className={`${inputCls} ${inputFocusStyle} font-mono text-sm`}
+              style={inputStyle}
+            />
+            <p className="mt-1.5 text-[11px] text-[#afa7c2]/60">
+              Must match the approved template name in your Meta Business Manager.
+            </p>
+          </div>
+        </div>
+
+        {/* Template preview */}
+        <div className="rounded-xl p-4 text-xs leading-relaxed"
+          style={{ background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.15)', color: '#afa7c2' }}>
+          <p className="font-semibold text-[#ebe1fe] mb-2 text-[11px] uppercase tracking-wider">Message Preview</p>
+          <p>Hi <span className="text-[#bd9dff]">{'{{employee name}}'}</span>, here&apos;s your daily update from <span className="text-[#bd9dff]">{'{{company name}}'}</span>:</p>
+          <p className="mt-1">Hours worked today: <span className="text-[#ebe1fe]">8.0 hrs</span></p>
+          <p>This month&apos;s earnings: <span className="text-[#ebe1fe]">₹12,500</span></p>
+          <p>Advance balance: <span className="text-[#ebe1fe]">₹2,000</span></p>
+        </div>
+
+        {/* Setup guide */}
+        <details className="group">
+          <summary className="text-xs font-semibold text-[#bd9dff] cursor-pointer list-none flex items-center gap-1 select-none">
+            <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
+            How to get your WhatsApp API credentials
+          </summary>
+          <ol className="mt-3 space-y-2 text-xs text-[#afa7c2] list-decimal list-inside pl-2">
+            <li>Go to <span className="font-mono text-[#ebe1fe]">developers.facebook.com</span> and create a Meta App (type: Business)</li>
+            <li>Add the <span className="font-mono text-[#ebe1fe]">WhatsApp</span> product to your app</li>
+            <li>In WhatsApp → API Setup, copy your <span className="text-[#ebe1fe] font-medium">Phone Number ID</span> and generate a permanent <span className="text-[#ebe1fe] font-medium">Access Token</span></li>
+            <li>Under Message Templates, create a template named <span className="font-mono text-[#ebe1fe]">{templateName || 'daily_employee_update'}</span> with 5 variables: employee name, company name, hours today, monthly earnings, advance balance</li>
+            <li>Wait for Meta to approve the template (~24 hrs), then paste your credentials above and enable notifications</li>
+          </ol>
+        </details>
+
+        {err && <p className="text-sm text-red-400">{err}</p>}
+
+        <button onClick={save} disabled={saving}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40 transition-all hover:shadow-[0_0_16px_rgba(189,157,255,0.3)] active:scale-95"
+          style={{ background: saved ? 'rgba(16,185,129,0.15)' : '#bd9dff', border: saved ? '1px solid rgba(16,185,129,0.3)' : 'none', color: saved ? '#10b981' : '#0F0A1E' }}>
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Notification Settings'}
+        </button>
+      </div>
+    </>
   )
 }
 
