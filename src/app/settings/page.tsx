@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import SettingsClient from './SettingsClient'
 
 export default async function SettingsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
   const { data: { user }, error: authErr } = await supabase.auth.getUser()
   if (authErr || !user) redirect('/login')
 
@@ -49,13 +49,12 @@ export default async function SettingsPage() {
   }))
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
-      <SettingsClient
-        companyName={(companyData as any)?.name ?? 'My Company'}
-        companyId={profile.company_id}
-        currentUserId={user.id}
-        members={membersWithEmail}
-      />
-    </div>
+    <SettingsClient
+      companyName={(companyData as any)?.name ?? 'My Company'}
+      companyId={profile.company_id}
+      currentUserId={user.id}
+      userEmail={user!.email ?? ''}
+      members={membersWithEmail}
+    />
   )
 }
