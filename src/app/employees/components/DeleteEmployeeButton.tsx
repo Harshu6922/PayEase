@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function DeleteEmployeeButton({ id, name }: { id: string; name: string }) {
@@ -24,35 +25,77 @@ export default function DeleteEmployeeButton({ id, name }: { id: string; name: s
     router.refresh()
   }
 
-  if (confirming) {
-    return (
-      <span className="inline-flex items-center gap-2">
-        {error && <span className="text-xs text-red-600">{error}</span>}
-        <span className="text-xs text-gray-500">Delete &quot;{name}&quot;?</span>
-        <button
-          onClick={handleDelete}
-          disabled={loading}
-          className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
-        >
-          {loading ? 'Deleting…' : 'Yes, delete'}
-        </button>
-        <button
-          onClick={() => { setConfirming(false); setError(null) }}
-          disabled={loading}
-          className="text-xs font-semibold text-gray-500 hover:text-gray-700"
-        >
-          Cancel
-        </button>
-      </span>
-    )
-  }
-
   return (
-    <button
-      onClick={() => setConfirming(true)}
-      className="ml-3 text-red-500 hover:text-red-700 font-medium text-sm"
-    >
-      Delete
-    </button>
+    <div className="relative">
+      {confirming && (
+        <>
+          {/* Backdrop to close on outside click */}
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => { setConfirming(false); setError(null) }}
+          />
+          {/* Inline confirmation panel floating above the button */}
+          <div
+            className="absolute bottom-full mb-2 right-0 z-50 rounded-xl p-4 shadow-xl"
+            style={{
+              background: 'rgba(22,17,38,0.97)',
+              border: '1px solid rgba(255,110,132,0.3)',
+              minWidth: '200px',
+            }}
+          >
+            {error && (
+              <p className="text-xs mb-2" style={{ color: '#ff6e84' }}>{error}</p>
+            )}
+            <p className="text-sm mb-3" style={{ color: '#ebe1fe' }}>
+              Delete &quot;{name}&quot;?
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setConfirming(false); setError(null) }}
+                disabled={loading}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                style={{
+                  border: '1px solid rgba(189,157,255,0.15)',
+                  color: '#afa7c2',
+                  background: 'transparent',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                style={{
+                  background: 'rgba(255,110,132,0.15)',
+                  border: '1px solid rgba(255,110,132,0.3)',
+                  color: '#ff6e84',
+                }}
+              >
+                {loading ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <button
+        onClick={() => setConfirming(true)}
+        className="p-2 rounded-lg border transition-all"
+        style={{
+          color: 'rgba(255,110,132,0.6)',
+          borderColor: 'rgba(255,110,132,0.15)',
+          background: 'transparent',
+        }}
+        onMouseEnter={e => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,110,132,0.1)'
+        }}
+        onMouseLeave={e => {
+          (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+        }}
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
   )
 }
