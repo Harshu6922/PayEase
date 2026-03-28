@@ -102,7 +102,7 @@ export default function WorkerListClient({ workers, companyName, companyId }: Pr
         className="max-w-2xl mx-auto px-6 pt-16 pb-12"
         variants={staggerContainer}
         initial="hidden"
-        animate="show"
+        animate="visible"
       >
         {/* Header */}
         <motion.header variants={fadeInUp} className="mb-10">
@@ -121,7 +121,7 @@ export default function WorkerListClient({ workers, companyName, companyId }: Pr
             </p>
           </motion.div>
         ) : (
-          <motion.div className="flex flex-col gap-4" variants={staggerContainer} initial="hidden" animate="show">
+          <motion.div className="flex flex-col gap-4" variants={staggerContainer} initial="hidden" animate="visible">
             {workers.map(worker => (
               <motion.div key={worker.id} variants={fadeInUp}>
                 <Link

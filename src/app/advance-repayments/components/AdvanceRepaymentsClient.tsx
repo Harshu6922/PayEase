@@ -60,7 +60,7 @@ export default function AdvanceRepaymentsClient({ repayments }: { repayments: Re
         className="max-w-7xl mx-auto px-6 py-10 md:py-16"
         variants={staggerContainer}
         initial="hidden"
-        animate="show"
+        animate="visible"
       >
         {/* Header */}
         <motion.header variants={fadeInUp} className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
@@ -156,7 +156,7 @@ export default function AdvanceRepaymentsClient({ repayments }: { repayments: Re
                   <motion.tbody
                     variants={staggerContainer}
                     initial="hidden"
-                    animate="show"
+                    animate="visible"
                     style={{ borderTop: '1px solid rgba(189,157,255,0.06)' }}
                   >
                     {repayments.map(r => (
