@@ -344,7 +344,11 @@ function WhatsAppSection() {
   const [phoneNumberId, setPhoneNumberId] = useState('')
   const [templateName, setTemplateName] = useState('daily_employee_update')
   const [sendTime, setSendTime] = useState('18:00')
+  const [smsApiKey, setSmsApiKey] = useState('')
+  const [adminDigestEnabled, setAdminDigestEnabled] = useState(false)
+  const [adminDigestPhone, setAdminDigestPhone] = useState('')
   const [showToken, setShowToken] = useState(false)
+  const [showSmsKey, setShowSmsKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -360,6 +364,9 @@ function WhatsAppSection() {
           setPhoneNumberId(d.settings.whatsapp_phone_number_id ?? '')
           setTemplateName(d.settings.template_name ?? 'daily_employee_update')
           setSendTime(d.settings.send_time ?? '18:00')
+          setSmsApiKey(d.settings.sms_api_key ?? '')
+          setAdminDigestEnabled(d.settings.admin_digest_enabled ?? false)
+          setAdminDigestPhone(d.settings.admin_digest_phone ?? '')
         }
         setLoaded(true)
       })
@@ -376,6 +383,9 @@ function WhatsAppSection() {
         whatsapp_phone_number_id: phoneNumberId.trim() || null,
         template_name: templateName.trim() || 'daily_employee_update',
         send_time: sendTime,
+        sms_api_key: smsApiKey.trim() || null,
+        admin_digest_enabled: adminDigestEnabled,
+        admin_digest_phone: adminDigestPhone.trim() || null,
       }),
     })
     const d = await res.json()
@@ -475,6 +485,62 @@ function WhatsAppSection() {
               Must match the approved template name in your Meta Business Manager.
             </p>
           </div>
+        </div>
+
+        {/* SMS fallback */}
+        <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(189,157,255,0.03)', border: '1px solid rgba(189,157,255,0.08)' }}>
+          <div>
+            <p className="text-sm font-semibold text-[#ebe1fe] mb-0.5">SMS Fallback <span className="text-xs font-normal text-[#afa7c2]">(Fast2SMS — for employees without WhatsApp)</span></p>
+            <p className="text-xs text-[#afa7c2]">Employees with notification method set to &quot;SMS&quot; will receive a plain text SMS instead. Works on any basic phone. Get a free API key at fast2sms.com.</p>
+          </div>
+          <div>
+            <label className={labelCls}>Fast2SMS API Key</label>
+            <div className="flex gap-2">
+              <input
+                type={showSmsKey ? 'text' : 'password'}
+                value={smsApiKey}
+                onChange={e => setSmsApiKey(e.target.value)}
+                placeholder="Your Fast2SMS API key"
+                className={`${inputCls} ${inputFocusStyle} flex-1 font-mono text-xs`}
+                style={inputStyle}
+              />
+              <button onClick={() => setShowSmsKey(v => !v)}
+                className="px-3 rounded-xl flex-shrink-0 transition-colors"
+                style={{ background: 'rgba(189,157,255,0.08)', border: '1px solid rgba(189,157,255,0.15)', color: '#afa7c2' }}>
+                {showSmsKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Admin digest */}
+        <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(189,157,255,0.03)', border: '1px solid rgba(189,157,255,0.08)' }}>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-[#ebe1fe] mb-0.5">Admin Daily Digest</p>
+              <p className="text-xs text-[#afa7c2]">Send you a single daily summary of all employees — useful for workers without any phone so you can inform them verbally.</p>
+            </div>
+            <button
+              onClick={() => setAdminDigestEnabled(v => !v)}
+              className="flex-shrink-0 w-11 h-6 rounded-full transition-all relative mt-0.5"
+              style={{ background: adminDigestEnabled ? '#bd9dff' : 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.2)' }}
+            >
+              <span className="absolute top-0.5 w-5 h-5 rounded-full transition-all shadow"
+                style={{ background: '#fff', left: adminDigestEnabled ? '22px' : '2px' }} />
+            </button>
+          </div>
+          {adminDigestEnabled && (
+            <div>
+              <label className={labelCls}>Your Phone Number (for digest)</label>
+              <input
+                value={adminDigestPhone}
+                onChange={e => setAdminDigestPhone(e.target.value)}
+                placeholder="e.g. 9876543210"
+                className={`${inputCls} ${inputFocusStyle}`}
+                style={inputStyle}
+              />
+            </div>
+          )}
         </div>
 
         {/* Template preview */}

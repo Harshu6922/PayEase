@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // Runs daily at 12:30 UTC (6:00 PM IST)
-// Sends WhatsApp template messages to employees with phone numbers
+// Routing: notification_method per employee
+//   'whatsapp' → Meta Cloud API (needs template approval)
+//   'sms'      → Fast2SMS (plain text, works on any phone)
+//   'none'     → skip
+// Admin digest: one summary message to admin phone covering ALL employees
 
 const adminClient = createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Format phone to E.164 for India (strips +, ensures 91 prefix)
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   if (digits.startsWith('91') && digits.length === 12) return digits
@@ -18,7 +21,6 @@ function formatPhone(raw: string): string {
   return digits
 }
 
-// Hours worked today from an attendance record
 function hoursToday(att: any, stdHours: number): string {
   if (!att || att.status === 'Absent') return '0'
   if (att.time_in && att.time_out) {
@@ -32,43 +34,72 @@ function hoursToday(att: any, stdHours: number): string {
 }
 
 async function sendWhatsApp(
-  token: string,
-  phoneNumberId: string,
-  templateName: string,
-  toPhone: string,
-  params: string[]
-) {
-  const components = params.map((text, i) => ({
-    type: 'text',
-    text,
-  }))
-
-  const res = await fetch(
-    `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+  token: string, phoneNumberId: string, templateName: string,
+  toPhone: string, params: string[]
+): Promise<boolean> {
+  const res = await fetch(`https://graph.facebook.com/v19.0/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: toPhone,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: { code: 'en' },
+        components: [{ type: 'body', parameters: params.map(text => ({ type: 'text', text })) }],
       },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: toPhone,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: 'en' },
-          components: [
-            {
-              type: 'body',
-              parameters: components,
-            },
-          ],
-        },
-      }),
-    }
-  )
+    }),
+  })
   return res.ok
+}
+
+async function sendSMS(apiKey: string, toPhone: string, message: string): Promise<boolean> {
+  const digits = formatPhone(toPhone).replace(/^91/, '') // Fast2SMS expects 10-digit
+  const res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    method: 'POST',
+    headers: { authorization: apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      route: 'q',
+      message,
+      language: 'english',
+      flash: '0',
+      numbers: digits,
+    }),
+  })
+  return res.ok
+}
+
+async function calcEmployeeData(empId: string, workerType: string, monthlySalary: number,
+  dailyRate: number, stdHours: number, today: string, monthStart: string) {
+  const { data: todayAtt } = await adminClient.from('attendance')
+    .select('status, time_in, time_out').eq('employee_id', empId).eq('date', today).maybeSingle()
+  const hrs = hoursToday(todayAtt, stdHours ?? 8)
+
+  let monthlyEarnings = 0
+  if (workerType === 'salaried') {
+    const { data: monthAtt } = await adminClient.from('attendance').select('status')
+      .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
+    const days = (monthAtt ?? []).reduce(
+      (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
+    monthlyEarnings = Math.round((days / 26) * (monthlySalary ?? 0))
+  } else if (workerType === 'daily') {
+    const { data: monthAtt } = await adminClient.from('attendance').select('status')
+      .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
+    const days = (monthAtt ?? []).reduce(
+      (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
+    monthlyEarnings = Math.round(days * (dailyRate ?? 0))
+  } else if (workerType === 'commission') {
+    const { data: entries } = await adminClient.from('work_entries').select('total_amount')
+      .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
+    monthlyEarnings = (entries ?? []).reduce((s: number, e: any) => s + Number(e.total_amount ?? 0), 0)
+  }
+
+  const { data: advances } = await adminClient.from('employee_advances').select('amount')
+    .eq('employee_id', empId).eq('is_repaid', false)
+  const advanceBalance = (advances ?? []).reduce((s: number, a: any) => s + Number(a.amount ?? 0), 0)
+
+  return { hrs, monthlyEarnings, advanceBalance }
 }
 
 export async function GET(req: NextRequest) {
@@ -79,125 +110,96 @@ export async function GET(req: NextRequest) {
 
   const today = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 7) + '-01'
+  const dateLabel = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 
-  // Get all companies with notifications enabled and credentials set
   const { data: configs } = await adminClient
     .from('notification_settings')
-    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name')
+    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key, admin_digest_phone, admin_digest_enabled')
     .eq('enabled', true)
-    .not('whatsapp_token', 'is', null)
-    .not('whatsapp_phone_number_id', 'is', null)
 
   if (!configs || configs.length === 0) {
     return NextResponse.json({ sent: 0, message: 'No companies with notifications enabled' })
   }
 
-  let totalSent = 0
-  let totalFailed = 0
+  let totalSent = 0, totalFailed = 0
 
   for (const config of configs) {
-    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name } = config as any
+    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name,
+      sms_api_key, admin_digest_phone, admin_digest_enabled } = config as any
 
-    // Get company name
-    const { data: company } = await adminClient
-      .from('companies').select('name').eq('id', company_id).maybeSingle()
+    const { data: company } = await adminClient.from('companies').select('name').eq('id', company_id).maybeSingle()
     const companyName = (company as any)?.name ?? 'Your Company'
 
-    // Get active employees with phone numbers
-    const { data: employees } = await adminClient
-      .from('employees')
-      .select('id, full_name, phone_number, worker_type, monthly_salary, daily_rate, standard_working_hours')
-      .eq('company_id', company_id)
-      .eq('is_active', true)
-      .not('phone_number', 'is', null)
+    const { data: employees } = await adminClient.from('employees')
+      .select('id, full_name, phone_number, worker_type, monthly_salary, daily_rate, standard_working_hours, notification_method')
+      .eq('company_id', company_id).eq('is_active', true)
 
     if (!employees || employees.length === 0) continue
 
+    const digestLines: string[] = []
+
     for (const emp of employees) {
       const e = emp as any
+      const method = e.notification_method ?? 'whatsapp'
+      if (method === 'none') continue
+      if (!e.phone_number && method !== 'none') continue
+
+      const { hrs, monthlyEarnings, advanceBalance } = await calcEmployeeData(
+        e.id, e.worker_type, e.monthly_salary, e.daily_rate, e.standard_working_hours, today, monthStart
+      )
+
+      // Add to admin digest regardless of method
+      const earningsLabel = e.worker_type === 'daily'
+        ? `₹${monthlyEarnings.toLocaleString('en-IN')} (month so far)`
+        : `₹${monthlyEarnings.toLocaleString('en-IN')}/mo`
+      digestLines.push(
+        `${e.full_name}: ${hrs}hrs today, ${earningsLabel}${advanceBalance > 0 ? `, adv ₹${advanceBalance.toLocaleString('en-IN')}` : ''}`
+      )
+
       if (!e.phone_number) continue
 
-      // Today's attendance
-      const { data: todayAtt } = await adminClient
-        .from('attendance')
-        .select('status, time_in, time_out')
-        .eq('employee_id', e.id)
-        .eq('date', today)
-        .maybeSingle()
-
-      const hrs = hoursToday(todayAtt, e.standard_working_hours ?? 8)
-
-      // This month's earnings
-      let monthlyEarnings = 0
-
-      if (e.worker_type === 'salaried') {
-        const { data: monthAtt } = await adminClient
-          .from('attendance')
-          .select('status')
-          .eq('employee_id', e.id)
-          .gte('date', monthStart)
-          .lte('date', today)
-        const present = (monthAtt ?? []).filter(
-          (a: any) => a.status === 'Present' || a.status === 'Half Day'
-        )
-        const days = present.reduce(
-          (sum: number, a: any) => sum + (a.status === 'Half Day' ? 0.5 : 1), 0
-        )
-        const workingDaysInMonth = 26
-        monthlyEarnings = Math.round((days / workingDaysInMonth) * (e.monthly_salary ?? 0))
-
-      } else if (e.worker_type === 'daily') {
-        const { data: monthAtt } = await adminClient
-          .from('attendance')
-          .select('status')
-          .eq('employee_id', e.id)
-          .gte('date', monthStart)
-          .lte('date', today)
-        const days = (monthAtt ?? []).filter(
-          (a: any) => a.status === 'Present' || a.status === 'Half Day'
-        ).reduce((sum: number, a: any) => sum + (a.status === 'Half Day' ? 0.5 : 1), 0)
-        monthlyEarnings = Math.round(days * (e.daily_rate ?? 0))
-
-      } else if (e.worker_type === 'commission') {
-        const { data: entries } = await adminClient
-          .from('work_entries')
-          .select('total_amount')
-          .eq('employee_id', e.id)
-          .gte('date', monthStart)
-          .lte('date', today)
-        monthlyEarnings = (entries ?? []).reduce(
-          (sum: number, en: any) => sum + Number(en.total_amount ?? 0), 0
-        )
-      }
-
-      // Pending advance balance
-      const { data: advances } = await adminClient
-        .from('employee_advances')
-        .select('amount')
-        .eq('employee_id', e.id)
-        .eq('is_repaid', false)
-      const advanceBalance = (advances ?? []).reduce(
-        (sum: number, a: any) => sum + Number(a.amount ?? 0), 0
-      )
-
-      // Send WhatsApp message
       const phone = formatPhone(e.phone_number)
-      const sent = await sendWhatsApp(
-        whatsapp_token,
-        whatsapp_phone_number_id,
-        template_name,
-        phone,
-        [
-          e.full_name,           // {{1}} employee name
-          companyName,           // {{2}} company name
-          `${hrs} hrs`,          // {{3}} hours today
-          `₹${monthlyEarnings.toLocaleString('en-IN')}`, // {{4}} monthly earnings
-          `₹${advanceBalance.toLocaleString('en-IN')}`,  // {{5}} advance balance
-        ]
-      )
+      let sent = false
+
+      if (method === 'whatsapp' && whatsapp_token && whatsapp_phone_number_id) {
+        sent = await sendWhatsApp(
+          whatsapp_token, whatsapp_phone_number_id, template_name, phone,
+          [e.full_name, companyName, `${hrs} hrs`,
+            `₹${monthlyEarnings.toLocaleString('en-IN')}`,
+            `₹${advanceBalance.toLocaleString('en-IN')}`]
+        )
+      } else if (method === 'sms' && sms_api_key) {
+        const msg = `Hi ${e.full_name}, update from ${companyName}:\nHours today: ${hrs} hrs\nThis month: Rs.${monthlyEarnings.toLocaleString('en-IN')}\nAdvance: Rs.${advanceBalance.toLocaleString('en-IN')}\n- PayEase`
+        sent = await sendSMS(sms_api_key, phone, msg)
+      }
 
       if (sent) totalSent++
       else totalFailed++
+    }
+
+    // Admin digest — one message summarising all employees
+    if (admin_digest_enabled && admin_digest_phone && digestLines.length > 0) {
+      const digestMsg = `PayEase Daily Summary\n${companyName} · ${dateLabel}\n\n${digestLines.join('\n')}`
+      const adminPhone = formatPhone(admin_digest_phone)
+
+      // Try WhatsApp first, fallback to SMS
+      let digestSent = false
+      if (whatsapp_token && whatsapp_phone_number_id) {
+        // Send as free-form text (only works within 24hr window if admin has messaged first)
+        // So we also try SMS as reliable fallback
+        const res = await fetch(`https://graph.facebook.com/v19.0/${whatsapp_phone_number_id}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${whatsapp_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: adminPhone, type: 'text',
+            text: { body: digestMsg },
+          }),
+        })
+        digestSent = res.ok
+      }
+      if (!digestSent && sms_api_key) {
+        await sendSMS(sms_api_key, admin_digest_phone, digestMsg)
+      }
     }
   }
 
