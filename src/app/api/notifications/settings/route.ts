@@ -33,8 +33,7 @@ export async function POST(req: NextRequest) {
   if ((profile as any)?.role !== 'admin') return NextResponse.json({ error: 'Admins only' }, { status: 403 })
 
   const body = await req.json()
-  const { enabled, whatsapp_token, whatsapp_phone_number_id, template_name, send_time,
-    sms_api_key, admin_digest_enabled, admin_digest_phone } = body
+  const { enabled, whatsapp_token, whatsapp_phone_number_id, template_name, send_time, sms_api_key } = body
 
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,8 +50,6 @@ export async function POST(req: NextRequest) {
       template_name: template_name || 'daily_employee_update',
       send_time: send_time || '18:00',
       sms_api_key: sms_api_key ?? null,
-      admin_digest_enabled: admin_digest_enabled ?? false,
-      admin_digest_phone: admin_digest_phone ?? null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'company_id' })
 

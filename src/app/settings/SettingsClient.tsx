@@ -345,8 +345,6 @@ function WhatsAppSection() {
   const [templateName, setTemplateName] = useState('daily_employee_update')
   const [sendTime, setSendTime] = useState('18:00')
   const [smsApiKey, setSmsApiKey] = useState('')
-  const [adminDigestEnabled, setAdminDigestEnabled] = useState(false)
-  const [adminDigestPhone, setAdminDigestPhone] = useState('')
   const [showToken, setShowToken] = useState(false)
   const [showSmsKey, setShowSmsKey] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -365,8 +363,6 @@ function WhatsAppSection() {
           setTemplateName(d.settings.template_name ?? 'daily_employee_update')
           setSendTime(d.settings.send_time ?? '18:00')
           setSmsApiKey(d.settings.sms_api_key ?? '')
-          setAdminDigestEnabled(d.settings.admin_digest_enabled ?? false)
-          setAdminDigestPhone(d.settings.admin_digest_phone ?? '')
         }
         setLoaded(true)
       })
@@ -384,8 +380,6 @@ function WhatsAppSection() {
         template_name: templateName.trim() || 'daily_employee_update',
         send_time: sendTime,
         sms_api_key: smsApiKey.trim() || null,
-        admin_digest_enabled: adminDigestEnabled,
-        admin_digest_phone: adminDigestPhone.trim() || null,
       }),
     })
     const d = await res.json()
@@ -511,36 +505,6 @@ function WhatsAppSection() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Admin digest */}
-        <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(189,157,255,0.03)', border: '1px solid rgba(189,157,255,0.08)' }}>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-[#ebe1fe] mb-0.5">Admin Daily Digest</p>
-              <p className="text-xs text-[#afa7c2]">Send you a single daily summary of all employees — useful for workers without any phone so you can inform them verbally.</p>
-            </div>
-            <button
-              onClick={() => setAdminDigestEnabled(v => !v)}
-              className="flex-shrink-0 w-11 h-6 rounded-full transition-all relative mt-0.5"
-              style={{ background: adminDigestEnabled ? '#bd9dff' : 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.2)' }}
-            >
-              <span className="absolute top-0.5 w-5 h-5 rounded-full transition-all shadow"
-                style={{ background: '#fff', left: adminDigestEnabled ? '22px' : '2px' }} />
-            </button>
-          </div>
-          {adminDigestEnabled && (
-            <div>
-              <label className={labelCls}>Your Phone Number (for digest)</label>
-              <input
-                value={adminDigestPhone}
-                onChange={e => setAdminDigestPhone(e.target.value)}
-                placeholder="e.g. 9876543210"
-                className={`${inputCls} ${inputFocusStyle}`}
-                style={inputStyle}
-              />
-            </div>
-          )}
         </div>
 
         {/* Template preview */}
