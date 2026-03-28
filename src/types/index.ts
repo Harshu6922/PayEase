@@ -23,6 +23,7 @@ export interface Employee {
   daily_rate: number | null;
   default_start_time?: string | null;
   default_end_time?: string | null;
+  phone_number?: string | null;
 }
 
 export interface AttendanceRecord {

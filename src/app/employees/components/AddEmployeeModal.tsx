@@ -34,6 +34,7 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
     daily_rate: '',
     default_start_time: '',
     default_end_time: '',
+    phone_number: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -107,6 +108,7 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
           : null,
         default_start_time: formData.default_start_time || null,
         default_end_time: formData.default_end_time || null,
+        phone_number: formData.phone_number.trim() || null,
       });
 
       if (insertError) {
@@ -127,6 +129,7 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
         daily_rate: '',
         default_start_time: '',
         default_end_time: '',
+        phone_number: '',
       });
 
       // Refresh list
@@ -217,6 +220,19 @@ export default function AddEmployeeModal({ atSeatLimit = false, employeeLimit = 
                 value={formData.employee_id}
                 onChange={handleChange}
                 placeholder="e.g. EMP-001"
+                className={inputClass}
+              />
+            </div>
+
+            {/* Phone Number (optional) */}
+            <div>
+              <label className={labelClass}>Phone Number <span className="normal-case font-normal opacity-60">(optional)</span></label>
+              <input
+                type="tel"
+                name="phone_number"
+                value={formData.phone_number}
+                onChange={handleChange}
+                placeholder="e.g. 9876543210"
                 className={inputClass}
               />
             </div>
