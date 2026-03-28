@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { formatINR } from '@/lib/payroll-utils'
 import { format } from 'date-fns'
 import { getPrevMonth, calcPrevBalance, downloadPdf } from '@/lib/pdf-utils'
 import type { PayrollRow, Payment } from '@/types'
 import PaymentModal from '@/components/PaymentModal'
-import Link from 'next/link'
+import { ChevronLeft, ChevronRight, Search, FileText, Banknote, Users, TrendingDown, Download } from 'lucide-react'
+import { fadeInUp, staggerContainer } from '@/lib/animations'
 
 // Data types passed from Server
 interface Employee {
@@ -87,21 +89,17 @@ function calculatePayroll(
     let total_deduction_amount = 0
 
     if (emp.worker_type === 'commission') {
-      // Commission: use pre-calculated total_amount stored at log time
       const empEntries = workEntries.filter(e => e.employee_id === emp.id)
       earned_salary = empEntries.reduce((sum, e) => sum + Number(e.total_amount ?? 0), 0)
-      // Count unique dates worked
       const uniqueDates = new Set(empEntries.map(e => e.date).filter(Boolean))
       total_worked_days = uniqueDates.size
 
     } else if (emp.worker_type === 'daily') {
-      // Daily: use pre-calculated pay_amount stored at attendance time
       const empDailyAtt = dailyAttendance.filter(a => a.employee_id === emp.id)
       earned_salary = empDailyAtt.reduce((sum, a) => sum + Number(a.pay_amount ?? 0), 0)
       total_worked_days = empDailyAtt.length
 
     } else {
-      // Salaried: attendance-based with overtime/deductions
       const empAttendance = attendance.filter(a => a.employee_id === emp.id)
       empAttendance.forEach(record => {
         if (Number(record.worked_hours) > 0) total_worked_days += 1
@@ -116,7 +114,6 @@ function calculatePayroll(
     const advance_deduction = total_advances
     const final_payable_salary = Math.round((earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction) * 100) / 100
 
-    // Aggregate totals based on positive/negative
     if (final_payable_salary >= 0) {
       totalPayable += final_payable_salary
     } else {
@@ -136,31 +133,59 @@ function calculatePayroll(
       final_payable_salary
     }
   })
-  
-  // Sort alphabetically or by net payable mostly for consistancy, let's just sort by payable descending
-  rows.sort((a,b) => b.final_payable_salary - a.final_payable_salary)
+
+  rows.sort((a, b) => b.final_payable_salary - a.final_payable_salary)
 
   const netPayout = totalPayable - totalRecoverable
 
-  return {
-    rows,
-    totalPayable,
-    totalRecoverable,
-    netPayout
-  }
+  return { rows, totalPayable, totalRecoverable, netPayout }
 }
 
 function getDaysInMonth(monthStr: string) {
-  // monthStr is YYYY-MM
   const parts = monthStr.split('-')
   if (parts.length !== 2) return 30
-  
   const year = parseInt(parts[0], 10)
   const month = parseInt(parts[1], 10)
-  
   if (isNaN(year) || isNaN(month)) return 30
-  
   return new Date(year, month, 0).getDate()
+}
+
+function formatMonth(monthStr: string) {
+  const [y, m] = monthStr.split('-')
+  return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+}
+
+function prevMonthStr(monthStr: string) {
+  const [y, m] = monthStr.split('-')
+  const d = new Date(parseInt(y), parseInt(m) - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function nextMonthStr(monthStr: string) {
+  const [y, m] = monthStr.split('-')
+  const d = new Date(parseInt(y), parseInt(m), 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+const initials = (name: string) =>
+  name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+
+const avatarGradient: Record<string, string> = {
+  salaried: 'from-[#bd9dff] to-[#8a4cfc]',
+  commission: 'from-[#d3c5f5] to-[#4b4168]',
+  daily: 'from-[#dad8ee] to-[#d3c5f5]',
+}
+
+const avatarText: Record<string, string> = {
+  salaried: 'text-[#000000]',
+  commission: 'text-[#382e54]',
+  daily: 'text-[#4b455c]',
+}
+
+const typeBadge: Record<string, string> = {
+  salaried: 'bg-[#4b4168] text-[#d7c9f9]',
+  commission: 'bg-[#28213e] text-[#afa7c2]',
+  daily: 'bg-[#2f2747] text-[#ebe1fe]',
 }
 
 export default function PayrollDashboard({
@@ -179,7 +204,7 @@ export default function PayrollDashboard({
   userRole = 'admin',
 }: PayrollDashboardProps) {
   const router = useRouter()
-  
+
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [isGenerating, setIsGenerating] = useState(false)
   const [paidUpToDay, setPaidUpToDay] = useState<number | null>(null)
@@ -195,19 +220,14 @@ export default function PayrollDashboard({
     setLocalPayments(monthPayments)
   }, [selectedMonth])
 
-  // When month changes externally (e.g. navigate), sync monthPayments
   useEffect(() => {
     setLocalPayments(monthPayments)
   }, [monthPayments])
 
-  // Use actual days in month for consistent daily wage calculation
   const actualDaysInMonth = getDaysInMonth(selectedMonth)
-
   const prevMonth = useMemo(() => getPrevMonth(selectedMonth), [selectedMonth])
-
   const daysInPrevMonth = useMemo(() => getDaysInMonth(prevMonth), [prevMonth])
 
-  // Memoize calculation so it ONLY runs when these specific variables change
   const computedPayroll = useMemo(() => {
     return calculatePayroll(employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee)
   }, [employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee])
@@ -222,13 +242,6 @@ export default function PayrollDashboard({
     )
   }, [paidUpToDay, prevMonth, employees])
 
-  const pdfTotalNetPayout = useMemo(() => {
-    return computedPayroll.rows.reduce((sum, row) => {
-      return sum + row.final_payable_salary + (prevBalances[row.employee_id] ?? 0)
-    }, 0)
-  }, [computedPayroll.rows, prevBalances])
-
-  // Compute paid-this-month per employee: cash payments + advance repayments via salary deduction
   const paidByEmployee = useMemo(() => {
     const map: Record<string, number> = {}
     localPayments.forEach(p => {
@@ -240,7 +253,6 @@ export default function PayrollDashboard({
     return map
   }, [localPayments, advanceRepaidThisMonth])
 
-  // Summary totals after subtracting recorded payments
   const remainingTotals = useMemo(() => {
     let totalRemaining = 0
     let totalRecoverable = 0
@@ -256,42 +268,41 @@ export default function PayrollDashboard({
     return { totalRemaining, totalRecoverable, net: totalRemaining - totalRecoverable }
   }, [computedPayroll.rows, paidByEmployee])
 
+  const employeesPaidCount = useMemo(() => {
+    return computedPayroll.rows.filter(row => {
+      if (row.final_payable_salary <= 0) return false
+      const paid = paidByEmployee[row.employee_id] ?? 0
+      return Math.round((row.final_payable_salary - paid) * 100) / 100 <= 0
+    }).length
+  }, [computedPayroll.rows, paidByEmployee])
+
+  const totalDeductions = useMemo(() => {
+    return computedPayroll.rows.reduce((sum, row) => sum + row.total_deduction_amount + row.total_advances, 0)
+  }, [computedPayroll.rows])
+
   const filteredRows = useMemo(() => {
     let rows = computedPayroll.rows
-
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      rows = rows.filter(
-        r =>
-          r.full_name.toLowerCase().includes(q) ||
-          r.display_id.toLowerCase().includes(q)
+      rows = rows.filter(r =>
+        r.full_name.toLowerCase().includes(q) ||
+        r.display_id.toLowerCase().includes(q)
       )
     }
-
-    if (sortOrder === 'asc') {
-      return [...rows].sort((a, b) => a.full_name.localeCompare(b.full_name))
-    }
-    if (sortOrder === 'desc') {
-      return [...rows].sort((a, b) => b.full_name.localeCompare(a.full_name))
-    }
-
+    if (sortOrder === 'asc') return [...rows].sort((a, b) => a.full_name.localeCompare(b.full_name))
+    if (sortOrder === 'desc') return [...rows].sort((a, b) => b.full_name.localeCompare(a.full_name))
     return rows
   }, [computedPayroll.rows, searchQuery, sortOrder])
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newMonth = e.target.value // Format YYYY-MM
-    if (!newMonth) return
-
+  const navigateMonth = (dir: 'prev' | 'next') => {
+    const newMonth = dir === 'prev' ? prevMonthStr(selectedMonth) : nextMonthStr(selectedMonth)
     setSelectedMonth(newMonth)
-
-    // Tell the server to fetch data for this new month
     router.push(`/reports?month=${newMonth}`)
   }
 
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
-      // Pass the computed values to the Server Action
       const [yearStr, monthStr] = selectedMonth.split('-')
       await generateAction({
         month: parseInt(monthStr, 10),
@@ -337,9 +348,7 @@ export default function PayrollDashboard({
       const emp = employees.find(e => e.id === row.employee_id)
       if (!emp) return
       const pb = prevBalances[row.employee_id] ?? 0
-      const od = pb > 0 && paidUpToDay
-        ? Math.max(0, daysInPrevMonth - paidUpToDay)
-        : 0
+      const od = pb > 0 && paidUpToDay ? Math.max(0, daysInPrevMonth - paidUpToDay) : 0
       const prevMonthName = format(new Date(
         parseInt(prevMonth.split('-')[0], 10),
         parseInt(prevMonth.split('-')[1], 10) - 1
@@ -369,249 +378,387 @@ export default function PayrollDashboard({
   }
 
   return (
-    <>
-      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
-        <div>
-          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Finance</p>
-          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Monthly Payroll Report</h1>
-          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>Interactive dashboard for {selectedMonth}</p>
-        </div>
-        <div className="flex items-center gap-3 mb-1">
-          <Link
-            href={`/reports/comparison?month=${selectedMonth}`}
-            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-          >
-            Compare →
-          </Link>
-          <button
-            onClick={handleExportBulkPdf}
-            disabled={isExportingBulk || computedPayroll.rows.length === 0}
-            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50 transition-opacity hover:opacity-80"
-            style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff' }}
-          >
-            {isExportingBulk ? 'Generating...' : 'Export PDF'}
-          </button>
-          {userRole === 'admin' && (
+    <div className="min-h-screen bg-[#100b1f] pb-20">
+
+      {/* Ambient glow */}
+      <div
+        className="pointer-events-none fixed top-[-10%] left-[-10%] w-[60%] h-[60%] z-0"
+        style={{ background: 'radial-gradient(circle, rgba(189,157,255,0.06) 0%, transparent 70%)' }}
+      />
+
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16">
+
+        {/* Page Header */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+          <div>
+            <h1 className="font-extrabold text-4xl md:text-5xl tracking-tight text-[#ebe1fe]">
+              Payroll Reports
+            </h1>
+            <p className="mt-2 text-[#afa7c2] text-sm">
+              {companyName} · salary calculations &amp; payments
+            </p>
+          </div>
+
+          {/* Month navigation */}
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleGenerate}
-              disabled={isGenerating || computedPayroll.rows.length === 0}
-              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold disabled:opacity-50 transition-opacity hover:opacity-80"
-              style={{ backgroundColor: '#D4A847', color: '#1C2333' }}
+              onClick={() => navigateMonth('prev')}
+              className="p-2 rounded-xl border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] hover:border-[#bd9dff]/30 transition-all"
+              style={{ background: 'rgba(28,22,46,0.4)' }}
             >
-              {isGenerating ? 'Generating...' : 'Generate Payroll'}
+              <ChevronLeft className="h-5 w-5" />
             </button>
-          )}
-        </div>
-      </div>
-
-      <div className="px-8 py-6">
-      {/* Control Panel & Summary Section */}
-      <div className="mb-8 overflow-hidden rounded-xl border bg-white shadow-sm p-6">
-        <div className="flex flex-col lg:flex-row gap-8 lg:items-center justify-between">
-          
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-6">
-            <div>
-              <label htmlFor="month-select" className="block text-sm font-medium leading-6 text-gray-900">Select Month</label>
-              <div className="mt-2">
-                <input
-                  type="month"
-                  id="month-select"
-                  value={selectedMonth}
-                  onChange={handleMonthChange}
-                  className="block w-full rounded-md border-0 py-1.5 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                />
-              </div>
+            <div
+              className="px-5 py-2.5 rounded-xl font-semibold text-sm text-[#ebe1fe] min-w-[160px] text-center"
+              style={{ background: 'rgba(28,22,46,0.6)', border: '1px solid rgba(189,157,255,0.15)' }}
+            >
+              {formatMonth(selectedMonth)}
             </div>
-            <div>
-              <label htmlFor="days-select" className="block text-sm font-medium leading-6 text-gray-900">Days in Month</label>
-              <div className="mt-2">
-                <input
-                  type="number"
-                  id="days-select"
-                  min="1"
-                  max="31"
-                  value={actualDaysInMonth}
-                  readOnly
-                  className="block rounded-md border-0 py-1.5 text-gray-500 shadow-sm ring-1 ring-inset ring-gray-300 bg-gray-50 sm:text-sm sm:leading-6 w-32 cursor-not-allowed"
-                  title="Based on actual days in selected month"
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="paid-up-to" className="block text-sm font-medium leading-6 text-gray-900">
-                Prev. month paid up to
-              </label>
-              <div className="mt-2">
-                <input
-                  type="number"
-                  id="paid-up-to"
-                  min={1}
-                  max={daysInPrevMonth}
-                  value={paidUpToDay ?? ''}
-                  onChange={e => {
-                    const val = parseInt(e.target.value, 10)
-                    setPaidUpToDay(isNaN(val) ? null : Math.min(val, daysInPrevMonth))
-                  }}
-                  placeholder="e.g. 25"
-                  className="block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 w-28 px-3"
-                />
-              </div>
-            </div>
+            <button
+              onClick={() => navigateMonth('next')}
+              className="p-2 rounded-xl border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] hover:border-[#bd9dff]/30 transition-all"
+              style={{ background: 'rgba(28,22,46,0.4)' }}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
+        </header>
 
-          {/* Dynamic Summary */}
-          <div className="flex flex-col sm:flex-row gap-6 lg:gap-12 bg-gray-50 rounded-lg p-4 border border-gray-100">
-            <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Total Payable</span>
-              <span className="text-xl font-bold text-green-600">{formatINR(remainingTotals.totalRemaining)}</span>
-            </div>
-
-            <div className="w-px bg-gray-200 hidden sm:block"></div>
-
-            <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Total Recoverable</span>
-              <span className="text-xl font-bold text-red-600">
-                {remainingTotals.totalRecoverable > 0 ? `-${formatINR(remainingTotals.totalRecoverable)}` : formatINR(0)}
-              </span>
-            </div>
-
-            <div className="w-px bg-gray-200 hidden sm:block"></div>
-
-            <div className="flex flex-col">
-              <span className="text-sm text-gray-500 font-medium">Remaining to Pay</span>
-              <span className={`text-2xl font-black ${remainingTotals.net < 0 ? 'text-red-700' : 'text-gray-900'}`}>
-                {remainingTotals.net < 0 ? `-${formatINR(Math.abs(remainingTotals.net))}` : formatINR(remainingTotals.net)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <input
-          type="text"
-          placeholder="Search employee…"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="block w-64 rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-        />
-        <button
-          onClick={() =>
-            setSortOrder(s => s === 'default' ? 'asc' : s === 'asc' ? 'desc' : 'default')
-          }
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+        {/* Summary Cards */}
+        <motion.section
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-12"
         >
-          {sortOrder === 'default' ? 'Default sort' : sortOrder === 'asc' ? 'A → Z' : 'Z → A'}
-        </button>
-      </div>
+          {/* Total Payable */}
+          <motion.div
+            variants={fadeInUp}
+            className="p-6 rounded-2xl"
+            style={{
+              background: 'rgba(28,22,46,0.6)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(189,157,255,0.1)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Total Payable</span>
+              <div className="p-2 rounded-lg" style={{ background: 'rgba(212,168,71,0.1)' }}>
+                <Banknote className="h-4 w-4 text-[#D4A847]" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-[#D4A847] mb-1">
+              {formatINR(computedPayroll.totalPayable)}
+            </div>
+            <p className="text-[#afa7c2] text-xs font-medium">
+              {formatINR(remainingTotals.totalRemaining)} remaining to pay
+            </p>
+          </motion.div>
 
-      {/* Dynamic Table */}
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm mb-12">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Overtime</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deductions</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Advances</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Payable</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Pay</th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {filteredRows.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-sm text-gray-500">
-                  {searchQuery.trim()
-                    ? 'No employees match your search.'
-                    : 'No active employees found to calculate payroll for.'}
-                </td>
-              </tr>
-            ) : (
-              filteredRows.map((row) => (
-                <tr key={row.employee_id} className="hover:bg-gray-50 transition-colors">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
-                    {row.full_name} <span className="text-gray-400 text-xs font-normal block">{row.display_id}</span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500 font-medium">{row.total_worked_days}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-700 font-medium">{formatINR(row.earned_salary)}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-500">{formatINR(row.total_overtime_amount)}</td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-red-500">
-                    {row.total_deduction_amount > 0 ? `-${formatINR(row.total_deduction_amount)}` : '-'}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-orange-500">
-                    {(() => {
-                      const outstanding = outstandingByEmployee[row.employee_id]?.totalOutstanding ?? 0
-                      return outstanding > 0 ? formatINR(outstanding) : '-'
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-bold">
-                    {(() => {
-                      const paid = paidByEmployee[row.employee_id] ?? 0
-                      const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
-                      if (row.final_payable_salary < 0) {
-                        return <span className="text-red-600">Recover ({formatINR(Math.abs(row.final_payable_salary))})</span>
-                      }
-                      if (remaining < 0) {
-                        return (
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-red-600 font-bold">{formatINR(Math.abs(remaining))}</span>
-                            <span className="text-[10px] font-semibold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded-full">Overpaid</span>
-                          </span>
-                        )
-                      }
-                      if (remaining === 0) {
-                        return (
-                          <span className="inline-flex items-center gap-1">
-                            <span className="text-gray-400 line-through">{formatINR(row.final_payable_salary)}</span>
-                            <span className="text-[10px] font-semibold bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">Settled</span>
-                          </span>
-                        )
-                      }
-                      return <span className="text-green-600">{formatINR(remaining)}</span>
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    {userRole === 'admin' && row.final_payable_salary > 0 && (() => {
-                      const paid = paidByEmployee[row.employee_id] ?? 0
-                      const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
-                      return (
-                        <button
-                          onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary + row.total_advances })}
-                          disabled={remaining <= 0}
-                          className={`rounded px-2 py-1 text-xs font-semibold transition-colors ${
-                            remaining <= 0
-                              ? 'bg-green-100 text-green-700 cursor-default'
-                              : 'bg-indigo-600 text-white hover:bg-indigo-500'
-                          }`}
-                        >
-                          {remaining <= 0 ? 'Paid' : 'Pay'}
-                        </button>
-                      )
-                    })()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleExportEmployeePdf(row as PayrollRow)}
-                      disabled={!!exportingEmployeeId}
-                      title="Download employee PDF"
-                      className="text-gray-400 hover:text-indigo-600 disabled:opacity-40 transition-colors"
-                    >
-                      {exportingEmployeeId === row.employee_id ? '...' : '↓'}
-                    </button>
-                  </td>
+          {/* Employees Paid */}
+          <motion.div
+            variants={fadeInUp}
+            className="p-6 rounded-2xl"
+            style={{
+              background: 'rgba(28,22,46,0.6)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(189,157,255,0.1)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Employees Paid</span>
+              <div className="p-2 rounded-lg" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                <Users className="h-4 w-4 text-emerald-400" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-emerald-400 mb-1">
+              {employeesPaidCount} / {computedPayroll.rows.length}
+            </div>
+            <p className="text-[#afa7c2] text-xs font-medium">
+              {computedPayroll.rows.length - employeesPaidCount} pending payment
+            </p>
+          </motion.div>
+
+          {/* Total Deductions */}
+          <motion.div
+            variants={fadeInUp}
+            className="p-6 rounded-2xl"
+            style={{
+              background: 'rgba(28,22,46,0.6)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(189,157,255,0.1)',
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Total Deductions</span>
+              <div className="p-2 rounded-lg" style={{ background: 'rgba(239,68,68,0.1)' }}>
+                <TrendingDown className="h-4 w-4 text-red-400" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-red-400 mb-1">
+              {formatINR(totalDeductions)}
+            </div>
+            <p className="text-[#afa7c2] text-xs font-medium">
+              Includes advances &amp; absences
+            </p>
+          </motion.div>
+        </motion.section>
+
+        {/* Table Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: 'rgba(28,22,46,0.6)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(189,157,255,0.1)',
+          }}
+        >
+          {/* Table toolbar */}
+          <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#4b455c]/20">
+            <h2 className="text-lg font-bold text-[#ebe1fe]">Salary Breakdown</h2>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search */}
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                style={{ background: 'rgba(189,157,255,0.05)', border: '1px solid rgba(189,157,255,0.1)' }}
+              >
+                <Search className="h-4 w-4 text-[#afa7c2] flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search employee..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-[#ebe1fe] text-sm placeholder:text-[#afa7c2]/50 w-36"
+                />
+              </div>
+
+              {/* Sort */}
+              <button
+                onClick={() => setSortOrder(s => s === 'default' ? 'asc' : s === 'asc' ? 'desc' : 'default')}
+                className="px-3 py-2 rounded-xl text-xs font-semibold text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
+                style={{ background: 'rgba(189,157,255,0.05)', border: '1px solid rgba(189,157,255,0.1)' }}
+              >
+                {sortOrder === 'default' ? 'Default' : sortOrder === 'asc' ? 'A → Z' : 'Z → A'}
+              </button>
+
+              {/* Export PDF */}
+              <button
+                onClick={handleExportBulkPdf}
+                disabled={isExportingBulk || computedPayroll.rows.length === 0}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[#afa7c2] hover:text-[#ebe1fe] disabled:opacity-40 transition-colors"
+                style={{ background: 'rgba(189,157,255,0.05)', border: '1px solid rgba(189,157,255,0.1)' }}
+              >
+                <Download className="h-4 w-4" />
+                {isExportingBulk ? 'Exporting...' : 'Export PDF'}
+              </button>
+
+              {/* Generate Payroll */}
+              {userRole === 'admin' && (
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || computedPayroll.rows.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 transition-all hover:shadow-[0_0_20px_rgba(212,168,71,0.3)] active:scale-95"
+                  style={{ background: '#D4A847', color: '#1C1000' }}
+                >
+                  <FileText className="h-4 w-4" />
+                  {isGenerating ? 'Generating...' : 'Generate Payroll'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[800px]">
+              <thead>
+                <tr className="text-[#afa7c2] text-[11px] font-bold tracking-widest uppercase border-b border-[#4b455c]/10">
+                  <th className="px-6 py-4">Employee</th>
+                  <th className="px-6 py-4 text-center">Type</th>
+                  <th className="px-6 py-4 text-right">Days</th>
+                  <th className="px-6 py-4 text-right">Deductions</th>
+                  <th className="px-6 py-4 text-right">Net Payable</th>
+                  <th className="px-6 py-4 text-right">Amount Left</th>
+                  <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-[#4b455c]/10">
+                {filteredRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-16 text-center text-sm text-[#afa7c2]">
+                      {searchQuery.trim()
+                        ? 'No employees match your search.'
+                        : 'No active employees found to calculate payroll for.'}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredRows.map((row) => {
+                    const paid = paidByEmployee[row.employee_id] ?? 0
+                    const remaining = Math.round((row.final_payable_salary - paid) * 100) / 100
+                    const isFullyPaid = remaining <= 0 && row.final_payable_salary > 0
+                    const isOverpaid = remaining < 0
+                    const isRecover = row.final_payable_salary < 0
+
+                    return (
+                      <tr
+                        key={row.employee_id}
+                        className="hover:bg-[#bd9dff]/[0.03] transition-colors"
+                      >
+                        {/* Employee */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${avatarGradient[row.worker_type] ?? 'from-[#bd9dff] to-[#8a4cfc]'} flex items-center justify-center font-bold text-xs flex-shrink-0 ${avatarText[row.worker_type] ?? 'text-black'}`}>
+                              {initials(row.full_name)}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm text-[#ebe1fe]">{row.full_name}</p>
+                              <p className="font-mono text-[10px] text-[#afa7c2] uppercase tracking-widest">{row.display_id}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Type */}
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${typeBadge[row.worker_type] ?? 'bg-[#28213e] text-[#afa7c2]'}`}>
+                            {row.worker_type}
+                          </span>
+                        </td>
+
+                        {/* Days */}
+                        <td className="px-6 py-4 text-right text-sm font-semibold text-[#ebe1fe]">
+                          {row.total_worked_days}
+                        </td>
+
+                        {/* Deductions */}
+                        <td className="px-6 py-4 text-right text-sm font-semibold text-red-400">
+                          {(row.total_deduction_amount + row.total_advances) > 0
+                            ? `-${formatINR(row.total_deduction_amount + row.total_advances)}`
+                            : <span className="text-[#afa7c2]">—</span>
+                          }
+                        </td>
+
+                        {/* Net Payable */}
+                        <td className="px-6 py-4 text-right">
+                          {isRecover ? (
+                            <span className="text-sm font-bold text-red-400">
+                              -{formatINR(Math.abs(row.final_payable_salary))}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-bold text-[#D4A847]">
+                              {formatINR(row.final_payable_salary)}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Amount Left */}
+                        <td className="px-6 py-4 text-right">
+                          {isRecover ? (
+                            <span className="text-sm font-bold text-red-400">Recover</span>
+                          ) : isOverpaid ? (
+                            <span className="text-sm font-bold text-amber-400">
+                              +{formatINR(Math.abs(remaining))} over
+                            </span>
+                          ) : isFullyPaid ? (
+                            <span className="text-sm font-semibold text-[#afa7c2] line-through">
+                              {formatINR(0)}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-bold text-[#ebe1fe]">
+                              {formatINR(remaining)}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4 text-center">
+                          {isRecover ? (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-red-500/10 text-red-400">
+                              Recover
+                            </span>
+                          ) : isOverpaid ? (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400">
+                              Overpaid
+                            </span>
+                          ) : isFullyPaid ? (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-emerald-500/10 text-emerald-400">
+                              Paid
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-500/10 text-amber-400">
+                              Pending
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            {userRole === 'admin' && row.final_payable_salary > 0 && (
+                              <button
+                                onClick={() => setPaymentModal({ row: row as PayrollRow, payable: row.final_payable_salary + row.total_advances })}
+                                disabled={remaining <= 0}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                  remaining <= 0
+                                    ? 'bg-emerald-500/10 text-emerald-400 cursor-default'
+                                    : 'bg-[#bd9dff] text-[#000000] hover:shadow-[0_0_12px_rgba(189,157,255,0.3)] active:scale-95'
+                                }`}
+                              >
+                                {remaining <= 0 ? 'Paid' : 'Pay'}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleExportEmployeePdf(row as PayrollRow)}
+                              disabled={!!exportingEmployeeId}
+                              title="Download PDF"
+                              className="p-1.5 rounded-lg text-[#afa7c2] hover:text-[#ebe1fe] hover:bg-[#bd9dff]/10 disabled:opacity-40 transition-all"
+                            >
+                              {exportingEmployeeId === row.employee_id ? (
+                                <span className="text-xs">...</span>
+                              ) : (
+                                <Download className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+
+              {/* Footer totals */}
+              {filteredRows.length > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-[#bd9dff]/10" style={{ background: 'rgba(189,157,255,0.03)' }}>
+                    <td className="px-6 py-4 text-sm font-bold text-[#afa7c2] uppercase tracking-wider" colSpan={3}>
+                      Totals ({filteredRows.length} employees)
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm font-bold text-red-400">
+                      -{formatINR(totalDeductions)}
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm font-bold text-[#D4A847]">
+                      {formatINR(computedPayroll.totalPayable)}
+                    </td>
+                    <td className="px-6 py-4 text-right text-sm font-bold text-[#ebe1fe]">
+                      {formatINR(remainingTotals.totalRemaining)}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-xs font-bold text-[#afa7c2]">
+                        {employeesPaidCount}/{computedPayroll.rows.length} paid
+                      </span>
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </motion.div>
+
+      </main>
 
       {paymentModal && (
         <PaymentModal
@@ -638,7 +785,6 @@ export default function PayrollDashboard({
           }}
         />
       )}
-      </div>
-    </>
+    </div>
   )
 }

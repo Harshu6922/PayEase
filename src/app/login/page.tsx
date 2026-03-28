@@ -2,13 +2,12 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { springScaleIn } from '@/lib/animations'
 
 export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -62,43 +61,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form fields — visual only, actual auth via Google */}
-          <div className="space-y-5 mb-6">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider px-1">
-                Email address
-              </label>
-              <input
-                type="email"
-                placeholder="name@company.com"
-                className="w-full bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3.5 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-                  Password
-                </label>
-                <button className="text-xs text-primary hover:text-primary-light transition-colors">Forgot?</button>
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  className="w-full bg-background border border-[#7C3AED]/30 rounded-xl px-4 py-3.5 pr-12 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Google Sign In — primary action */}
+          {/* Google Sign In */}
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleGoogle}
@@ -116,17 +79,11 @@ export default function LoginPage() {
             {googleLoading ? 'Redirecting…' : 'Continue with Google'}
           </motion.button>
 
-          {/* Footer links */}
-          <div className="mt-8 text-center space-y-4">
-            <p className="text-sm text-text-muted">
-              No account?{' '}
-              <a href="/login" className="text-primary font-semibold hover:underline underline-offset-4 decoration-primary/30">
-                Start your 14-day free trial
-              </a>
-            </p>
-            <div className="pt-2 flex items-center justify-center gap-2">
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <div className="flex items-center justify-center gap-2">
               <ShieldCheck className="h-3.5 w-3.5 text-text-muted" />
-              <span className="text-[11px] text-text-muted/80 uppercase tracking-widest font-medium">No credit card required</span>
+              <span className="text-[11px] text-text-muted/80 uppercase tracking-widest font-medium">Secure sign-in · No password needed</span>
             </div>
           </div>
         </div>

@@ -4,9 +4,8 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import {
-  Banknote, CalendarCheck, Shield, FileText, BarChart3, Zap,
-  CheckCircle, XCircle, PlayCircle, Menu, X, ChevronRight,
-  Users, ClipboardList,
+  Banknote, CalendarCheck, Shield, FileText, BarChart3,
+  CheckCircle, XCircle, Menu, X, ChevronRight,
 } from 'lucide-react'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import { useCountUp } from '@/lib/hooks/useCountUp'
@@ -15,44 +14,44 @@ const FEATURES = [
   { icon: Banknote, title: 'One-Click Salary', desc: 'Automate net pay calculations with deductions, advances, and overtime.' },
   { icon: CalendarCheck, title: 'Attendance Sync', desc: 'Track daily attendance, leaves, and half-days across your workforce.' },
   { icon: Shield, title: 'Compliance Ready', desc: 'Stay audit-ready with structured payroll records and export-ready reports.' },
-  { icon: Banknote, title: 'Advance & Loans', desc: 'Manage employee advances and auto-deduct monthly EMIs from salary.' },
+  { icon: Banknote, title: 'Advance Management', desc: 'Issue and track employee salary advances with automatic deduction from payroll.' },
   { icon: FileText, title: 'Digital Payslips', desc: 'Generate and share professional PDF payslips instantly with one click.' },
   { icon: BarChart3, title: 'Payroll Analytics', desc: 'Visual charts for salary trends, attendance patterns, and monthly summaries.' },
 ]
 
 const STEPS = [
-  { n: 1, title: 'Add Employees', desc: 'Set up profiles with salary type, working hours, and KYC details in minutes.' },
+  { n: 1, title: 'Add Employees', desc: 'Set up profiles with salary type and working hours in minutes.' },
   { n: 2, title: 'Track Attendance', desc: 'Capture daily logs, leaves, overtime, and deductions effortlessly.' },
   { n: 3, title: 'Run Payroll', desc: 'Review the summary and click Run. Payslips generated instantly.' },
 ]
 
 const PLANS = [
   {
-    name: 'Starter', price: 'Free', sub: '/forever', popular: false,
+    name: 'Starter', price: '₹299', sub: '/mo', popular: false,
     features: [
-      { text: 'Up to 5 employees', ok: true },
-      { text: 'Basic Attendance', ok: true },
-      { text: 'No Statutory Filings', ok: false },
+      { text: 'Up to 10 employees', ok: true },
+      { text: 'Attendance & Payroll', ok: true },
+      { text: 'PDF Payslips', ok: true },
     ],
-    cta: 'Start Free',
+    cta: 'Get Started',
   },
   {
-    name: 'Growth', price: '₹999', sub: '/mo', popular: true,
+    name: 'Growth', price: '₹499', sub: '/mo', popular: true,
     features: [
-      { text: 'Up to 50 employees', ok: true },
+      { text: 'Up to 30 employees', ok: true },
       { text: 'Full Payroll Suite', ok: true },
       { text: 'Advance Management', ok: true },
     ],
     cta: 'Get Started',
   },
   {
-    name: 'Business', price: '₹2499', sub: '/mo', popular: false,
+    name: 'Business', price: '₹999', sub: '/mo', popular: false,
     features: [
       { text: 'Unlimited employees', ok: true },
-      { text: 'Multi-Branch Support', ok: true },
-      { text: 'Custom Integrations', ok: true },
+      { text: 'Expense Tracking', ok: true },
+      { text: 'Priority Support', ok: true },
     ],
-    cta: 'Talk to Sales',
+    cta: 'Get Started',
   },
 ]
 
@@ -102,7 +101,6 @@ export default function LandingPage() {
             <a href="#features" className="text-sm text-text-muted hover:text-text transition-colors">Features</a>
             <a href="#how" className="text-sm text-text-muted hover:text-text transition-colors">How it works</a>
             <a href="#pricing" className="text-sm text-text-muted hover:text-text transition-colors">Pricing</a>
-            <Link href="/contact" className="text-sm text-text-muted hover:text-text transition-colors">Contact</Link>
           </nav>
           <div className="hidden md:flex items-center gap-4">
             <Link href="/login" className="text-sm font-semibold text-primary hover:text-text transition-all">Sign In</Link>
@@ -161,20 +159,10 @@ export default function LandingPage() {
                 Start Free Trial <ChevronRight className="h-4 w-4" />
               </Link>
             </motion.div>
-            <a
-              href="#how"
-              className="w-full sm:w-auto px-8 py-4 flex items-center justify-center gap-2 text-text font-semibold hover:bg-surface-elevated transition-colors rounded-xl"
-            >
-              <PlayCircle className="h-5 w-5 text-primary-light" /> Watch Demo
-            </a>
           </motion.div>
-
-          <motion.p variants={fadeInUp} className="text-xs text-text-muted">
-            No credit card required · 14-day free trial
-          </motion.p>
         </motion.div>
 
-        {/* Browser mockup */}
+        {/* Dashboard screenshot */}
         <motion.div
           initial={{ opacity: 0, y: 40, rotateX: 12 }}
           animate={{ opacity: 1, y: 0, rotateX: 10 }}
@@ -183,26 +171,12 @@ export default function LandingPage() {
           className="relative max-w-5xl mx-auto mt-16 px-4"
         >
           <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-2xl p-2 shadow-2xl shadow-black/60">
-            <div className="bg-surface-elevated/50 rounded-xl overflow-hidden border border-white/5 aspect-video flex items-center justify-center">
-              <div className="w-full h-full bg-gradient-to-br from-[#1A1035] via-[#221445] to-[#0F0A1E] flex flex-col">
-                {/* Mock dashboard */}
-                <div className="flex h-10 items-center px-4 border-b border-[#7C3AED]/10 gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-danger/60" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-warning/60" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-success/60" />
-                </div>
-                <div className="flex flex-1 gap-3 p-4">
-                  <div className="w-28 rounded-lg bg-[#7C3AED]/10 border border-[#7C3AED]/10" />
-                  <div className="flex-1 grid grid-cols-2 gap-3">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="rounded-xl bg-white/5 border border-[#7C3AED]/10 p-3 flex flex-col gap-2">
-                        <div className="h-1.5 w-12 bg-text-muted/20 rounded" />
-                        <div className="h-4 w-16 bg-primary/40 rounded" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="rounded-xl overflow-hidden border border-white/5">
+              <img
+                src="/dashboard-preview.png"
+                alt="PayEase Dashboard"
+                className="w-full h-auto block"
+              />
             </div>
           </div>
         </motion.div>
@@ -404,18 +378,12 @@ export default function LandingPage() {
           />
           <h2 className="font-sans font-extrabold text-3xl md:text-5xl text-text mb-6">Ready to fix your payroll?</h2>
           <p className="text-text-muted mb-10 text-lg">Join 500+ Indian businesses automating their payout cycles.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <motion.div whileTap={{ scale: 0.97 }}>
               <Link href="/login" className="inline-block bg-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:scale-105 transition-transform">
                 Get Started Now
               </Link>
             </motion.div>
-            <Link
-              href="/contact"
-              className="inline-block bg-white/5 backdrop-blur-md text-text px-10 py-5 rounded-2xl font-bold text-lg border border-[#7C3AED]/20 hover:bg-white/10 transition-all"
-            >
-              Schedule a Demo
-            </Link>
           </div>
         </motion.div>
       </section>
@@ -433,7 +401,6 @@ export default function LandingPage() {
           <div className="flex gap-8">
             <a href="#features" className="text-text-muted hover:text-text transition-colors text-sm">Features</a>
             <a href="#pricing" className="text-text-muted hover:text-text transition-colors text-sm">Pricing</a>
-            <Link href="/contact" className="text-text-muted hover:text-text transition-colors text-sm">Contact</Link>
             <Link href="/login" className="text-text-muted hover:text-text transition-colors text-sm">Sign In</Link>
           </div>
         </div>

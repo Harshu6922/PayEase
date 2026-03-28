@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid'
 import { MAX_REFERRALS } from '@/lib/plans'
 
 export async function POST(req: NextRequest) {
-  const { companyName, referralCode } = await req.json()
+  const { companyName, ownerName, city, teamSize, referralCode } = await req.json()
   if (!companyName) return NextResponse.json({ error: 'Company name required' }, { status: 400 })
 
   const supabase = await createClient()
@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
 
   // Create company
   const { data: company, error: companyErr } = await adminClient
-    .from('companies').insert({ name: companyName }).select('id').single()
+    .from('companies').insert({
+      name: companyName,
+      ...(ownerName && { owner_name: ownerName }),
+      ...(city && { city }),
+      ...(teamSize && { team_size: teamSize }),
+    }).select('id').single()
   if (companyErr || !company) {
     return NextResponse.json({ error: companyErr?.message ?? 'Failed to create company' }, { status: 500 })
   }

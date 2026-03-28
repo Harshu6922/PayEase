@@ -1,28 +1,28 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { Employee } from '@/types'
 import AttendanceManager from './components/AttendanceManager'
-import PageShell from '@/components/PageShell'
 
 export default async function AttendancePage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profileData } = user
-    ? await supabase.from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
-    : { data: null }
+  if (!user) redirect('/login')
+
+  const { data: profileData } = await supabase
+    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
+
   const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
+  const companyId = (profileData as any)?.company_id
 
   const { data } = await supabase
     .from('employees')
     .select('*')
+    .eq('company_id', companyId)
     .eq('is_active', true)
     .order('full_name')
 
   const employees: Employee[] = (data || []) as Employee[]
 
-  return (
-    <PageShell title="Attendance" subtitle="Workforce">
-      <AttendanceManager employees={employees} userRole={userRole} />
-    </PageShell>
-  )
+  return <AttendanceManager employees={employees} userRole={userRole} />
 }
