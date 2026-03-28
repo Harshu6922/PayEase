@@ -1,187 +1,145 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
-import { Plus, X } from 'lucide-react';
-import type { Database } from '@/types/supabase';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { createClient } from '@/lib/supabase/client'
+import { X } from 'lucide-react'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-type EmployeeMinimal = { id: string; full_name: string; employee_id: string; };
+type EmployeeMinimal = { id: string; full_name: string; employee_id: string }
 
-export default function AddAdvanceModal({ employees }: { employees: EmployeeMinimal[] }) {
-  const router = useRouter();
-  const supabase = createClient() as unknown as SupabaseClient<Database>;
-  const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface Props {
+  employees: EmployeeMinimal[]
+  companyId: string
+  onSaved: () => void
+  onClose: () => void
+}
 
+const inputCls = `w-full rounded-xl px-4 py-2.5 text-sm text-[#ebe1fe] placeholder:text-[#afa7c2]/50
+  bg-[rgba(189,157,255,0.05)] border border-[rgba(189,157,255,0.1)]
+  focus:outline-none focus:border-[#bd9dff]/40 focus:ring-0 transition-colors`
+
+const labelCls = 'block text-xs font-semibold text-[#afa7c2] uppercase tracking-wider mb-1.5'
+
+export default function AddAdvanceModal({ employees, companyId, onSaved, onClose }: Props) {
+  const supabase = createClient() as unknown as SupabaseClient<any>
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     employee_id: '',
     amount: '',
     advance_date: new Date().toISOString().split('T')[0],
     note: '',
-  });
+  })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+    e.preventDefault()
+    setError(null)
+    if (!formData.employee_id) { setError('Please select an employee.'); return }
+    if (!formData.amount || Number(formData.amount) <= 0) { setError('Please enter a valid amount.'); return }
 
+    setLoading(true)
     try {
-      if (!formData.employee_id) throw new Error('Please select an employee.');
-      if (!formData.amount || Number(formData.amount) <= 0) throw new Error('Please enter a valid amount.');
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error('Active session not found. Please log in again.');
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (profileError || !profile?.company_id) throw new Error('Could not fetch company profile.');
-
       const { error: insertError } = await supabase.from('employee_advances').insert({
-        company_id: profile.company_id,
+        company_id: companyId,
         employee_id: formData.employee_id,
         amount: parseFloat(formData.amount),
         advance_date: formData.advance_date,
         note: formData.note || null,
-      });
-
-      if (insertError) throw new Error(insertError.message);
-
-      setIsOpen(false);
-      setFormData({
-        employee_id: '',
-        amount: '',
-        advance_date: new Date().toISOString().split('T')[0],
-        note: '',
-      });
-      
-      router.refresh();
-
+      })
+      if (insertError) throw new Error(insertError.message)
+      onSaved()
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || 'An error occurred while saving.');
-      } else {
-        setError('An unknown error occurred while saving.');
-      }
+      setError(err instanceof Error ? err.message : 'An error occurred.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transform transition-transform active:scale-95"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+      <motion.div
+        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        style={{ background: 'rgba(22,17,38,0.95)', border: '1px solid rgba(189,157,255,0.15)', backdropFilter: 'blur(24px)' }}
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
       >
-        <Plus className="h-4 w-4" />
-        Record Advance
-      </button>
-
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b px-6 py-4">
-              <h2 className="text-lg font-semibold text-gray-900">Record Salary Advance</h2>
-              <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-500">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6">
-              {error && (
-                <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Employee</label>
-                  <select
-                    name="employee_id"
-                    required
-                    value={formData.employee_id}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  >
-                    <option value="" disabled>Select Employee...</option>
-                    {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.full_name} ({emp.employee_id})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (INR)</label>
-                  <input
-                    type="number"
-                    name="amount"
-                    required
-                    step="0.01"
-                    min="1"
-                    value={formData.amount}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Advance Date</label>
-                  <input
-                    type="date"
-                    name="advance_date"
-                    required
-                    value={formData.advance_date}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note (Optional)</label>
-                  <textarea
-                    name="note"
-                    rows={2}
-                    value={formData.note}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                    placeholder="Reason for advance..."
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3 border-t pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-md border border-gray-300 dark:border-gray-600 bg-white px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-                >
-                  {loading ? 'Saving...' : 'Save Advance'}
-                </button>
-              </div>
-            </form>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#4b455c]/20">
+          <div>
+            <h2 className="text-base font-bold text-[#ebe1fe]">Give Advance</h2>
+            <p className="text-xs text-[#afa7c2] mt-0.5">Record a salary advance for an employee</p>
           </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[#afa7c2] hover:text-[#ebe1fe] hover:bg-[#bd9dff]/10 transition-all">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-      )}
-    </>
-  );
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="rounded-xl px-4 py-3 text-sm text-red-400" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className={labelCls}>Employee</label>
+            <select name="employee_id" required value={formData.employee_id} onChange={handleChange} className={inputCls}>
+              <option value="" disabled style={{ background: '#1c162e' }}>Select employee...</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id} style={{ background: '#1c162e' }}>
+                  {emp.full_name} ({emp.employee_id})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Amount (₹)</label>
+            <input type="number" name="amount" required step="1" min="1"
+              value={formData.amount} onChange={handleChange}
+              placeholder="0" className={inputCls} />
+          </div>
+
+          <div>
+            <label className={labelCls}>Date</label>
+            <input type="date" name="advance_date" required
+              value={formData.advance_date} onChange={handleChange} className={inputCls} />
+          </div>
+
+          <div>
+            <label className={labelCls}>Note <span className="text-[#afa7c2]/50 normal-case font-normal">(optional)</span></label>
+            <textarea name="note" rows={2} value={formData.note} onChange={handleChange}
+              placeholder="Reason for advance..." className={inputCls + ' resize-none'} />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} disabled={loading}
+              className="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#afa7c2] hover:text-[#ebe1fe] disabled:opacity-50 transition-colors"
+              style={{ background: 'rgba(189,157,255,0.05)', border: '1px solid rgba(189,157,255,0.1)' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={loading}
+              className="flex-1 rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50 transition-all hover:shadow-[0_0_16px_rgba(189,157,255,0.3)] active:scale-95"
+              style={{ background: '#bd9dff', color: '#100b1f' }}>
+              {loading ? 'Saving...' : 'Give Advance'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  )
 }

@@ -1,11 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import AddAdvanceModal from './components/AddAdvanceModal'
 import AdvancesClient, { type AdvanceWithBalance } from './components/AdvancesClient'
-import PageShell from '@/components/PageShell'
 
 export default async function AdvancesPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -19,6 +17,7 @@ export default async function AdvancesPage() {
   const { data: employees } = await supabase
     .from('employees')
     .select('id, full_name, employee_id')
+    .eq('company_id', companyId)
     .eq('is_active', true)
     .order('full_name')
 
@@ -50,13 +49,36 @@ export default async function AdvancesPage() {
     }
   })
 
+  // Stat computations
+  const totalOutstanding = advances.reduce((s, a) => s + (a.remaining > 0 ? a.remaining : 0), 0)
+
+  const now = new Date()
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const givenThisMonth = advances
+    .filter(a => a.advance_date.startsWith(monthPrefix))
+    .reduce((s, a) => s + a.amount, 0)
+
+  // Fetch repayments made this month
+  const startOfMonth = `${monthPrefix}-01`
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+  const { data: monthRepayments } = await supabase
+    .from('advance_repayments')
+    .select('amount')
+    .eq('company_id', companyId)
+    .gte('repayment_date', startOfMonth)
+    .lte('repayment_date', endOfMonth)
+
+  const recoveredThisMonth = (monthRepayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+
   return (
-    <PageShell
-      title="Advances"
-      subtitle="Workforce"
-      actions={userRole === 'admin' ? <AddAdvanceModal employees={employees || []} /> : undefined}
-    >
-      <AdvancesClient initialAdvances={advances} companyId={companyId} userRole={userRole} />
-    </PageShell>
+    <AdvancesClient
+      initialAdvances={advances}
+      companyId={companyId}
+      employees={employees || []}
+      totalOutstanding={totalOutstanding}
+      givenThisMonth={givenThisMonth}
+      recoveredThisMonth={recoveredThisMonth}
+      userRole={userRole}
+    />
   )
 }
