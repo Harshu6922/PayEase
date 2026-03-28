@@ -24,6 +24,7 @@ export interface Employee {
   default_start_time?: string | null;
   default_end_time?: string | null;
   phone_number?: string | null;
+  notification_method?: 'whatsapp' | 'sms' | 'none' | null;
 }
 
 export interface AttendanceRecord {

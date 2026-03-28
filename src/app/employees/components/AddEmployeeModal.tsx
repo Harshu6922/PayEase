@@ -44,6 +44,7 @@ export default function AddEmployeeModal({
     full_name: '',
     employee_id: '',
     phone_number: '',
+    notification_method: 'whatsapp' as 'whatsapp' | 'sms' | 'none',
     monthly_salary: '',
     standard_working_hours: '8',
     overtime_multiplier: '1.0',
@@ -104,6 +105,7 @@ export default function AddEmployeeModal({
         default_start_time: formData.default_start_time || null,
         default_end_time: formData.default_end_time || null,
         phone_number: formData.phone_number.trim() || null,
+        notification_method: formData.phone_number.trim() ? formData.notification_method : 'none',
         notes: formData.notes.trim() || null,
       })
 
@@ -114,6 +116,7 @@ export default function AddEmployeeModal({
         full_name: '',
         employee_id: '',
         phone_number: '',
+        notification_method: 'whatsapp',
         monthly_salary: '',
         standard_working_hours: '8',
         overtime_multiplier: '1.0',
@@ -209,11 +212,23 @@ export default function AddEmployeeModal({
                   onChange={handleChange} placeholder="e.g. EMP-001" className={inputCls} />
               </div>
 
-              {/* Phone Number */}
-              <div>
-                <label className={labelCls}>Phone Number <span className="normal-case font-normal opacity-60">(optional)</span></label>
-                <input type="tel" name="phone_number" value={formData.phone_number}
-                  onChange={handleChange} placeholder="e.g. 9876543210" className={inputCls} />
+              {/* Phone Number + Notification method */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Phone Number <span className="normal-case font-normal opacity-60">(optional)</span></label>
+                  <input type="tel" name="phone_number" value={formData.phone_number}
+                    onChange={handleChange} placeholder="e.g. 9876543210" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Notify Via</label>
+                  <select name="notification_method" value={formData.notification_method}
+                    onChange={handleChange} className={selectCls}
+                    disabled={!formData.phone_number.trim()}>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="sms">SMS</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
               </div>
 
               {/* Worker Type */}
