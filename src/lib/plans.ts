@@ -25,4 +25,4 @@ export const PLANS = {
 export type PlanId = keyof typeof PLANS
 
 export const REFERRAL_DISCOUNT_RS = 50
-export const MAX_REFERRALS = 5
+export const MAX_REFERRALS = 3

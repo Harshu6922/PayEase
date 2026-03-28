@@ -37,15 +37,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Cannot use your own referral code' }, { status: 400 })
   }
 
-  // Check referrer hasn't hit max referrals
+  // Check referrer hasn't hit the monthly cap (3 per calendar month)
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()
+
   const { data: existing } = await adminClient
     .from('referral_discounts')
     .select('id')
     .eq('referrer_company_id', (refCode as any).company_id)
-    .eq('active', true)
+    .gte('created_at', monthStart)
+    .lt('created_at', monthEnd)
 
   if ((existing ?? []).length >= MAX_REFERRALS) {
-    return NextResponse.json({ error: 'Referrer has reached the maximum referral limit' }, { status: 400 })
+    return NextResponse.json({ error: 'Referrer has reached the 3-referral monthly limit' }, { status: 400 })
   }
 
   // Check this company hasn't already been referred
