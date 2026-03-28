@@ -10,6 +10,27 @@
   }
 }
 
+/* Custom scrollbar — dark purple to match design system */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #100b1f;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(189, 157, 255, 0.25);
+  border-radius: 9999px;
+  border: 2px solid #100b1f;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(189, 157, 255, 0.45);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(189, 157, 255, 0.25) #100b1f;
+}
+
 @layer base {
   :root {
     --background: oklch(1 0 0);
