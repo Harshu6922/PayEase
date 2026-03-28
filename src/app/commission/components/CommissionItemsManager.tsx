@@ -47,7 +47,7 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
         className="max-w-4xl mx-auto px-6 py-10 md:py-16"
         variants={staggerContainer}
         initial="hidden"
-        animate="show"
+        animate="visible"
       >
         {/* Header */}
         <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
@@ -145,7 +145,7 @@ export default function CommissionItemsManager({ items: initialItems, companyId,
             className="flex flex-col gap-4"
             variants={staggerContainer}
             initial="hidden"
-            animate="show"
+            animate="visible"
           >
             {items.map(item => (
               <motion.div
