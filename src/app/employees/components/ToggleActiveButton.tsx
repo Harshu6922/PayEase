@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Power } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ToggleActiveButton({ id, isActive }: { id: string; isActive: boolean }) {
@@ -16,17 +17,45 @@ export default function ToggleActiveButton({ id, isActive }: { id: string; isAct
     setLoading(false)
   }
 
-  return (
+  return isActive ? (
     <button
       onClick={toggle}
       disabled={loading}
-      className={`text-xs font-medium px-2 py-1 rounded transition-colors disabled:opacity-50 ${
-        isActive
-          ? 'text-red-600 hover:bg-red-50'
-          : 'text-green-600 hover:bg-green-50'
-      }`}
+      title="Deactivate"
+      className="p-2 rounded-lg border transition-all disabled:opacity-50"
+      style={{
+        color: 'rgba(255,110,132,0.7)',
+        borderColor: 'rgba(255,110,132,0.2)',
+        background: 'transparent',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,110,132,0.1)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+      }}
     >
-      {loading ? '…' : isActive ? 'Deactivate' : 'Reactivate'}
+      <Power className="w-4 h-4" />
+    </button>
+  ) : (
+    <button
+      onClick={toggle}
+      disabled={loading}
+      title="Reactivate"
+      className="p-2 rounded-lg border transition-all disabled:opacity-50"
+      style={{
+        color: 'rgba(16,185,129,0.7)',
+        borderColor: 'rgba(16,185,129,0.2)',
+        background: 'transparent',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(16,185,129,0.1)'
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+      }}
+    >
+      <Power className="w-4 h-4" />
     </button>
   )
 }

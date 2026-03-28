@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Search, Calendar, ArrowRight } from 'lucide-react'
+import { Search, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import type { Employee } from '@/types'
@@ -11,26 +11,18 @@ import EditEmployeeModal from './EditEmployeeModal'
 import ToggleActiveButton from './ToggleActiveButton'
 import DeleteEmployeeButton from './DeleteEmployeeButton'
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const FILTERS = ['All', 'Salaried', 'Commission', 'Daily'] as const
 type Filter = typeof FILTERS[number]
 
-const avatarGradient: Record<string, string> = {
-  salaried: 'from-[#bd9dff] to-[#8a4cfc]',
-  commission: 'from-[#d3c5f5] to-[#4b4168]',
-  daily: 'from-[#dad8ee] to-[#d3c5f5]',
-}
+const AVATAR_COLORS = ['#bd9dff', '#8a4cfc', '#d3c5f5', '#afa7c2', '#7c6fa0', '#a78bfa']
 
-const avatarText: Record<string, string> = {
-  salaried: 'text-[#000000]',
-  commission: 'text-[#382e54]',
-  daily: 'text-[#4b455c]',
-}
-
-const typeBadge: Record<string, string> = {
-  salaried: 'bg-[#4b4168] text-[#d7c9f9]',
-  commission: 'bg-[#28213e] text-[#afa7c2]',
-  daily: 'bg-[#2f2747] text-[#ebe1fe]',
-}
+// ---------------------------------------------------------------------------
+// Helper functions
+// ---------------------------------------------------------------------------
 
 const initials = (name: string) =>
   name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -38,9 +30,9 @@ const initials = (name: string) =>
 const formatJoining = (date: string) =>
   new Date(date).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
 
-const salaryLabel = (type: string) => {
-  if (type === 'daily') return 'Daily Wage'
-  if (type === 'commission') return 'Base Salary'
+const salaryLabel = (emp: Employee) => {
+  if (emp.worker_type === 'daily') return 'Daily Wage'
+  if (emp.worker_type === 'commission' && emp.monthly_salary === 0) return 'Commission only'
   return 'Monthly CTC'
 }
 
@@ -52,6 +44,61 @@ const formatSalary = (emp: Employee) => {
   return `₹${emp.monthly_salary.toLocaleString('en-IN')}`
 }
 
+const avatarColor = (name: string): string => {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+// ---------------------------------------------------------------------------
+// Badge helpers
+// ---------------------------------------------------------------------------
+
+const TYPE_BADGE: Record<string, { bg: string; border: string; color: string }> = {
+  salaried:   { bg: 'rgba(189,157,255,0.15)', border: 'rgba(189,157,255,0.3)',  color: '#bd9dff' },
+  daily:      { bg: 'rgba(212,168,71,0.1)',   border: 'rgba(212,168,71,0.25)', color: '#D4A847' },
+  commission: { bg: 'rgba(16,185,129,0.1)',   border: 'rgba(16,185,129,0.2)',  color: '#10b981' },
+}
+
+function TypeBadge({ type }: { type: string }) {
+  const s = TYPE_BADGE[type] ?? TYPE_BADGE.salaried
+  return (
+    <span
+      className="px-2.5 py-1 rounded-full text-xs font-semibold border"
+      style={{ background: s.bg, borderColor: s.border, color: s.color }}
+    >
+      {type.charAt(0).toUpperCase() + type.slice(1)}
+    </span>
+  )
+}
+
+function StatusDot({ active }: { active: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="relative flex h-2 w-2">
+        {active && (
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        )}
+        <span
+          className={`relative inline-flex rounded-full h-2 w-2 ${active ? 'bg-emerald-500' : 'bg-red-400'}`}
+        />
+      </span>
+      <span
+        className="text-[10px] uppercase font-bold tracking-tight"
+        style={{ color: active ? '#10b981' : '#ff6e84' }}
+      >
+        {active ? 'Active' : 'Inactive'}
+      </span>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
 interface Props {
   employees: Employee[]
   userRole: 'admin' | 'viewer'
@@ -60,11 +107,16 @@ interface Props {
   isSubscribed: boolean
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function EmployeeListClient({
   employees, userRole, atSeatLimit, employeeLimit, isSubscribed,
 }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('All')
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const filtered = employees.filter(emp => {
@@ -78,8 +130,14 @@ export default function EmployeeListClient({
     return matchesFilter && matchesSearch
   })
 
+  const glassCard = {
+    background: 'rgba(28,22,46,0.6)',
+    backdropFilter: 'blur(24px)',
+    border: '1px solid rgba(189,157,255,0.1)',
+  } as const
+
   return (
-    <div className="min-h-screen bg-[#100b1f] pb-20">
+    <div className="min-h-screen pb-20" style={{ background: '#100b1f' }}>
 
       {/* Ambient glow */}
       <div
@@ -92,10 +150,10 @@ export default function EmployeeListClient({
         {/* Page Header */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <h1 className="font-extrabold text-4xl md:text-5xl tracking-tight text-[#ebe1fe]">
+            <h1 className="font-extrabold text-4xl md:text-5xl tracking-tight" style={{ color: '#ebe1fe' }}>
               Employees
             </h1>
-            <p className="mt-2 text-[#afa7c2] text-sm">
+            <p className="mt-2 text-sm" style={{ color: '#afa7c2' }}>
               Manage your workforce and salaries
             </p>
           </div>
@@ -108,37 +166,47 @@ export default function EmployeeListClient({
           )}
         </header>
 
-        {/* Search + Filter */}
+        {/* Search + Filter Bar */}
         <section className="flex flex-col lg:flex-row gap-5 mb-12">
           <div
-            className="relative flex-grow lg:w-2/3 flex items-center gap-3 px-4 py-4 rounded-2xl border border-[#bd9dff]/10 focus-within:border-[#bd9dff]/30 focus-within:ring-1 focus-within:ring-[#bd9dff]/20 transition-all"
-            style={{ background: 'rgba(28,22,46,0.4)', backdropFilter: 'blur(24px)' }}
+            className="relative flex-grow lg:w-2/3 flex items-center gap-3 px-4 py-4 rounded-2xl border focus-within:border-[#bd9dff]/30 focus-within:ring-1 focus-within:ring-[#bd9dff]/20 transition-all cursor-text"
+            style={{ ...glassCard, borderColor: 'rgba(189,157,255,0.1)' }}
             onClick={() => searchRef.current?.focus()}
           >
-            <Search className="h-5 w-5 text-[#afa7c2] flex-shrink-0" />
+            <Search className="h-5 w-5 flex-shrink-0" style={{ color: '#afa7c2' }} />
             <input
               ref={searchRef}
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search by name or employee ID..."
-              className="bg-transparent border-none outline-none text-[#ebe1fe] w-full text-sm placeholder:text-[#afa7c2]/50"
+              className="bg-transparent border-none outline-none w-full text-sm"
+              style={{ color: '#ebe1fe' }}
             />
           </div>
 
           <div
             className="lg:w-1/3 flex p-1.5 rounded-2xl"
-            style={{ background: 'rgba(28,22,46,0.4)', backdropFilter: 'blur(24px)', border: '1px solid rgba(189,157,255,0.1)' }}
+            style={glassCard}
           >
             {FILTERS.map(f => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`flex-1 py-2.5 rounded-xl font-semibold text-xs transition-all ${
+                className="flex-1 py-2.5 rounded-xl font-semibold text-xs transition-all"
+                style={
                   filter === f
-                    ? 'bg-[#bd9dff] text-[#000000] shadow-lg'
-                    : 'text-[#afa7c2] hover:text-[#ebe1fe]'
-                }`}
+                    ? { background: '#bd9dff', color: '#000000' }
+                    : { color: '#afa7c2' }
+                }
+                onMouseEnter={e => {
+                  if (filter !== f)
+                    (e.currentTarget as HTMLButtonElement).style.color = '#ebe1fe'
+                }}
+                onMouseLeave={e => {
+                  if (filter !== f)
+                    (e.currentTarget as HTMLButtonElement).style.color = '#afa7c2'
+                }}
               >
                 {f}
               </button>
@@ -146,108 +214,223 @@ export default function EmployeeListClient({
           </div>
         </section>
 
-        {/* Cards Grid */}
+        {/* Empty state */}
         {filtered.length === 0 ? (
-          <div className="text-center py-28 text-[#afa7c2]">
+          <div className="text-center py-28" style={{ color: '#afa7c2' }}>
             <p className="text-xl font-semibold">No employees found</p>
             <p className="text-sm mt-2 opacity-60">Try adjusting your search or filter.</p>
           </div>
         ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
-          >
-            {filtered.map(emp => (
+          <>
+            {/* ----------------------------------------------------------------
+                MOBILE CARDS  (hidden on lg+)
+            ---------------------------------------------------------------- */}
+            <div className="lg:hidden">
               <motion.div
-                key={emp.id}
-                variants={fadeInUp}
-                className="relative flex flex-col h-full p-8 rounded-2xl"
-                style={{
-                  background: 'rgba(28,22,46,0.6)',
-                  backdropFilter: 'blur(24px)',
-                  border: '1px solid rgba(189,157,255,0.1)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
-                whileHover={{ y: -4, boxShadow: '0 0 30px rgba(124,58,237,0.15)', borderColor: 'rgba(189,157,255,0.4)' }}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 gap-5"
               >
-                {/* Card header */}
-                <div className="flex items-start justify-between mb-8">
-                  <div className="flex items-center gap-5">
-                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${avatarGradient[emp.worker_type] ?? 'from-[#bd9dff] to-[#8a4cfc]'} flex items-center justify-center font-bold text-xl shadow-lg flex-shrink-0 ${avatarText[emp.worker_type] ?? 'text-black'}`}>
-                      {initials(emp.full_name)}
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-[#ebe1fe] tracking-tight leading-tight">
-                        {emp.full_name}
-                      </h3>
-                      <p className="font-mono text-xs text-[#afa7c2] uppercase tracking-widest mt-1">
-                        {emp.employee_id}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase ${typeBadge[emp.worker_type] ?? 'bg-[#28213e] text-[#afa7c2]'}`}>
-                    {emp.worker_type}
-                  </span>
-                </div>
+                {filtered.map(emp => {
+                  const bg = avatarColor(emp.full_name)
+                  return (
+                    <motion.div
+                      key={emp.id}
+                      variants={fadeInUp}
+                      className="rounded-2xl p-5"
+                      style={glassCard}
+                      whileHover={{
+                        y: -2,
+                        boxShadow: '0 0 24px rgba(124,58,237,0.15)',
+                        borderColor: 'rgba(189,157,255,0.3)',
+                      }}
+                    >
+                      {/* Row 1: avatar + name + badge */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0"
+                            style={{ background: bg, color: '#100b1f' }}
+                          >
+                            {initials(emp.full_name)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm leading-tight" style={{ color: '#ebe1fe' }}>
+                              {emp.full_name}
+                            </p>
+                            <p className="font-mono text-[10px] uppercase tracking-widest mt-0.5" style={{ color: '#afa7c2' }}>
+                              {emp.employee_id}
+                            </p>
+                          </div>
+                        </div>
+                        <TypeBadge type={emp.worker_type} />
+                      </div>
 
-                {/* Salary */}
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#afa7c2] text-sm font-medium">{salaryLabel(emp.worker_type)}</span>
-                    <span className="text-[#bd9dff] font-bold text-lg">{formatSalary(emp)}</span>
-                  </div>
-                  <div className="h-px bg-[#4b455c]/20" />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-[#afa7c2]">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-sm">Joined {formatJoining(emp.joining_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="relative flex h-2 w-2">
-                        {emp.is_active && (
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        )}
-                        <span className={`relative inline-flex rounded-full h-2 w-2 ${emp.is_active ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                      </span>
-                      <span className={`text-[10px] uppercase font-bold tracking-tight ${emp.is_active ? 'text-emerald-500' : 'text-red-400'}`}>
-                        {emp.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                      {/* Row 2: salary + status */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wide font-semibold mb-0.5" style={{ color: '#6b6483' }}>
+                            {salaryLabel(emp)}
+                          </p>
+                          <p className="text-sm font-bold" style={{ color: '#bd9dff' }}>
+                            {formatSalary(emp)}
+                          </p>
+                        </div>
+                        <StatusDot active={emp.is_active} />
+                      </div>
 
-                {/* Actions */}
-                <div className="mt-auto flex items-center gap-2">
-                  <Link
-                    href={`/employees/${emp.id}`}
-                    className="flex-1 py-3.5 border border-[#bd9dff]/20 rounded-xl text-[#bd9dff] font-bold text-sm hover:bg-[#bd9dff]/5 transition-colors flex items-center justify-center gap-2 group"
-                  >
-                    View Details
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                  {userRole === 'admin' && (
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <EditEmployeeModal employee={emp} />
-                      <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
-                      <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
-                    </div>
-                  )}
-                </div>
+                      {/* Row 3: actions */}
+                      {userRole === 'admin' && (
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/employees/${emp.id}`}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-bold border text-center transition-all"
+                            style={{
+                              borderColor: 'rgba(189,157,255,0.2)',
+                              color: '#bd9dff',
+                            }}
+                          >
+                            View Details
+                          </Link>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <EditEmployeeModal employee={emp} />
+                            <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
+                            <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
               </motion.div>
-            ))}
-          </motion.div>
+            </div>
+
+            {/* ----------------------------------------------------------------
+                DESKTOP TABLE  (hidden on md and below)
+            ---------------------------------------------------------------- */}
+            <div className="hidden lg:block rounded-2xl overflow-hidden" style={glassCard}>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr style={{ background: 'rgba(189,157,255,0.04)' }}>
+                    {['Employee', 'ID', 'Type', 'Salary', 'Status', 'Joined', ...(userRole === 'admin' ? ['Actions'] : [])].map(col => (
+                      <th
+                        key={col}
+                        className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-[0.2em]"
+                        style={{ color: '#afa7c2' }}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(emp => {
+                    const bg = avatarColor(emp.full_name)
+                    const isHovered = hoveredRow === emp.id
+                    return (
+                      <tr
+                        key={emp.id}
+                        style={{
+                          borderBottom: '1px solid rgba(189,157,255,0.06)',
+                          background: isHovered ? 'rgba(47,39,71,0.3)' : 'transparent',
+                          transition: 'background 0.15s ease',
+                        }}
+                        onMouseEnter={() => setHoveredRow(emp.id)}
+                        onMouseLeave={() => setHoveredRow(null)}
+                      >
+                        {/* Employee */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                              style={{ background: bg, color: '#100b1f' }}
+                            >
+                              {initials(emp.full_name)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm" style={{ color: '#ebe1fe' }}>
+                                {emp.full_name}
+                              </p>
+                              <p className="font-mono text-xs uppercase" style={{ color: '#afa7c2' }}>
+                                {emp.employee_id}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* ID */}
+                        <td className="px-6 py-4 font-mono text-xs uppercase" style={{ color: '#afa7c2' }}>
+                          {emp.employee_id}
+                        </td>
+
+                        {/* Type */}
+                        <td className="px-6 py-4">
+                          <TypeBadge type={emp.worker_type} />
+                        </td>
+
+                        {/* Salary */}
+                        <td className="px-6 py-4 text-sm font-semibold" style={{ color: '#bd9dff' }}>
+                          {formatSalary(emp)}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4">
+                          <StatusDot active={emp.is_active} />
+                        </td>
+
+                        {/* Joined */}
+                        <td className="px-6 py-4 text-sm" style={{ color: '#afa7c2' }}>
+                          {formatJoining(emp.joining_date)}
+                        </td>
+
+                        {/* Actions */}
+                        {userRole === 'admin' && (
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1">
+                              <Link
+                                href={`/employees/${emp.id}`}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                                style={{
+                                  borderColor: 'rgba(189,157,255,0.2)',
+                                  color: '#bd9dff',
+                                }}
+                                onMouseEnter={e => {
+                                  (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(189,157,255,0.05)'
+                                }}
+                                onMouseLeave={e => {
+                                  (e.currentTarget as HTMLAnchorElement).style.background = 'transparent'
+                                }}
+                              >
+                                View
+                              </Link>
+                              <EditEmployeeModal employee={emp} />
+                              <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
+                              <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Footer count */}
         {filtered.length > 0 && (
           <footer className="mt-16 flex justify-center">
             <div
-              className="flex items-center gap-3 px-6 py-3 rounded-full border border-[#4b455c]/10"
-              style={{ background: 'rgba(28,22,46,0.3)', backdropFilter: 'blur(12px)' }}
+              className="flex items-center gap-3 px-6 py-3 rounded-full border"
+              style={{
+                background: 'rgba(28,22,46,0.3)',
+                backdropFilter: 'blur(12px)',
+                borderColor: 'rgba(75,69,92,0.1)',
+              }}
             >
-              <span className="text-[#afa7c2] text-xs font-medium uppercase tracking-widest">
+              <span className="text-xs font-medium uppercase tracking-widest" style={{ color: '#afa7c2' }}>
                 Showing {filtered.length} of {employees.length} Employees
               </span>
             </div>
