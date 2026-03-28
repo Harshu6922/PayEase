@@ -58,9 +58,14 @@ export async function POST(req: NextRequest) {
     const { data: refRow } = await adminClient
       .from('referral_codes').select('company_id').eq('code', referralCode.toUpperCase()).maybeSingle()
     if (refRow && (refRow as any).company_id !== companyId) {
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()
       const { data: existing } = await adminClient
         .from('referral_discounts').select('id')
-        .eq('referrer_company_id', (refRow as any).company_id).eq('active', true)
+        .eq('referrer_company_id', (refRow as any).company_id)
+        .gte('created_at', monthStart)
+        .lt('created_at', monthEnd)
       if ((existing ?? []).length < MAX_REFERRALS) {
         await adminClient.from('referral_discounts').insert({
           referrer_company_id: (refRow as any).company_id,

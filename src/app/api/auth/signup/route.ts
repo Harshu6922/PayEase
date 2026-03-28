@@ -74,13 +74,16 @@ export async function POST(req: NextRequest) {
       .maybeSingle()
 
     if (refCodeRow && refCodeRow.company_id !== companyId) {
+      const { MAX_REFERRALS } = await import('@/lib/plans')
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()
       const { data: existing } = await adminClient
         .from('referral_discounts')
         .select('id')
         .eq('referrer_company_id', refCodeRow.company_id)
-        .eq('active', true)
-
-      const { MAX_REFERRALS } = await import('@/lib/plans')
+        .gte('created_at', monthStart)
+        .lt('created_at', monthEnd)
       if ((existing ?? []).length < MAX_REFERRALS) {
         await adminClient.from('referral_discounts').insert({
           referrer_company_id: refCodeRow.company_id,

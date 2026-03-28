@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowRight, Loader2 } from 'lucide-react'
@@ -14,9 +14,15 @@ export default function OnboardingForm({ userId, email }: { userId: string; emai
   const [ownerName, setOwnerName] = useState('')
   const [city, setCity] = useState('')
   const [teamSize, setTeamSize] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    const pending = localStorage.getItem('pendingReferralCode')
+    if (pending) setReferralCode(pending)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -32,6 +38,7 @@ export default function OnboardingForm({ userId, email }: { userId: string; emai
         ownerName: ownerName.trim() || undefined,
         city: city.trim() || undefined,
         teamSize: teamSize || undefined,
+        referralCode: referralCode.trim() || undefined,
       }),
     })
 
@@ -42,6 +49,7 @@ export default function OnboardingForm({ userId, email }: { userId: string; emai
       return
     }
 
+    localStorage.removeItem('pendingReferralCode')
     router.push('/dashboard')
     router.refresh()
   }
