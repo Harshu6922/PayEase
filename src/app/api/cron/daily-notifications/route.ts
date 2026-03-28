@@ -110,11 +110,10 @@ export async function GET(req: NextRequest) {
 
   const today = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 7) + '-01'
-  const dateLabel = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 
   const { data: configs } = await adminClient
     .from('notification_settings')
-    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key, admin_digest_phone, admin_digest_enabled')
+    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key')
     .eq('enabled', true)
 
   if (!configs || configs.length === 0) {
@@ -124,8 +123,7 @@ export async function GET(req: NextRequest) {
   let totalSent = 0, totalFailed = 0
 
   for (const config of configs) {
-    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name,
-      sms_api_key, admin_digest_phone, admin_digest_enabled } = config as any
+    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key } = config as any
 
     const { data: company } = await adminClient.from('companies').select('name').eq('id', company_id).maybeSingle()
     const companyName = (company as any)?.name ?? 'Your Company'
@@ -136,27 +134,14 @@ export async function GET(req: NextRequest) {
 
     if (!employees || employees.length === 0) continue
 
-    const digestLines: string[] = []
-
     for (const emp of employees) {
       const e = emp as any
       const method = e.notification_method ?? 'whatsapp'
-      if (method === 'none') continue
-      if (!e.phone_number && method !== 'none') continue
+      if (method === 'none' || !e.phone_number) continue
 
       const { hrs, monthlyEarnings, advanceBalance } = await calcEmployeeData(
         e.id, e.worker_type, e.monthly_salary, e.daily_rate, e.standard_working_hours, today, monthStart
       )
-
-      // Add to admin digest regardless of method
-      const earningsLabel = e.worker_type === 'daily'
-        ? `₹${monthlyEarnings.toLocaleString('en-IN')} (month so far)`
-        : `₹${monthlyEarnings.toLocaleString('en-IN')}/mo`
-      digestLines.push(
-        `${e.full_name}: ${hrs}hrs today, ${earningsLabel}${advanceBalance > 0 ? `, adv ₹${advanceBalance.toLocaleString('en-IN')}` : ''}`
-      )
-
-      if (!e.phone_number) continue
 
       const phone = formatPhone(e.phone_number)
       let sent = false
@@ -175,31 +160,6 @@ export async function GET(req: NextRequest) {
 
       if (sent) totalSent++
       else totalFailed++
-    }
-
-    // Admin digest — one message summarising all employees
-    if (admin_digest_enabled && admin_digest_phone && digestLines.length > 0) {
-      const digestMsg = `PayEase Daily Summary\n${companyName} · ${dateLabel}\n\n${digestLines.join('\n')}`
-      const adminPhone = formatPhone(admin_digest_phone)
-
-      // Try WhatsApp first, fallback to SMS
-      let digestSent = false
-      if (whatsapp_token && whatsapp_phone_number_id) {
-        // Send as free-form text (only works within 24hr window if admin has messaged first)
-        // So we also try SMS as reliable fallback
-        const res = await fetch(`https://graph.facebook.com/v19.0/${whatsapp_phone_number_id}/messages`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${whatsapp_token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp', to: adminPhone, type: 'text',
-            text: { body: digestMsg },
-          }),
-        })
-        digestSent = res.ok
-      }
-      if (!digestSent && sms_api_key) {
-        await sendSMS(sms_api_key, admin_digest_phone, digestMsg)
-      }
     }
   }
 
