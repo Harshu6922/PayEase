@@ -7,7 +7,7 @@ export default async function PaymentsPage({
 }: {
   searchParams: { month?: string }
 }) {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -50,13 +50,11 @@ export default async function PaymentsPage({
     .eq('is_active', true)
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
-      <PaymentHistoryClient
-        month={month}
-        payments={(payments || []) as any[]}
-        advances={(advances || []) as any[]}
-        employees={(employees || []) as any[]}
-      />
-    </div>
+    <PaymentHistoryClient
+      month={month}
+      payments={(payments || []) as any[]}
+      advances={(advances || []) as any[]}
+      employees={(employees || []) as any[]}
+    />
   )
 }
