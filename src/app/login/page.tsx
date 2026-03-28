@@ -9,11 +9,15 @@ import { springScaleIn } from '@/lib/animations'
 export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [referralCode, setReferralCode] = useState('')
   const supabase = createClient()
 
   async function handleGoogle() {
     setGoogleLoading(true)
     setError(null)
+    if (referralCode.trim()) {
+      localStorage.setItem('pendingReferralCode', referralCode.trim().toUpperCase())
+    }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${location.origin}/auth/callback` },
@@ -60,6 +64,21 @@ export default function LoginPage() {
               {error}
             </div>
           )}
+
+          {/* Referral code */}
+          <div className="mb-5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+              Referral Code <span className="normal-case font-normal opacity-60">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={e => setReferralCode(e.target.value.toUpperCase())}
+              placeholder="e.g. ABC12345"
+              maxLength={8}
+              className="w-full bg-[rgba(189,157,255,0.05)] border border-[rgba(189,157,255,0.1)] rounded-xl px-4 py-3 text-sm text-[#ebe1fe] placeholder-[#afa7c2]/50 font-mono uppercase focus:outline-none focus:border-[#bd9dff]/40 transition-colors"
+            />
+          </div>
 
           {/* Google Sign In */}
           <motion.button
