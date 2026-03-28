@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { CheckCircle } from 'lucide-react'
 import { PLANS, type PlanId } from '@/lib/plans'
 import type { CompanySubscription } from '@/lib/subscription'
@@ -41,6 +41,14 @@ export default function BillingClient({
   const [referralInput, setReferralInput] = useState('')
   const [referralMsg, setReferralMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    const pending = localStorage.getItem('pendingReferralCode')
+    if (pending) {
+      setReferralInput(pending)
+      localStorage.removeItem('pendingReferralCode')
+    }
+  }, [])
 
   async function handleSubscribe(plan: PlanId) {
     setLoading(true)
@@ -234,7 +242,7 @@ export default function BillingClient({
               <p className="text-sm text-[#7B7A8E] mb-3">
                 Share your code — earn{' '}
                 <span className="font-semibold text-[#F1F0F5]">₹50/month off</span>{' '}
-                for each referral (max 5 = ₹250/month)
+                for each referral (max 3 per month = ₹150/month)
               </p>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-lg font-bold text-[#A855F7] bg-[#7C3AED]/10 border border-[#7C3AED]/20 px-4 py-2 rounded-xl tracking-widest">
