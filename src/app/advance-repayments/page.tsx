@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import PageShell from '@/components/PageShell'
 import AdvanceRepaymentsClient, { type RepaymentRow } from './components/AdvanceRepaymentsClient'
 
 export default async function AdvanceRepaymentsPage() {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -13,7 +12,6 @@ export default async function AdvanceRepaymentsPage() {
     .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
   const companyId = (profileData as any)?.company_id
   if (!companyId) redirect('/login')
-  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
   const { data: raw } = await supabase
     .from('advance_repayments')
@@ -37,9 +35,5 @@ export default async function AdvanceRepaymentsPage() {
     employee_display_id: r.employees?.employee_id ?? '—',
   }))
 
-  return (
-    <PageShell title="Advance Repayments" subtitle="Workforce">
-      <AdvanceRepaymentsClient repayments={repayments} />
-    </PageShell>
-  )
+  return <AdvanceRepaymentsClient repayments={repayments} />
 }
