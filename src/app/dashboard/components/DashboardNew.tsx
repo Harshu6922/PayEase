@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  Users, CalendarCheck, Banknote, Receipt,
-  ClipboardList, CalendarDays, FileText,
+  Users, CalendarCheck, Banknote, Receipt, ClipboardList, FileText,
 } from 'lucide-react'
+import { fadeInUp, staggerContainer } from '@/lib/animations'
+import { useCountUp } from '@/lib/hooks/useCountUp'
 
 interface Props {
   month: string
@@ -17,22 +18,25 @@ interface Props {
   totalAdvances: number
   advancesCount: number
   totalExpenses: number
-  topEmployees: { id: string; name: string; worker_type: string }[]
-}
-
-const fmt = (n: number) => '₨ ' + n.toLocaleString('en-PK')
-
-const typeStyle: Record<string, { bg: string; text: string; label: string }> = {
-  salaried:   { bg: '#EEF2FF', text: '#4338CA', label: 'Salaried' },
-  commission: { bg: '#FFF8ED', text: '#92400E', label: 'Commission' },
-  daily:      { bg: '#F0FDF4', text: '#166534', label: 'Daily' },
+  topEmployees: { id: string; full_name: string; worker_type: string; monthly_salary: number }[]
 }
 
 const initials = (name: string) =>
   name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
-const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
-const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }
+const avatarColor: Record<string, string> = {
+  salaried: 'bg-[#7C3AED]/20 text-[#bd9dff]',
+  commission: 'bg-[#4b4168]/40 text-[#d3c5f5]',
+  daily: 'bg-[#28213e] text-[#afa7c2]',
+}
+
+const typeBadge: Record<string, string> = {
+  salaried: 'bg-[#7C3AED]/10 text-[#bd9dff]',
+  commission: 'bg-[#4b4168]/30 text-[#d3c5f5]',
+  daily: 'bg-[#28213e] text-[#afa7c2]',
+}
+
+const glassCard = 'backdrop-blur-md bg-[rgba(28,22,46,0.6)] border border-[#7C3AED]/10 rounded-xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(124,58,237,0.08)] hover:border-[#bd9dff]/30'
 
 export default function DashboardNew({
   month, totalEmployees, salaryEmployees, commissionEmployees,
@@ -43,219 +47,229 @@ export default function DashboardNew({
     ? Math.round((todaysAttendance / totalEmployees) * 100)
     : 0
 
+  const countedEmployees = useCountUp(totalEmployees)
+  const countedAttendance = useCountUp(todaysAttendance)
+  const countedAdvances = useCountUp(Math.round(totalAdvances))
+  const countedExpenses = useCountUp(Math.round(totalExpenses))
+
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
+    <div className="min-h-screen bg-[#100b1f] pb-12">
 
-      {/* ── Header Band ── */}
-      <div className="px-8 pt-8 pb-7" style={{ backgroundColor: '#1C2333' }}>
-        <div className="flex items-start justify-between mb-7">
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>
-              {month}
-            </p>
-            <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>
-              Dashboard
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 mt-1">
-            <Link
-              href="/reports"
-              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-80"
-              style={{ backgroundColor: '#D4A847', color: '#1C2333' }}
-            >
-              <FileText className="h-4 w-4" />
-              View Reports
-            </Link>
-          </div>
+      {/* Top header */}
+      <div className="flex items-center justify-between px-4 lg:px-8 pt-6 pb-4">
+        <div>
+          <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#afa7c2]">
+            {month.toUpperCase()}
+          </p>
+          <h1 className="text-2xl font-extrabold text-[#ebe1fe] tracking-tight mt-0.5">Dashboard</h1>
         </div>
-
-        {/* Hero metrics */}
-        <div className="flex items-center gap-10 flex-wrap">
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1" style={{ color: '#6B7A99', letterSpacing: '0.08em' }}>
-              Active Employees
-            </p>
-            <p className="font-display font-extrabold leading-none" style={{ fontSize: '52px', color: '#D4A847', letterSpacing: '-1.5px' }}>
-              {totalEmployees}
-            </p>
-          </div>
-          <div className="w-px h-12 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1" style={{ color: '#6B7A99', letterSpacing: '0.08em' }}>
-              Present Today
-            </p>
-            <p className="font-display font-bold text-white leading-none" style={{ fontSize: '32px', letterSpacing: '-0.5px' }}>
-              {todaysAttendance}{' '}
-              <span className="text-xl font-normal" style={{ color: '#6B7A99' }}>/ {totalEmployees}</span>
-            </p>
-          </div>
-          <div className="w-px h-12 self-center" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1" style={{ color: '#6B7A99', letterSpacing: '0.08em' }}>
-              Advances Outstanding
-            </p>
-            <p className="font-display font-bold text-white leading-none" style={{ fontSize: '32px', letterSpacing: '-0.5px' }}>
-              {fmt(totalAdvances)}
-            </p>
-          </div>
-        </div>
+        <Link
+          href="/reports"
+          className="hidden sm:flex items-center gap-2 bg-[#b28cff] text-[#2e006c] px-5 py-2 rounded-xl font-bold text-sm hover:shadow-[0_0_20px_rgba(189,157,255,0.3)] transition-all active:scale-95"
+        >
+          <FileText className="h-4 w-4" />
+          View Reports
+        </Link>
       </div>
 
-      {/* ── Body ── */}
-      <div className="flex-1 p-8 flex flex-col gap-6">
+      <div className="px-4 lg:px-8 space-y-8">
 
-        {/* KPI Cards */}
-        <motion.div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          initial="hidden" animate="show" variants={stagger}
+        {/* Stats Grid */}
+        <motion.section
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
         >
-          {/* Employees */}
-          <motion.div variants={fadeUp}>
-            <div className="rounded-2xl p-6 flex flex-col gap-4 border h-full" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Total Employees</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F3F0E8' }}>
-                  <Users className="h-4 w-4" style={{ color: '#D4A847' }} />
-                </div>
-              </div>
-              <div>
-                <p className="font-display font-extrabold leading-none" style={{ fontSize: '40px', color: '#1A1F36', letterSpacing: '-1px' }}>{totalEmployees}</p>
-                <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Active this month</p>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-md" style={{ backgroundColor: '#EEF2FF', color: '#4338CA' }}>● {salaryEmployees} Salaried</span>
-                <span className="text-xs font-medium px-2.5 py-1 rounded-md" style={{ backgroundColor: '#FFF8ED', color: '#92400E' }}>● {commissionEmployees} Commission</span>
-                <span className="text-xs font-medium px-2.5 py-1 rounded-md" style={{ backgroundColor: '#F0FDF4', color: '#166534' }}>● {dailyEmployees} Daily</span>
-              </div>
+          {/* Total Employees */}
+          <motion.div variants={fadeInUp} className={`${glassCard} p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Total Employees</span>
+              <Users className="h-5 w-5 text-[#bd9dff]" />
+            </div>
+            <div className="text-3xl font-bold text-[#ebe1fe] mb-4">{countedEmployees}</div>
+            <div className="flex flex-wrap gap-2">
+              <span className="px-2 py-1 rounded-full bg-[#7C3AED]/10 text-[#bd9dff] text-[10px] font-bold uppercase tracking-wider">
+                Salaried: {salaryEmployees}
+              </span>
+              <span className="px-2 py-1 rounded-full bg-[#4b4168]/30 text-[#d3c5f5] text-[10px] font-bold uppercase tracking-wider">
+                Comm: {commissionEmployees}
+              </span>
+              <span className="px-2 py-1 rounded-full bg-[#28213e] text-[#afa7c2] text-[10px] font-bold uppercase tracking-wider">
+                Daily: {dailyEmployees}
+              </span>
             </div>
           </motion.div>
 
-          {/* Attendance */}
-          <motion.div variants={fadeUp}>
-            <div className="rounded-2xl p-6 flex flex-col gap-4 border h-full" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Attendance Today</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F0FDF4' }}>
-                  <CalendarCheck className="h-4 w-4" style={{ color: '#22C55E' }} />
-                </div>
-              </div>
-              <div>
-                <p className="font-display font-extrabold leading-none" style={{ fontSize: '40px', color: '#1A1F36', letterSpacing: '-1px' }}>
-                  {todaysAttendance}<span className="text-xl font-normal ml-1" style={{ color: '#9CA3AF' }}>/ {totalEmployees}</span>
-                </p>
-                <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Present · {totalEmployees - todaysAttendance} absent</p>
-              </div>
-              <div>
-                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#F3F4F6' }}>
-                  <div className="h-full rounded-full" style={{ width: `${attendanceRate}%`, backgroundColor: '#22C55E' }} />
-                </div>
-                <p className="text-xs mt-1.5" style={{ color: '#9CA3AF' }}>{attendanceRate}% attendance rate</p>
-              </div>
+          {/* Attendance Today */}
+          <motion.div variants={fadeInUp} className={`${glassCard} p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Attendance Today</span>
+              <CalendarCheck className="h-5 w-5 text-[#bd9dff]" />
             </div>
+            <div className="flex items-end gap-2 mb-2">
+              <div className="text-3xl font-bold text-[#ebe1fe]">
+                {countedAttendance}/{totalEmployees}
+              </div>
+              <div className="text-[#bd9dff] font-bold mb-1 text-sm">{attendanceRate}%</div>
+            </div>
+            <div className="w-full h-1.5 bg-[#28213e] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#bd9dff] rounded-full transition-all"
+                style={{ width: `${attendanceRate}%` }}
+              />
+            </div>
+            <p className="text-[10px] text-[#afa7c2] mt-3 font-medium">
+              {totalEmployees - todaysAttendance} employees absent
+            </p>
           </motion.div>
 
-          {/* Advances */}
-          <motion.div variants={fadeUp}>
-            <div className="rounded-2xl p-6 flex flex-col gap-4 border h-full" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Advances Outstanding</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FFF8ED' }}>
-                  <Banknote className="h-4 w-4" style={{ color: '#D4A847' }} />
-                </div>
-              </div>
-              <div>
-                <p className="font-display font-extrabold leading-none" style={{ fontSize: '36px', color: '#1A1F36', letterSpacing: '-1px' }}>{fmt(totalAdvances)}</p>
-                <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>Across {advancesCount} employees</p>
-              </div>
-              <Link href="/advances" className="text-xs font-medium px-2.5 py-1 rounded-md self-start" style={{ backgroundColor: '#FFF3CD', color: '#92400E' }}>
-                View advances →
+          {/* Advances Outstanding */}
+          <motion.div variants={fadeInUp} className={`${glassCard} p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Advances Outstanding</span>
+              <Banknote className="h-5 w-5 text-[#bd9dff]" />
+            </div>
+            <div className="text-3xl font-bold text-[#ebe1fe] mb-1">
+              ₹{countedAdvances.toLocaleString('en-IN')}
+            </div>
+            <p className="text-[#afa7c2] text-sm font-medium">Across {advancesCount} employees</p>
+            <Link
+              href="/advances"
+              className="mt-4 inline-flex items-center gap-1 text-[#bd9dff] text-[10px] font-bold hover:underline"
+            >
+              View advances →
+            </Link>
+          </motion.div>
+
+          {/* Expenses This Month */}
+          <motion.div variants={fadeInUp} className={`${glassCard} p-6`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-[#afa7c2] text-sm font-medium">Expenses This Month</span>
+              <Receipt className="h-5 w-5 text-[#bd9dff]" />
+            </div>
+            <div className="text-3xl font-bold text-[#ebe1fe] mb-1">
+              ₹{countedExpenses.toLocaleString('en-IN')}
+            </div>
+            <p className="text-[#afa7c2] text-sm font-medium">Operating &amp; Misc.</p>
+            <Link
+              href="/expenses"
+              className="mt-4 inline-flex items-center gap-1 text-[#bd9dff] text-[10px] font-bold hover:underline"
+            >
+              View expenses →
+            </Link>
+          </motion.div>
+        </motion.section>
+
+        {/* Main Layout: Table + Quick Actions */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* Employee Overview (2/3) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className={`${glassCard} lg:col-span-2 overflow-hidden`}
+          >
+            <div className="px-6 py-5 flex justify-between items-center border-b border-[#4b455c]/20">
+              <h2 className="text-lg font-bold text-[#ebe1fe]">Employee Overview</h2>
+              <Link
+                href="/employees"
+                className="text-[#bd9dff] text-sm font-bold flex items-center gap-1 hover:underline"
+              >
+                View All →
               </Link>
             </div>
-          </motion.div>
-
-          {/* Expenses */}
-          <motion.div variants={fadeUp}>
-            <div className="rounded-2xl p-6 flex flex-col gap-4 border h-full" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#9CA3AF' }}>Expenses This Month</span>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#FEF2F2' }}>
-                  <Receipt className="h-4 w-4" style={{ color: '#EF4444' }} />
-                </div>
-              </div>
-              <div>
-                <p className="font-display font-extrabold leading-none" style={{ fontSize: '36px', color: '#1A1F36', letterSpacing: '-1px' }}>{fmt(totalExpenses)}</p>
-                <p className="text-xs mt-1" style={{ color: '#9CA3AF' }}>This month</p>
-              </div>
-              <Link href="/expenses" className="text-xs font-medium px-2.5 py-1 rounded-md self-start" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-                View expenses →
-              </Link>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[520px]">
+                <thead>
+                  <tr className="text-[#afa7c2] text-[11px] font-bold tracking-widest uppercase border-b border-[#4b455c]/10">
+                    <th className="px-6 py-4">Employee Name</th>
+                    <th className="px-6 py-4">Type</th>
+                    <th className="px-6 py-4">Monthly Salary</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#4b455c]/10">
+                  {topEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-6 py-10 text-center text-sm text-[#afa7c2]">
+                        No employees found.
+                      </td>
+                    </tr>
+                  ) : topEmployees.map((emp) => (
+                    <tr key={emp.id} className="hover:bg-[#7C3AED]/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${avatarColor[emp.worker_type] ?? 'bg-[#28213e] text-[#afa7c2]'}`}>
+                            {initials(emp.full_name)}
+                          </div>
+                          <span className="font-medium text-sm text-[#ebe1fe]">{emp.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${typeBadge[emp.worker_type] ?? 'bg-[#28213e] text-[#afa7c2]'}`}>
+                          {emp.worker_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-bold text-sm text-[#ebe1fe]">
+                        ₹{emp.monthly_salary?.toLocaleString('en-IN') ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </motion.div>
-        </motion.div>
 
-        {/* Bottom Row */}
-        <div className="flex gap-4 flex-col lg:flex-row">
-
-          {/* Employee List */}
-          <div className="flex-[2] rounded-2xl border overflow-hidden" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: '#F3F4F6' }}>
-              <h2 className="font-display font-bold text-base" style={{ color: '#1A1F36' }}>Employee Overview</h2>
-              <Link href="/employees" className="text-xs font-medium" style={{ color: '#D4A847' }}>View all →</Link>
-            </div>
-            <div className="flex px-6 py-2 border-b" style={{ borderColor: '#F3F4F6' }}>
-              <span className="flex-[2] text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>Employee</span>
-              <span className="flex-1 text-center text-xs font-semibold uppercase tracking-wide" style={{ color: '#9CA3AF' }}>Type</span>
-            </div>
-            {topEmployees.length === 0 && (
-              <p className="px-6 py-4 text-sm" style={{ color: '#9CA3AF' }}>No employees found.</p>
-            )}
-            {topEmployees.map((emp) => {
-              const t = typeStyle[emp.worker_type] ?? typeStyle.salaried
-              return (
-                <div key={emp.id} className="flex items-center px-6 py-3 border-b last:border-0" style={{ borderColor: '#F9FAFB' }}>
-                  <div className="flex-[2] flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold"
-                      style={{ backgroundColor: t.bg, color: t.text }}
-                    >
-                      {initials(emp.name)}
-                    </div>
-                    <span className="text-sm font-medium" style={{ color: '#1A1F36' }}>{emp.name}</span>
-                  </div>
-                  <div className="flex-1 flex justify-center">
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-md" style={{ backgroundColor: t.bg, color: t.text }}>
-                      {t.label}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex-1">
-            <div className="rounded-2xl border p-5 flex flex-col gap-3" style={{ backgroundColor: '#fff', borderColor: '#EDECEA' }}>
-              <h2 className="font-display font-bold text-base" style={{ color: '#1A1F36' }}>Quick Actions</h2>
+          {/* Quick Actions (1/3) */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className={`${glassCard} p-6 h-fit`}
+          >
+            <h2 className="text-lg font-bold text-[#ebe1fe] mb-6">Quick Actions</h2>
+            <div className="space-y-4">
               <Link
                 href="/attendance"
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-opacity hover:opacity-80"
-                style={{ backgroundColor: '#1C2333', color: '#fff' }}
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#7C3AED]/10 border border-[#7C3AED]/20 hover:bg-[#7C3AED]/20 transition-all text-left group"
               >
-                <CalendarCheck className="h-4 w-4" style={{ color: '#D4A847' }} />
-                Mark Attendance
+                <span className="p-3 rounded-lg bg-[#bd9dff] text-[#2e006c] group-hover:scale-110 transition-transform flex-shrink-0">
+                  <CalendarCheck className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="font-bold text-sm text-[#ebe1fe]">Mark Attendance</div>
+                  <div className="text-[10px] text-[#afa7c2] font-medium mt-0.5">Daily register login</div>
+                </div>
               </Link>
-              <Link href="/daily-attendance" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium hover:bg-gray-50 transition-colors" style={{ backgroundColor: '#F7F6F3', borderColor: '#EDECEA', color: '#374151' }}>
-                <CalendarDays className="h-4 w-4 text-gray-400" /> Daily Attendance
-              </Link>
-              <Link href="/work-entries" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium hover:bg-gray-50 transition-colors" style={{ backgroundColor: '#F7F6F3', borderColor: '#EDECEA', color: '#374151' }}>
-                <ClipboardList className="h-4 w-4 text-gray-400" /> Log Work Entry
-              </Link>
-              <Link href="/expenses" className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-medium hover:bg-gray-50 transition-colors" style={{ backgroundColor: '#F7F6F3', borderColor: '#EDECEA', color: '#374151' }}>
-                <Receipt className="h-4 w-4 text-gray-400" /> Add Expense
+
+              <Link
+                href="/work-entries"
+                className="flex items-center gap-4 p-4 rounded-xl bg-[#4b4168]/20 border border-[#4b455c]/10 hover:bg-[#4b4168]/40 transition-all text-left group"
+              >
+                <span className="p-3 rounded-lg bg-[#4b4168] text-[#d3c5f5] group-hover:scale-110 transition-transform flex-shrink-0">
+                  <ClipboardList className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="font-bold text-sm text-[#ebe1fe]">Log Work Entry</div>
+                  <div className="text-[10px] text-[#afa7c2] font-medium mt-0.5">Update tasks for labourers</div>
+                </div>
               </Link>
             </div>
-          </div>
-        </div>
+
+            {/* Payroll alert */}
+            <div className="mt-8 p-4 rounded-xl bg-gradient-to-br from-[#7C3AED]/10 to-transparent border border-[#7C3AED]/10">
+              <div className="flex items-center gap-2 mb-2">
+                <Banknote className="h-4 w-4 text-[#bd9dff]" />
+                <span className="text-xs font-bold text-[#bd9dff] uppercase tracking-wider">Payroll Tip</span>
+              </div>
+              <p className="text-[11px] text-[#afa7c2] leading-relaxed">
+                Mark today's attendance before running payroll to ensure accurate salary calculations.
+              </p>
+            </div>
+          </motion.div>
+
+        </section>
       </div>
     </div>
   )

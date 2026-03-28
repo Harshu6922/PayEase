@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('date', today),
     supabase.from('advances').select('amount', { count: 'exact' }).eq('company_id', companyId).eq('status', 'outstanding'),
     supabase.from('expenses').select('amount').eq('company_id', companyId).gte('date', `${currentMonth}-01`),
-    supabase.from('employees').select('id, name, worker_type').eq('company_id', companyId).eq('is_active', true).order('name').limit(4),
+    supabase.from('employees').select('id, full_name, worker_type, monthly_salary').eq('company_id', companyId).eq('is_active', true).order('full_name').limit(5),
   ])
 
   const totalAdvances = advancesData?.reduce((sum, a) => sum + ((a as { amount: number }).amount ?? 0), 0) ?? 0
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       totalAdvances={totalAdvances}
       advancesCount={advancesCount ?? 0}
       totalExpenses={totalExpenses}
-      topEmployees={(topEmployees ?? []) as { id: string; name: string; worker_type: string }[]}
+      topEmployees={(topEmployees ?? []) as { id: string; full_name: string; worker_type: string; monthly_salary: number }[]}
     />
   )
 }

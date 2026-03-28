@@ -23,7 +23,16 @@ const formatRs = (n: number) =>
   'Rs. ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } }
-const row = { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' as const } } }
+const cardAnim = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' as const } } }
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export default function AdvancesClient({
   initialAdvances,
@@ -80,51 +89,73 @@ export default function AdvancesClient({
     setRepayingAdvance(null)
   }
 
-  const AdvanceRow = ({ adv }: { adv: AdvanceWithBalance }) => {
+  const AdvanceCard = ({ adv }: { adv: AdvanceWithBalance }) => {
     const pct = Math.min(100, Math.round((adv.repaid_total / adv.amount) * 100))
     const isSettled = adv.remaining <= 0
+
     return (
-      <motion.div variants={row} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group">
-        {/* Employee */}
-        <div className="w-44 flex-shrink-0">
-          <p className="text-sm font-semibold text-gray-900">{adv.employee_name}</p>
-          <p className="text-xs text-gray-400">{adv.employee_display_id}</p>
+      <motion.div
+        variants={cardAnim}
+        className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-5 flex flex-col gap-3"
+      >
+        {/* Employee info row */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/20 text-primary-light flex items-center justify-center text-sm font-bold flex-shrink-0">
+            {getInitials(adv.employee_name)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-text font-semibold text-sm truncate">{adv.employee_name}</p>
+            <p className="text-text-muted text-xs">{adv.employee_display_id}</p>
+          </div>
+          {isSettled && (
+            <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">
+              Settled
+            </span>
+          )}
         </div>
+
         {/* Date & note */}
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-500">{format(new Date(adv.advance_date + 'T00:00:00'), 'dd MMM yyyy')}</p>
-          {adv.note && <p className="text-xs text-gray-400 dark:text-gray-500 italic truncate">{adv.note}</p>}
+        <div className="text-xs text-text-muted">
+          <span>{format(new Date(adv.advance_date + 'T00:00:00'), 'dd MMM yyyy')}</span>
+          {adv.note && (
+            <span className="ml-2 italic truncate block mt-0.5">{adv.note}</span>
+          )}
         </div>
-        {/* Progress */}
-        <div className="w-32 flex-shrink-0">
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-            <span>{formatRs(adv.repaid_total)}</span>
+
+        {/* Progress bar */}
+        <div>
+          <div className="flex justify-between text-xs text-text-muted mb-1.5">
+            <span className="font-mono">Repaid: {formatRs(adv.repaid_total)}</span>
             <span>{pct}%</span>
           </div>
-          <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${isSettled ? 'bg-green-500' : 'bg-indigo-500'}`}
+              className={`h-full rounded-full transition-all ${isSettled ? 'bg-success' : 'bg-primary'}`}
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
-        {/* Amounts */}
-        <div className="text-right flex-shrink-0 w-28">
-          <p className="text-xs text-gray-400">of {formatRs(adv.amount)}</p>
-          <p className={`text-sm font-bold ${isSettled ? 'text-green-600' : 'text-gray-900'}`}>
-            {isSettled ? 'Settled' : `${formatRs(adv.remaining)} left`}
-          </p>
+
+        {/* Outstanding */}
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-text-muted uppercase tracking-wide">Outstanding Balance</p>
+            <p className={`font-mono font-bold text-2xl mt-0.5 ${isSettled ? 'text-text-muted' : 'text-danger'}`}>
+              {formatRs(adv.remaining > 0 ? adv.remaining : 0)}
+            </p>
+          </div>
+          <p className="text-xs text-text-muted font-mono">of {formatRs(adv.amount)}</p>
         </div>
-        {/* Action */}
+
+        {/* Action button */}
         {!isSettled && userRole === 'admin' && (
           <button
             onClick={() => setRepayingAdvance(adv)}
-            className="flex-shrink-0 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors opacity-0 group-hover:opacity-100"
+            className="w-full mt-1 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
           >
             Log Repayment
           </button>
         )}
-        {isSettled && <div className="w-[110px] flex-shrink-0" />}
       </motion.div>
     )
   }
@@ -132,37 +163,51 @@ export default function AdvancesClient({
   return (
     <>
       {/* Active advances */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <div className="px-6 py-3 border-b border-gray-100 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+      <div>
+        <div className="px-1 pb-3 text-xs font-semibold text-text-muted uppercase tracking-wider">
           Active — {active.length} advance{active.length !== 1 ? 's' : ''}
         </div>
         {active.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-gray-400">No active advances.</div>
+          <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl px-6 py-12 text-center text-sm text-text-muted">
+            No active advances.
+          </div>
         ) : (
-          <motion.div variants={container} initial="hidden" animate="show">
-            {active.map(adv => <AdvanceRow key={adv.id} adv={adv} />)}
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
+            {active.map(adv => <AdvanceCard key={adv.id} adv={adv} />)}
           </motion.div>
         )}
       </div>
 
       {/* Settled section */}
       {settled.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-6">
           <button
             onClick={() => setShowSettled(s => !s)}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 font-medium mb-2"
+            className="text-sm text-text-muted hover:text-text font-medium mb-3 flex items-center gap-1 transition-colors"
           >
-            {showSettled ? '▾' : '▸'} Settled ({settled.length})
+            <span>{showSettled ? '▾' : '▸'}</span>
+            <span>Settled ({settled.length})</span>
           </button>
           <AnimatePresence>
             {showSettled && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="rounded-xl border bg-white shadow-sm overflow-hidden"
+                className="overflow-hidden"
               >
-                <motion.div variants={container} initial="hidden" animate="show">
-                  {settled.map(adv => <AdvanceRow key={adv.id} adv={adv} />)}
+                <motion.div
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                >
+                  {settled.map(adv => <AdvanceCard key={adv.id} adv={adv} />)}
                 </motion.div>
               </motion.div>
             )}

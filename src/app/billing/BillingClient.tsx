@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { CheckCircle } from 'lucide-react'
 import { PLANS, type PlanId } from '@/lib/plans'
 import type { CompanySubscription } from '@/lib/subscription'
 
@@ -12,6 +13,23 @@ interface Props {
 }
 
 declare global { interface Window { Razorpay: any } }
+
+const PLAN_FEATURES = [
+  'Full payroll — salary, OT & advances',
+  'Attendance & daily labour tracking',
+  'Commission & daily wage workers',
+  'PDF payslips & payroll reports',
+  'Expenses, charts & analytics',
+  'Team access with role controls',
+]
+
+const PLAN_TAG: Record<string, string> = {
+  starter: 'Perfect for small teams',
+  growth: 'Built for growing businesses',
+  business: 'For large operations',
+}
+
+const inputCls = 'bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 w-full text-sm'
 
 export default function BillingClient({
   subscription,
@@ -74,93 +92,129 @@ export default function BillingClient({
 
   const isLocked = subscription?.isLocked ?? false
   const isTrial = subscription?.status === 'trial'
+  const currentPlanId = subscription?.status === 'active' ? subscription.plan : null
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Billing</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your subscription and referrals</p>
+    <div className="min-h-screen bg-[#0F0A1E]">
+      {/* Header */}
+      <div className="px-6 md:px-8 pt-8 pb-7 border-b border-[#7C3AED]/10">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-2xl font-bold text-[#F1F0F5]">Billing</h1>
+          {currentPlanId && (
+            <span className="bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30 text-xs px-2 py-0.5 rounded-full font-medium">
+              {PLANS[currentPlanId].name} Plan
+            </span>
+          )}
+          {isTrial && (
+            <span className="bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-xs px-2 py-0.5 rounded-full font-medium">
+              Free Trial
+            </span>
+          )}
+          {isLocked && (
+            <span className="bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 text-xs px-2 py-0.5 rounded-full font-medium">
+              Locked
+            </span>
+          )}
         </div>
+        <p className="text-sm text-[#7B7A8E] mt-1">Manage your subscription and referrals</p>
+      </div>
 
+      <div className="px-6 md:px-8 py-6 space-y-6 max-w-5xl">
+
+        {/* Alert banners */}
         {isLocked && (
-          <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 text-red-800 dark:text-red-300 text-sm font-medium">
+          <div className="rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 p-4 text-[#EF4444] text-sm font-medium">
             Your account is locked. Choose a plan below to restore access.
           </div>
         )}
 
         {isTrial && subscription?.daysLeftInTrial !== null && (
-          <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-4 text-amber-800 dark:text-amber-300 text-sm">
+          <div className="rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30 p-4 text-[#F59E0B] text-sm">
             <span className="font-semibold">Free trial:</span>{' '}
             {subscription.daysLeftInTrial} day{subscription.daysLeftInTrial !== 1 ? 's' : ''} remaining.
             Subscribe below to keep access.
           </div>
         )}
 
-        {/* Current plan */}
-        {subscription && !isLocked && subscription.status === 'active' && (
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Current plan</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">
-              {PLANS[subscription.plan].name} — ₹{PLANS[subscription.plan].priceRs}/month
-            </p>
-            {referralDiscountRs > 0 && (
-              <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                Referral discount: −₹{referralDiscountRs}/month ({activeReferrals} active referral{activeReferrals !== 1 ? 's' : ''})
-              </p>
-            )}
+        {/* Referral discount banner */}
+        {currentPlanId && referralDiscountRs > 0 && (
+          <div className="rounded-xl bg-[#10B981]/10 border border-[#10B981]/30 p-4 text-[#10B981] text-sm">
+            Referral discount active: <span className="font-semibold font-mono">−₹{referralDiscountRs}/month</span>{' '}
+            ({activeReferrals} active referral{activeReferrals !== 1 ? 's' : ''})
           </div>
         )}
 
         {/* Plan cards */}
         <div>
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            {subscription?.status === 'active' ? 'Change plan' : 'Choose a plan'}
+          <h2 className="text-sm font-semibold text-[#7B7A8E] mb-4 uppercase tracking-wider">
+            {currentPlanId ? 'Change Plan' : 'Choose a Plan'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {(Object.values(PLANS) as (typeof PLANS)[PlanId][]).map(plan => {
-              const isCurrent = subscription?.plan === plan.id && subscription.status === 'active'
+              const isCurrent = currentPlanId === plan.id
+              const isPopular = plan.id === 'growth'
               const discountedPrice = Math.max(0, plan.priceRs - referralDiscountRs)
+
               return (
                 <div
                   key={plan.id}
-                  className={`rounded-xl border p-5 bg-white dark:bg-gray-800 flex flex-col ${
-                    isCurrent
-                      ? 'border-indigo-500 ring-2 ring-indigo-500'
-                      : 'border-gray-200 dark:border-gray-700'
+                  className={`relative backdrop-blur-md bg-white/5 rounded-xl p-6 flex flex-col transition-all ${
+                    isPopular
+                      ? 'border-2 border-[#7C3AED]/50 shadow-[0_0_30px_rgba(124,58,237,0.2)]'
+                      : 'border border-[#7C3AED]/20'
                   }`}
                 >
-                  <p className="font-bold text-gray-900 dark:text-white">{plan.name}</p>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                      ₹{discountedPrice}
-                    </span>
-                    {referralDiscountRs > 0 && (
-                      <span className="text-sm text-gray-400 line-through">₹{plan.priceRs}</span>
+                  {/* Most Popular badge */}
+                  {isPopular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="bg-[#7C3AED] text-white text-[10px] px-3 py-1 rounded-full font-semibold whitespace-nowrap">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Plan name + current badge */}
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="text-[#F1F0F5] font-bold text-lg">{plan.name}</p>
+                    {isCurrent && (
+                      <span className="bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30 text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0">
+                        Current
+                      </span>
                     )}
-                    <span className="text-sm text-gray-400">/mo</span>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Up to {plan.employeeLimit} employees
-                  </p>
-                  <ul className="mt-3 space-y-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    <li>✓ Full payroll — salary, OT & advances</li>
-                    <li>✓ Attendance & daily labour tracking</li>
-                    <li>✓ Commission & daily wage workers</li>
-                    <li>✓ PDF payslips & payroll reports</li>
-                    <li>✓ Expenses, charts & analytics</li>
-                    <li>✓ Team access with role controls</li>
-                    {plan.id === 'starter' && <li className="text-indigo-500 font-medium">Perfect for small teams</li>}
-                    {plan.id === 'growth' && <li className="text-indigo-500 font-medium">Built for growing businesses</li>}
-                    {plan.id === 'business' && <li className="text-indigo-500 font-medium">For large operations</li>}
+
+                  {/* Price */}
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="font-mono font-extrabold text-3xl text-[#F1F0F5]">₹{discountedPrice}</span>
+                    {referralDiscountRs > 0 && (
+                      <span className="text-sm text-[#7B7A8E] line-through font-mono">₹{plan.priceRs}</span>
+                    )}
+                    <span className="text-sm text-[#7B7A8E]">/mo</span>
+                  </div>
+                  <p className="text-xs text-[#7B7A8E] mb-4">Up to {plan.employeeLimit} employees</p>
+
+                  {/* Features */}
+                  <ul className="space-y-2 mb-5 flex-1">
+                    {PLAN_FEATURES.map(feat => (
+                      <li key={feat} className="flex items-start gap-2 text-sm text-[#F1F0F5]">
+                        <CheckCircle className="text-[#10B981] h-4 w-4 flex-shrink-0 mt-0.5" />
+                        {feat}
+                      </li>
+                    ))}
+                    <li className="flex items-start gap-2 text-sm text-[#A855F7] font-medium">
+                      <CheckCircle className="text-[#A855F7] h-4 w-4 flex-shrink-0 mt-0.5" />
+                      {PLAN_TAG[plan.id]}
+                    </li>
                   </ul>
+
+                  {/* CTA */}
                   <button
-                    onClick={() => handleSubscribe(plan.id)}
+                    onClick={() => !isCurrent && handleSubscribe(plan.id)}
                     disabled={loading || isCurrent}
-                    className={`mt-4 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
                       isCurrent
-                        ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 cursor-default'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50'
+                        ? 'bg-[#7C3AED]/10 text-[#7C3AED] border border-[#7C3AED]/30 cursor-default'
+                        : 'bg-[#7C3AED] text-white hover:bg-[#6D28D9] disabled:opacity-50'
                     }`}
                   >
                     {isCurrent ? 'Current Plan' : loading ? 'Loading…' : 'Subscribe'}
@@ -172,36 +226,38 @@ export default function BillingClient({
         </div>
 
         {/* Referral section */}
-        <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-5 space-y-5">
-          <h2 className="font-semibold text-gray-900 dark:text-white">Referrals</h2>
+        <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-6 space-y-5">
+          <h2 className="text-[#F1F0F5] font-semibold text-base pb-3 border-b border-[#7C3AED]/10">Referrals</h2>
 
           {referralCode && (
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                Share your code — earn <span className="font-semibold text-gray-900 dark:text-white">₹50/month off</span> for each referral (max 5 = ₹250/month)
+              <p className="text-sm text-[#7B7A8E] mb-3">
+                Share your code — earn{' '}
+                <span className="font-semibold text-[#F1F0F5]">₹50/month off</span>{' '}
+                for each referral (max 5 = ₹250/month)
               </p>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-lg tracking-widest">
+                <span className="font-mono text-lg font-bold text-[#A855F7] bg-[#7C3AED]/10 border border-[#7C3AED]/20 px-4 py-2 rounded-xl tracking-widest">
                   {referralCode}
                 </span>
                 <button
                   onClick={copyCode}
-                  className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                  className="text-sm font-medium text-[#7B7A8E] hover:text-[#F1F0F5] transition-colors bg-[#7C3AED]/10 border border-[#7C3AED]/20 rounded-lg px-3 py-2"
                 >
                   {copied ? '✓ Copied' : 'Copy'}
                 </button>
               </div>
               {activeReferrals > 0 && (
-                <p className="text-sm text-green-600 dark:text-green-400 mt-2">
+                <p className="text-sm text-[#10B981] mt-2">
                   {activeReferrals} active referral{activeReferrals !== 1 ? 's' : ''} →{' '}
-                  <span className="font-semibold">₹{activeReferrals * 50}/month discount</span>
+                  <span className="font-semibold font-mono">₹{activeReferrals * 50}/month discount</span>
                 </p>
               )}
             </div>
           )}
 
-          <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <div className="border-t border-[#7C3AED]/10 pt-4">
+            <p className="text-sm text-[#7B7A8E] mb-3">
               Have a referral code? Apply it for a discount on your subscription:
             </p>
             <div className="flex gap-2">
@@ -210,22 +266,23 @@ export default function BillingClient({
                 onChange={e => setReferralInput(e.target.value.toUpperCase())}
                 placeholder="Enter code"
                 maxLength={8}
-                className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono uppercase"
+                className="flex-1 bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm font-mono uppercase"
               />
               <button
                 onClick={applyReferral}
-                className="rounded-lg bg-indigo-600 text-white px-4 py-2 text-sm font-semibold hover:bg-indigo-500 transition-colors"
+                className="bg-[#7C3AED] text-white rounded-xl px-5 py-3 text-sm font-semibold hover:bg-[#6D28D9] transition-colors"
               >
                 Apply
               </button>
             </div>
             {referralMsg && (
-              <p className={`text-sm mt-2 ${referralMsg.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-sm mt-2 ${referralMsg.type === 'success' ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
                 {referralMsg.text}
               </p>
             )}
           </div>
         </div>
+
       </div>
     </div>
   )

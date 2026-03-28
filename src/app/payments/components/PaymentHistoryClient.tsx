@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, parse } from 'date-fns'
 import { motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { fadeInUp, staggerContainer } from '@/lib/animations'
+import WorkerTypeBadge from '@/components/WorkerTypeBadge'
 
 interface Employee { id: string; full_name: string; employee_id: string; worker_type: string }
 interface SalaryPayment { id: string; employee_id: string; amount: number; payment_date: string; note: string | null; month: string }
@@ -16,14 +19,11 @@ interface Props {
   employees: Employee[]
 }
 
-const workerTypeBadge: Record<string, string> = {
-  salaried:   'bg-indigo-50 text-indigo-700',
-  commission: 'bg-amber-50 text-amber-700',
-  daily:      'bg-green-50 text-green-700',
-}
-
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } }
 const row = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: 'easeOut' as const } } }
+
+const initials = (name: string) =>
+  name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 
 export default function PaymentHistoryClient({ month, payments, advances, employees }: Props) {
   const router = useRouter()
@@ -77,173 +77,201 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
   const formatRs = (n: number) =>
     'Rs. ' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.value) router.push(`/payments?month=${e.target.value}`)
+  const handleMonthChange = (delta: number) => {
+    const d = parse(month + '-01', 'yyyy-MM-dd', new Date())
+    d.setMonth(d.getMonth() + delta)
+    const newMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    router.push(`/payments?month=${newMonth}`)
   }
 
+  const hasFilters = search || typeFilter !== 'all' || workerFilter !== 'all'
+
   return (
-    <>
-      {/* Header band */}
-      <div className="px-8 pt-8 pb-7 flex items-end justify-between" style={{ backgroundColor: '#1C2333' }}>
-        <div>
-          <p className="text-xs font-semibold uppercase mb-1.5" style={{ color: '#6B7A99', letterSpacing: '0.1em' }}>Finance</p>
-          <h1 className="font-display text-4xl font-extrabold text-white" style={{ letterSpacing: '-0.5px' }}>Payment History</h1>
-          <p className="mt-1 text-sm" style={{ color: '#6B7A99' }}>All salary payments and advances for {monthLabel}</p>
-        </div>
-        <div className="mb-1">
-          <input
-            type="month"
-            value={month}
-            onChange={handleMonthChange}
-            className="rounded-lg px-3 py-1.5 text-sm focus:outline-none"
-            style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff' }}
-          />
-        </div>
-      </div>
+    <div className="flex flex-col min-h-screen bg-background">
 
-      <div className="px-8 py-6">
-      {/* Summary cards */}
-      <motion.div
-        variants={container} initial="hidden" animate="show"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
-      >
-        {[
-          { label: 'Total Paid Out', value: formatRs(totalPaid), color: 'text-gray-900', sub: 'All types combined' },
-          { label: 'Salary Payments', value: formatRs(totalSalary), color: 'text-indigo-600', sub: 'From payments table' },
-          { label: 'Advances Given', value: formatRs(totalAdvances), color: 'text-amber-600', sub: 'Advance disbursements' },
-        ].map(card => (
-          <motion.div key={card.label} variants={row} className="rounded-xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500 font-medium">{card.label}</p>
-            <p className={`text-2xl font-bold mt-1 ${card.color}`}>{card.value}</p>
-            <p className="text-xs text-gray-400 mt-1">{card.sub}</p>
-          </motion.div>
-        ))}
-      </motion.div>
+      {/* ── Page Header ── */}
+      <div className="px-4 md:px-6 pt-6 pb-4 border-b border-[#7C3AED]/10 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-text">Payments</h1>
 
-      {/* By worker type */}
-      <motion.div
-        variants={container} initial="hidden" animate="show"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
-      >
-        {[
-          { label: 'Salaried Workers', key: 'salaried', color: 'text-indigo-700', bg: 'bg-indigo-50', dot: 'bg-indigo-500' },
-          { label: 'Commission Workers', key: 'commission', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
-          { label: 'Daily Workers', key: 'daily', color: 'text-green-700', bg: 'bg-green-50', dot: 'bg-green-500' },
-        ].map(card => (
-          <motion.div key={card.key} variants={row}
-            className={`rounded-xl border p-5 shadow-sm flex items-center gap-4 ${card.bg}`}
+        {/* Month selector */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleMonthChange(-1)}
+            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors text-text-muted hover:text-text"
+            aria-label="Previous month"
           >
-            <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${card.dot}`} />
-            <div>
-              <p className="text-xs font-medium text-gray-500">{card.label}</p>
-              <p className={`text-xl font-bold mt-0.5 ${card.color}`}>{formatRs(byWorkerType[card.key] ?? 0)}</p>
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Search + Filter bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search employee name or ID…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-        />
-        <select
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
-        >
-          <option value="all">All types</option>
-          <option value="salary">Salary only</option>
-          <option value="advance">Advances only</option>
-        </select>
-        <select
-          value={workerFilter}
-          onChange={e => setWorkerFilter(e.target.value as typeof workerFilter)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-indigo-500 focus:outline-none"
-        >
-          <option value="all">All workers</option>
-          <option value="salaried">Salaried</option>
-          <option value="commission">Commission</option>
-          <option value="daily">Daily</option>
-        </select>
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-semibold text-text min-w-[110px] text-center">{monthLabel}</span>
+          <button
+            onClick={() => handleMonthChange(1)}
+            className="p-1.5 rounded-lg hover:bg-white/5 transition-colors text-text-muted hover:text-text"
+            aria-label="Next month"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Entries table */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">
+      <div className="px-4 md:px-6 py-5 flex flex-col gap-5">
+
+        {/* ── Summary Cards ── */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          {[
+            { label: 'Total Paid Out', value: totalPaid, valueClass: 'text-text' },
+            { label: 'Salary Payments', value: totalSalary, valueClass: 'text-primary-light' },
+            { label: 'Advances Given', value: totalAdvances, valueClass: 'text-warning' },
+          ].map(card => (
+            <motion.div
+              key={card.label}
+              variants={fadeInUp}
+              className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-4 hover:shadow-[0_0_20px_rgba(124,58,237,0.15)] hover:border-[#7C3AED]/50 transition-all"
+            >
+              <p className="text-xs text-text-muted uppercase tracking-wide mb-2">{card.label}</p>
+              <p className={`text-xl font-mono font-bold ${card.valueClass}`}>{formatRs(card.value)}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ── By Worker Type ── */}
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          {[
+            { label: 'Salaried Workers', key: 'salaried', valueClass: 'text-primary-light' },
+            { label: 'Commission Workers', key: 'commission', valueClass: 'text-[#A855F7]' },
+            { label: 'Daily Workers', key: 'daily', valueClass: 'text-rupee-gold' },
+          ].map(card => (
+            <motion.div
+              key={card.key}
+              variants={fadeInUp}
+              className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-4 flex items-center gap-4 hover:border-[#7C3AED]/50 transition-all"
+            >
+              <div className="w-2 h-2 rounded-full bg-current flex-shrink-0" style={{ color: 'inherit' }} />
+              <div>
+                <p className="text-xs text-text-muted">{card.label}</p>
+                <p className={`text-lg font-mono font-bold mt-0.5 ${card.valueClass}`}>
+                  {formatRs(byWorkerType[card.key] ?? 0)}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ── Search + Filters ── */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search employee name or ID…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/5 border border-[#7C3AED]/20 text-text text-sm placeholder:text-text-muted focus:outline-none focus:border-[#7C3AED]/50 focus:bg-white/8 transition-all"
+            />
+          </div>
+          <select
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as typeof typeFilter)}
+            className="rounded-lg bg-white/5 border border-[#7C3AED]/20 px-3 py-2 text-sm text-text focus:outline-none focus:border-[#7C3AED]/50 transition-all appearance-none cursor-pointer"
+          >
+            <option value="all" className="bg-surface">All types</option>
+            <option value="salary" className="bg-surface">Salary only</option>
+            <option value="advance" className="bg-surface">Advances only</option>
+          </select>
+          <select
+            value={workerFilter}
+            onChange={e => setWorkerFilter(e.target.value as typeof workerFilter)}
+            className="rounded-lg bg-white/5 border border-[#7C3AED]/20 px-3 py-2 text-sm text-text focus:outline-none focus:border-[#7C3AED]/50 transition-all appearance-none cursor-pointer"
+          >
+            <option value="all" className="bg-surface">All workers</option>
+            <option value="salaried" className="bg-surface">Salaried</option>
+            <option value="commission" className="bg-surface">Commission</option>
+            <option value="daily" className="bg-surface">Daily</option>
+          </select>
+        </div>
+
+        {/* ── Transaction Count + Clear Filters ── */}
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-text-muted">
             {filteredEntries.length} transaction{filteredEntries.length !== 1 ? 's' : ''}
             {filteredEntries.length !== entries.length && (
-              <span className="text-gray-400 font-normal"> (filtered from {entries.length})</span>
+              <span className="text-text-muted/60"> (filtered from {entries.length})</span>
             )}
-          </h2>
-          {(search || typeFilter !== 'all' || workerFilter !== 'all') && (
+          </p>
+          {hasFilters && (
             <button
               onClick={() => { setSearch(''); setTypeFilter('all'); setWorkerFilter('all') }}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+              className="flex items-center gap-1.5 text-xs text-primary-light hover:text-primary transition-colors font-medium"
             >
+              <X className="w-3.5 h-3.5" />
               Clear filters
             </button>
           )}
         </div>
 
+        {/* ── Entry Cards ── */}
         {filteredEntries.length === 0 ? (
-          <div className="px-6 py-12 text-center text-sm text-gray-400">
+          <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl px-6 py-16 text-center text-sm text-text-muted">
             No payments match your filters.
           </div>
         ) : (
-          <motion.div variants={container} initial="hidden" animate="show">
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="flex flex-col gap-3"
+          >
             {filteredEntries.map(entry => {
               const emp = empMap[entry.employee_id]
+              const workerType = emp
+                ? (emp.worker_type.charAt(0).toUpperCase() + emp.worker_type.slice(1)) as 'Salaried' | 'Daily' | 'Commission'
+                : null
               return (
                 <motion.div
                   key={entry.type + entry.id}
                   variants={row}
-                  className="flex items-center justify-between px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"
+                  className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#7C3AED]/40 hover:bg-white/[0.07] transition-all"
                 >
-                  <div className="flex items-center gap-4 min-w-0">
-                    {/* Type indicator */}
-                    <div className={`h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                      entry.type === 'salary' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {entry.type === 'salary' ? '₹' : 'A'}
+                  {/* Left: avatar + name + badge */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 text-primary-light text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                      {emp ? initials(emp.full_name) : '?'}
                     </div>
-
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-900">
+                        <span className="text-sm font-semibold text-text truncate">
                           {emp?.full_name ?? 'Unknown'}
                         </span>
-                        <span className="text-xs text-gray-400">{emp?.employee_id}</span>
                         {emp && (
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${workerTypeBadge[emp.worker_type] ?? 'bg-gray-100 text-gray-600'}`}>
-                            {emp.worker_type}
-                          </span>
+                          <span className="text-xs text-text-muted">{emp.employee_id}</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className={`text-xs font-medium ${entry.type === 'salary' ? 'text-indigo-600' : 'text-amber-600'}`}>
-                          {entry.type === 'salary' ? 'Salary Payment' : 'Advance'}
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {workerType && <WorkerTypeBadge type={workerType} />}
+                        <span className={`text-xs font-medium ${entry.type === 'salary' ? 'text-primary-light' : 'text-warning'}`}>
+                          {entry.type === 'salary' ? 'Salary' : 'Advance'}
                         </span>
-                        <span className="text-xs text-gray-400">·</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-text-muted">
                           {format(new Date(entry.date + 'T00:00:00'), 'dd MMM yyyy')}
                         </span>
                         {entry.note && (
-                          <>
-                            <span className="text-xs text-gray-400">·</span>
-                            <span className="text-xs text-gray-400 italic truncate">{entry.note}</span>
-                          </>
+                          <span className="text-xs text-text-muted italic truncate max-w-[120px]">{entry.note}</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <span className="text-sm font-bold text-gray-900 ml-4 whitespace-nowrap">
+                  {/* Right: amount */}
+                  <span className="font-mono text-lg font-bold text-rupee-gold whitespace-nowrap flex-shrink-0">
                     {formatRs(entry.amount)}
                   </span>
                 </motion.div>
@@ -251,8 +279,8 @@ export default function PaymentHistoryClient({ month, payments, advances, employ
             })}
           </motion.div>
         )}
+
       </div>
-      </div>
-    </>
+    </div>
   )
 }

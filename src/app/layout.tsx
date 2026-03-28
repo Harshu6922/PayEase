@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
-import { Inter, DM_Sans } from 'next/font/google'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import AppShell from '@/components/AppShell'
-import { ThemeProvider } from 'next-themes'
 import { Suspense } from 'react'
 import TrialBanner from '@/components/TrialBanner'
 import InstallPrompt from '@/components/InstallPrompt'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
 
 export const metadata: Metadata = {
   title: 'PayEase',
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
     title: 'PayEase',
   },
   other: {
-    'theme-color': '#1C2333',
+    'theme-color': '#0F0A1E',
   },
 }
 
@@ -30,14 +29,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${dmSans.variable} font-sans`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
-            {children}
-          </AppShell>
-          <InstallPrompt />
-        </ThemeProvider>
+    <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+      <body className="font-sans bg-background text-text antialiased">
+        <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
+          {children}
+        </AppShell>
+        <InstallPrompt />
       </body>
     </html>
   )
