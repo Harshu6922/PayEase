@@ -1,7 +1,12 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
+import { createClient } from '@/lib/supabase/client'
+import { Copy, Check, LogOut, Trash2, Shield, UserPlus } from 'lucide-react'
+import { staggerContainer, fadeInUp } from '@/lib/animations'
 
 interface Member {
   id: string
@@ -14,29 +19,45 @@ interface Props {
   companyName: string
   companyId: string
   currentUserId: string
+  userEmail: string
   members: Member[]
 }
 
-const glassSection = 'backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-6 mb-4'
-const sectionTitle = 'text-[#F1F0F5] font-semibold text-base mb-4 pb-3 border-b border-[#7C3AED]/10'
-const inputCls = 'bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 w-full text-sm'
-const saveBtnCls = 'bg-[#7C3AED] text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-[#6D28D9] transition-colors disabled:opacity-50'
+const glassCard: React.CSSProperties = {
+  background: 'rgba(28,22,46,0.6)',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
+  border: '1px solid rgba(189,157,255,0.1)',
+}
 
-export default function SettingsClient({ companyName, companyId, currentUserId, members: initialMembers }: Props) {
+const inputCls = `w-full px-4 py-3 rounded-xl text-sm text-[#ebe1fe] placeholder:text-[#afa7c2]/50
+  focus:outline-none transition-colors`
+const inputStyle: React.CSSProperties = {
+  background: 'rgba(189,157,255,0.05)',
+  border: '1px solid rgba(189,157,255,0.1)',
+}
+const inputFocusStyle = `focus:border-[rgba(189,157,255,0.4)] focus:bg-[rgba(189,157,255,0.08)]`
+
+const labelCls = 'block text-xs font-semibold text-[#afa7c2] uppercase tracking-widest mb-1.5'
+const sectionLabelCls = 'text-[10px] font-bold uppercase tracking-[0.2em] text-[#afa7c2] mb-4 block'
+
+function initials(name: string) {
+  return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+}
+
+export default function SettingsClient({ companyName, companyId, currentUserId, userEmail, members: initialMembers }: Props) {
+  const router = useRouter()
   const [members, setMembers] = useState(initialMembers)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteStatus, setInviteStatus] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [signingOut, setSigningOut] = useState(false)
 
-  // Profile name state
   const currentMember = initialMembers.find(m => m.id === currentUserId)
   const [nameInput, setNameInput] = useState(currentMember?.full_name ?? '')
   const [nameSaving, setNameSaving] = useState(false)
   const [nameSaved, setNameSaved] = useState(false)
-
-  // Company name state (display only — no server action for company rename in original)
-  const [companyInput] = useState(companyName)
 
   const handleSaveName = async () => {
     if (!nameInput.trim()) return
@@ -93,157 +114,226 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
     })
   }
 
-  return (
-    <div className="min-h-screen bg-[#0F0A1E]">
-      {/* Header */}
-      <div className="px-6 md:px-8 pt-8 pb-7 border-b border-[#7C3AED]/10">
-        <p className="text-xs font-semibold uppercase mb-1.5 text-[#7B7A8E] tracking-widest">Company</p>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-[#F1F0F5]" style={{ letterSpacing: '-0.5px' }}>Settings</h1>
-        <p className="mt-1 text-sm text-[#7B7A8E]">{companyName}</p>
-      </div>
+  const handleSignOut = async () => {
+    setSigningOut(true)
+    const supabase = createClient() as unknown as any
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
-      <div className="px-6 md:px-8 py-6 max-w-2xl">
+  return (
+    <div className="min-h-screen pb-20" style={{ background: '#0F0A1E' }}>
+      {/* Ambient glow */}
+      <div className="pointer-events-none fixed top-[-10%] right-[-10%] w-[50%] h-[50%] z-0"
+        style={{ background: 'radial-gradient(circle, rgba(189,157,255,0.08) 0%, transparent 70%)' }} />
+
+      <main className="relative z-10 max-w-4xl mx-auto px-6 py-12 md:py-16">
+
+        {/* Header */}
+        <header className="mb-12">
+          <h1 className="font-extrabold text-4xl md:text-5xl tracking-tight text-[#ebe1fe]">Settings</h1>
+          <p className="mt-2 text-[#afa7c2] text-sm">Company settings and profile management</p>
+        </header>
 
         {actionError && (
-          <div className="rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 px-4 py-3 text-sm text-[#EF4444] mb-4">
+          <div className="mb-6 px-4 py-3 rounded-xl text-sm text-red-400"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
             {actionError}
           </div>
         )}
 
-        {/* Section 1 — Profile */}
-        <div className={glassSection}>
-          <h2 className={sectionTitle}>Profile</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-[#7B7A8E] mb-1.5 uppercase tracking-wider">Full Name</label>
-              <input
-                value={nameInput}
-                onChange={e => setNameInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
-                placeholder="Your full name"
-                className={inputCls}
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveName}
-                disabled={nameSaving || !nameInput.trim()}
-                className={saveBtnCls}
-              >
-                {nameSaving ? 'Saving…' : nameSaved ? '✓ Saved' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-8">
 
-        {/* Section 2 — Company */}
-        <div className={glassSection}>
-          <h2 className={sectionTitle}>Company</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-[#7B7A8E] mb-1.5 uppercase tracking-wider">Company Name</label>
-              <input
-                value={companyInput}
-                readOnly
-                placeholder="Company name"
-                className={`${inputCls} cursor-not-allowed opacity-60`}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3 — Viewers / Team Members */}
-        <div className={glassSection}>
-          <h2 className={sectionTitle}>Team Members</h2>
-
-          {members.length === 0 ? (
-            <p className="text-sm text-[#7B7A8E] text-center py-4">No members yet.</p>
-          ) : (
-            <ul className="space-y-2 mb-5">
-              {members.map(member => (
-                <li
-                  key={member.id}
-                  className="flex items-center justify-between gap-3 bg-[#0F0A1E]/50 rounded-xl px-4 py-3 border border-[#7C3AED]/10"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#F1F0F5] truncate">
-                      {member.full_name ?? '(no name)'}
-                      {member.id === currentUserId && (
-                        <span className="text-xs text-[#7B7A8E] ml-1">(you)</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-[#7B7A8E] truncate">{member.email}</p>
+          {/* Personal Profile */}
+          <motion.section variants={fadeInUp}>
+            <span className={sectionLabelCls}>Personal Profile</span>
+            <div className="p-6 rounded-2xl" style={glassCard}>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-5">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl text-[#2e006c] flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg, #bd9dff 0%, #8a4cfc 100%)', boxShadow: '0 0 20px rgba(189,157,255,0.25)' }}>
+                    {currentMember?.full_name ? initials(currentMember.full_name) : userEmail[0]?.toUpperCase() ?? '?'}
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border ${
-                      member.role === 'admin'
-                        ? 'bg-[#7C3AED]/20 text-[#A855F7] border-[#7C3AED]/30'
-                        : 'bg-[#7B7A8E]/20 text-[#7B7A8E] border-[#7B7A8E]/30'
-                    }`}>
-                      {member.role}
-                    </span>
-                    {member.id !== currentUserId && (
-                      <>
-                        <button
-                          onClick={() => handleChangeRole(member.id, member.role === 'admin' ? 'viewer' : 'admin')}
-                          disabled={isPending}
-                          className="text-xs text-[#A855F7] hover:text-[#7C3AED] disabled:opacity-50 transition-colors"
-                        >
-                          Make {member.role === 'admin' ? 'Viewer' : 'Admin'}
-                        </button>
-                        <button
-                          onClick={() => handleRemove(member.id)}
-                          disabled={isPending}
-                          className="text-xs text-[#EF4444] hover:text-[#EF4444]/80 disabled:opacity-50 transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </>
-                    )}
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <input
+                        value={nameInput}
+                        onChange={e => setNameInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
+                        placeholder="Your full name"
+                        className={`${inputCls} ${inputFocusStyle} text-base font-bold w-48`}
+                        style={inputStyle}
+                      />
+                      <button onClick={handleSaveName} disabled={nameSaving || !nameInput.trim()}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-40 transition-all active:scale-95"
+                        style={{ background: nameSaved ? 'rgba(16,185,129,0.15)' : 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.2)', color: nameSaved ? '#10b981' : '#bd9dff' }}>
+                        {nameSaving ? 'Saving…' : nameSaved ? '✓ Saved' : 'Save'}
+                      </button>
+                    </div>
+                    <p className="text-sm text-[#afa7c2]">{userEmail}</p>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+                <button onClick={handleSignOut} disabled={signingOut}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-red-400 disabled:opacity-50 transition-all hover:bg-red-400/10 active:scale-95"
+                  style={{ border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <LogOut className="h-4 w-4" />
+                  {signingOut ? 'Signing out…' : 'Sign Out'}
+                </button>
+              </div>
+            </div>
+          </motion.section>
 
-          {/* Add Viewer inline form */}
-          <div>
-            <p className="text-xs font-medium text-[#7B7A8E] mb-3 uppercase tracking-wider">Add Viewer</p>
-            <form onSubmit={handleInvite} className="flex gap-2">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                placeholder="colleague@example.com"
-                required
-                className="flex-1 bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm"
-              />
-              <button
-                type="submit"
-                disabled={isPending || !inviteEmail.trim()}
-                className={saveBtnCls}
-              >
-                {isPending ? 'Sending…' : 'Invite'}
-              </button>
-            </form>
-            {inviteStatus && (
-              <p className="mt-2 text-sm text-[#10B981]">{inviteStatus}</p>
-            )}
-            <p className="mt-2 text-xs text-[#7B7A8E]">
-              Invited users receive an email link and join as Viewers. Promote them to Admin after they accept.
-            </p>
-          </div>
-        </div>
+          {/* Organization Details */}
+          <motion.section variants={fadeInUp}>
+            <span className={sectionLabelCls}>Organization Details</span>
+            <div className="p-8 rounded-2xl" style={glassCard}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                  <label className={labelCls}>Company Name</label>
+                  <input value={companyName} readOnly
+                    className={`${inputCls} cursor-not-allowed opacity-50`}
+                    style={inputStyle} />
+                </div>
+                <div>
+                  <label className={labelCls}>Company ID</label>
+                  <CopyField value={companyId} />
+                </div>
+              </div>
+              <p className="text-[10px] text-[#afa7c2]/60 italic">
+                Company name changes require contacting support. Company ID is used for external viewer login.
+              </p>
+            </div>
+          </motion.section>
 
-        {/* External Viewers Section */}
-        <ViewersSection companyId={companyId} />
+          {/* Team Members */}
+          <motion.section variants={fadeInUp}>
+            <span className={sectionLabelCls}>Team Members</span>
+            <div className="p-8 rounded-2xl space-y-6" style={glassCard}>
 
-      </div>
+              {/* Members list */}
+              {members.length === 0 ? (
+                <p className="text-sm text-[#afa7c2] text-center py-4">No members yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {members.map(member => (
+                    <li key={member.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
+                      style={{ background: 'rgba(189,157,255,0.04)', border: '1px solid rgba(189,157,255,0.08)' }}>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{ background: 'rgba(189,157,255,0.15)', color: '#bd9dff' }}>
+                          {(member.full_name ?? member.email)[0]?.toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[#ebe1fe] truncate">
+                            {member.full_name ?? '(no name)'}
+                            {member.id === currentUserId && <span className="text-[#afa7c2] font-normal ml-1 text-xs">(you)</span>}
+                          </p>
+                          <p className="text-xs text-[#afa7c2] truncate">{member.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                          member.role === 'admin'
+                            ? 'bg-[#bd9dff]/15 text-[#bd9dff]'
+                            : 'bg-[#afa7c2]/15 text-[#afa7c2]'
+                        }`}>
+                          {member.role}
+                        </span>
+                        {member.id !== currentUserId && (
+                          <>
+                            <button onClick={() => handleChangeRole(member.id, member.role === 'admin' ? 'viewer' : 'admin')}
+                              disabled={isPending}
+                              className="text-xs text-[#bd9dff] hover:text-[#ebe1fe] disabled:opacity-50 transition-colors px-2 py-1 rounded-lg hover:bg-[#bd9dff]/10">
+                              Make {member.role === 'admin' ? 'Viewer' : 'Admin'}
+                            </button>
+                            <button onClick={() => handleRemove(member.id)} disabled={isPending}
+                              className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors px-2 py-1 rounded-lg hover:bg-red-400/10">
+                              Remove
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Invite */}
+              <div>
+                <p className={labelCls}>Invite Team Member</p>
+                <form onSubmit={handleInvite} className="flex gap-2">
+                  <input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+                    placeholder="colleague@example.com" required
+                    className={`${inputCls} ${inputFocusStyle} flex-1`} style={inputStyle} />
+                  <button type="submit" disabled={isPending || !inviteEmail.trim()}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40 transition-all hover:shadow-[0_0_16px_rgba(189,157,255,0.3)] active:scale-95 flex-shrink-0"
+                    style={{ background: '#bd9dff', color: '#0F0A1E' }}>
+                    <UserPlus className="h-4 w-4" />
+                    {isPending ? 'Sending…' : 'Invite'}
+                  </button>
+                </form>
+                {inviteStatus && <p className="mt-2 text-sm text-emerald-400">{inviteStatus}</p>}
+                <p className="mt-2 text-xs text-[#afa7c2]/60">
+                  Invited users join as Viewers. Promote them to Admin after they accept.
+                </p>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* External Viewers */}
+          <motion.section variants={fadeInUp}>
+            <ViewersSection companyId={companyId} />
+          </motion.section>
+
+          {/* Danger Zone */}
+          <motion.section variants={fadeInUp}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-400 mb-4 block">Critical Actions</span>
+            <div className="p-8 rounded-2xl" style={{ ...glassCard, border: '1px solid rgba(239,68,68,0.2)' }}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="max-w-md">
+                  <h4 className="text-lg font-bold text-[#ebe1fe] mb-1">Delete Company Data</h4>
+                  <p className="text-sm text-[#afa7c2]">
+                    This action is permanent and cannot be undone. All payroll history, employee records, and data will be permanently deleted.
+                  </p>
+                </div>
+                <button className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-red-400 hover:bg-red-400/10 transition-all whitespace-nowrap active:scale-95"
+                  style={{ border: '1px solid rgba(239,68,68,0.4)' }}
+                  onClick={() => alert('Please contact support to delete company data.')}>
+                  <Trash2 className="h-4 w-4" />
+                  Delete Data
+                </button>
+              </div>
+            </div>
+          </motion.section>
+
+        </motion.div>
+      </main>
     </div>
   )
 }
 
-function ViewersSection({ companyId }: { companyId: string }) {
+function CopyField({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard.writeText(value)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+  return (
+    <div className="flex gap-2">
+      <input readOnly value={value}
+        className={`${inputCls} font-mono opacity-60 cursor-default flex-1`}
+        style={inputStyle} />
+      <button onClick={copy}
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold flex-shrink-0 transition-all"
+        style={{ background: copied ? 'rgba(16,185,129,0.15)' : 'rgba(189,157,255,0.1)', border: '1px solid rgba(189,157,255,0.2)', color: copied ? '#10b981' : '#bd9dff' }}>
+        {copied ? <><Check className="h-3.5 w-3.5" /> Copied</> : <><Copy className="h-3.5 w-3.5" /> Copy</>}
+      </button>
+    </div>
+  )
+}
+
+function ViewersSection(_: { companyId: string }) {
   const [viewers, setViewers] = useState<{ phone: string; role: string }[]>([])
   const [phone, setPhone] = useState('')
   const [role, setRole] = useState('ca')
@@ -251,7 +341,6 @@ function ViewersSection({ companyId }: { companyId: string }) {
   const [status, setStatus] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetch('/api/viewers').then(r => r.json()).then(d => setViewers(d.viewers ?? []))
@@ -278,111 +367,71 @@ function ViewersSection({ companyId }: { companyId: string }) {
     setViewers(v => v.filter(x => x.phone !== p))
   }
 
-  function copyCompanyId() {
-    navigator.clipboard.writeText(companyId)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const roleBadge: Record<string, string> = {
+    ca:      'bg-[#bd9dff]/15 text-[#bd9dff]',
+    manager: 'bg-emerald-500/15 text-emerald-400',
+    partner: 'bg-amber-500/15 text-amber-400',
   }
 
-  const inputCls = 'bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 w-full text-sm'
-  const saveBtnCls = 'bg-[#7C3AED] text-white font-semibold px-4 py-2 rounded-lg text-sm hover:bg-[#6D28D9] transition-colors disabled:opacity-50'
-
   return (
-    <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-6 mb-4">
-      <h2 className="text-[#F1F0F5] font-semibold text-base mb-4 pb-3 border-b border-[#7C3AED]/10">External Viewers</h2>
+    <>
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#afa7c2] mb-4 block">External Viewers</span>
+      <div className="p-8 rounded-2xl space-y-6" style={glassCard}>
+        <p className="text-sm text-[#afa7c2]">
+          Give read-only access to CAs, managers, or partners. They log in at{' '}
+          <span className="font-mono text-[#bd9dff] text-xs">/viewer/dashboard</span>{' '}
+          using your company ID, their phone, and the password you set.
+        </p>
 
-      <p className="text-xs text-[#7B7A8E] mb-4">
-        Give read-only access to CAs, managers, or partners. They log in at{' '}
-        <span className="font-mono text-[#A855F7]">/viewer/dashboard</span> using your company ID, their phone, and the password you set.
-      </p>
+        {err && <p className="text-sm text-red-400">{err}</p>}
+        {status && <p className="text-sm text-emerald-400">{status}</p>}
 
-      {/* Section 4 — Referral (Company ID copy) */}
-      <div className="mb-5">
-        <label className="block text-xs font-medium text-[#7B7A8E] mb-1.5 uppercase tracking-wider">Your Company ID</label>
-        <div className="flex gap-2">
-          <input
-            readOnly
-            value={companyId}
-            className={`${inputCls} font-mono cursor-default opacity-70`}
-          />
-          <button
-            onClick={copyCompanyId}
-            className={saveBtnCls}
-          >
-            {copied ? '✓ Copied' : 'Copy'}
-          </button>
+        {viewers.length > 0 && (
+          <ul className="space-y-2">
+            {viewers.map(v => (
+              <li key={v.phone} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
+                style={{ background: 'rgba(189,157,255,0.04)', border: '1px solid rgba(189,157,255,0.08)' }}>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-4 w-4 text-[#afa7c2]" />
+                  <div>
+                    <p className="text-sm font-mono text-[#ebe1fe]">{v.phone}</p>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${roleBadge[v.role] ?? 'bg-[#afa7c2]/15 text-[#afa7c2]'}`}>
+                      {v.role}
+                    </span>
+                  </div>
+                </div>
+                <button onClick={() => remove(v.phone)}
+                  className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded-lg hover:bg-red-400/10 transition-colors">
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div>
+          <p className={labelCls}>Add External Viewer</p>
+          <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <input required value={phone} onChange={e => setPhone(e.target.value)}
+              placeholder="Phone number"
+              className={`${inputCls} sm:col-span-1`} style={inputStyle} />
+            <select value={role} onChange={e => setRole(e.target.value)}
+              className={`${inputCls}`} style={inputStyle}>
+              <option value="ca" style={{ background: '#1c162e' }}>CA (full access)</option>
+              <option value="manager" style={{ background: '#1c162e' }}>Manager (payroll + attendance)</option>
+              <option value="partner" style={{ background: '#1c162e' }}>Partner (payroll + employees)</option>
+            </select>
+            <input required type="password" value={password} onChange={e => setPassword(e.target.value)}
+              placeholder="Set password"
+              className={inputCls} style={inputStyle} />
+            <button disabled={busy} type="submit"
+              className="px-4 py-2.5 rounded-xl text-sm font-bold disabled:opacity-40 transition-all hover:shadow-[0_0_16px_rgba(189,157,255,0.3)] active:scale-95"
+              style={{ background: '#bd9dff', color: '#0F0A1E' }}>
+              {busy ? 'Adding…' : 'Add Viewer'}
+            </button>
+          </form>
         </div>
       </div>
-
-      {err && <p className="text-sm text-[#EF4444] mb-3">{err}</p>}
-      {status && <p className="text-sm text-[#10B981] mb-3">{status}</p>}
-
-      {/* Existing viewers list */}
-      {viewers.length > 0 && (
-        <ul className="space-y-2 mb-5">
-          {viewers.map(v => (
-            <li
-              key={v.phone}
-              className="flex items-center justify-between gap-3 bg-[#0F0A1E]/50 rounded-xl px-4 py-3 border border-[#7C3AED]/10"
-            >
-              <div>
-                <p className="text-sm font-medium text-[#F1F0F5] font-mono">{v.phone}</p>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border mt-0.5 ${
-                  v.role === 'ca'
-                    ? 'bg-[#7C3AED]/20 text-[#A855F7] border-[#7C3AED]/30'
-                    : v.role === 'manager'
-                    ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30'
-                    : 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30'
-                }`}>
-                  {v.role}
-                </span>
-              </div>
-              <button
-                onClick={() => remove(v.phone)}
-                className="text-xs text-[#EF4444] hover:text-[#EF4444]/80 transition-colors"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Add viewer form */}
-      <p className="text-xs font-medium text-[#7B7A8E] mb-3 uppercase tracking-wider">Add External Viewer</p>
-      <form onSubmit={add} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <input
-          required
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          placeholder="Phone"
-          className="sm:col-span-1 bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm"
-        />
-        <select
-          value={role}
-          onChange={e => setRole(e.target.value)}
-          className="bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm"
-        >
-          <option value="ca">CA (full access)</option>
-          <option value="manager">Manager (payroll + attendance)</option>
-          <option value="partner">Partner (payroll + employees)</option>
-        </select>
-        <input
-          required
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Set password"
-          className="bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm"
-        />
-        <button
-          disabled={busy}
-          type="submit"
-          className="bg-[#7C3AED] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#6D28D9] disabled:opacity-50 transition-colors"
-        >
-          {busy ? 'Adding…' : 'Add Viewer'}
-        </button>
-      </form>
-    </div>
+    </>
   )
 }
