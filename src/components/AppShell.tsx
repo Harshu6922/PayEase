@@ -14,7 +14,7 @@ const bottomTabs = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Employees', href: '/employees', icon: Users },
   { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
-  { name: 'Payroll', href: '/payments', icon: WalletCards },
+  { name: 'Payroll', href: '/reports', icon: WalletCards },
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
