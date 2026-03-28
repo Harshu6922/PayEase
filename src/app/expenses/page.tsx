@@ -7,7 +7,7 @@ export default async function ExpensesPage({
 }: {
   searchParams: { month?: string }
 }) {
-  const supabase = await createClient()
+  const supabase = createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -41,15 +41,13 @@ export default async function ExpensesPage({
     .order('created_at', { ascending: true })
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F7F6F3' }}>
-      <ExpensesManager
+    <ExpensesManager
         key={month}
         month={month}
         companyId={companyId}
         initialExpenses={(expenses || []) as any[]}
         initialTemplates={(templates || []) as any[]}
         userRole={userRole}
-      />
-    </div>
+    />
   )
 }
