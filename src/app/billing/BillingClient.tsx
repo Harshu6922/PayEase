@@ -24,6 +24,7 @@ const PLAN_FEATURES = [
 ]
 
 const PLAN_TAG: Record<string, string> = {
+  micro: 'Perfect for tiny teams',
   starter: 'Perfect for small teams',
   growth: 'Built for growing businesses',
   business: 'For large operations',
@@ -40,6 +41,11 @@ export default function BillingClient({
   const [referralInput, setReferralInput] = useState('')
   const [referralMsg, setReferralMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [promoInput, setPromoInput] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoMsg, setPromoMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; promoId: string; discountRs: number } | null>(null)
+  const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null)
 
   useEffect(() => {
     const pending = localStorage.getItem('pendingReferralCode')
@@ -49,12 +55,33 @@ export default function BillingClient({
     }
   }, [])
 
+  async function validatePromo(plan: PlanId) {
+    if (!promoInput.trim()) return
+    setPromoLoading(true)
+    setPromoMsg(null)
+    const res = await fetch('/api/promo/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: promoInput.trim(), plan }),
+    })
+    const data = await res.json()
+    if (data.valid) {
+      setAppliedPromo({ code: promoInput.trim().toUpperCase(), promoId: data.promoId, discountRs: data.discountRs })
+      setPromoMsg({ type: 'success', text: data.message })
+    } else {
+      setAppliedPromo(null)
+      setPromoMsg({ type: 'error', text: data.error })
+    }
+    setPromoLoading(false)
+  }
+
   async function handleSubscribe(plan: PlanId) {
     setLoading(true)
+    setSelectedPlan(plan)
     const res = await fetch('/api/razorpay/create-subscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, promoCode: appliedPromo?.code ?? null }),
     })
     const data = await res.json()
     if (!res.ok) { alert(data.error); setLoading(false); return }
@@ -97,7 +124,8 @@ export default function BillingClient({
     }
   }
 
-  const isLocked = subscription?.isLocked ?? false
+  const isPending = subscription?.status === 'pending'
+  const isLocked = (subscription?.isLocked ?? false) && !isPending
   const isTrial = subscription?.status === 'trial'
   const currentPlanId = subscription?.status === 'active' ? subscription.plan : null
 
@@ -129,6 +157,12 @@ export default function BillingClient({
       <div className="px-6 md:px-8 py-6 space-y-6 max-w-5xl">
 
         {/* Alert banners */}
+        {isPending && (
+          <div className="rounded-xl bg-[#7C3AED]/10 border border-[#7C3AED]/30 p-4 text-[#bd9dff] text-sm">
+            <span className="font-semibold">One step away!</span> Set up autopay below to activate your{' '}
+            <span className="font-semibold">7-day free trial</span>. You won&apos;t be charged until the trial ends.
+          </div>
+        )}
         {isLocked && (
           <div className="rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30 p-4 text-[#EF4444] text-sm font-medium">
             Your account is locked. Choose a plan below to restore access.
@@ -154,19 +188,24 @@ export default function BillingClient({
         {/* Plan cards */}
         <div>
           <h2 className="text-sm font-semibold text-[#7B7A8E] mb-4 uppercase tracking-wider">
-            {currentPlanId ? 'Change Plan' : 'Choose a Plan'}
+            {currentPlanId ? 'Change Plan' : isPending ? 'Choose a Plan to Start Your Free Trial' : 'Choose a Plan'}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {(Object.values(PLANS) as (typeof PLANS)[PlanId][]).map(plan => {
               const isCurrent = currentPlanId === plan.id
               const isPopular = plan.id === 'growth'
-              const discountedPrice = Math.max(0, plan.priceRs - referralDiscountRs)
+              const promoDiscountRs = appliedPromo && selectedPlan === plan.id ? appliedPromo.discountRs : 0
+              const discountedPrice = Math.max(0, plan.priceRs - referralDiscountRs - promoDiscountRs)
+              const isSelected = selectedPlan === plan.id
 
               return (
                 <div
                   key={plan.id}
-                  className={`relative backdrop-blur-md bg-white/5 rounded-xl p-6 flex flex-col transition-all ${
-                    isPopular
+                  onClick={() => { if (!isCurrent) { setSelectedPlan(plan.id); setAppliedPromo(null); setPromoMsg(null) } }}
+                  className={`relative backdrop-blur-md bg-white/5 rounded-xl p-6 flex flex-col transition-all cursor-pointer ${
+                    isSelected && !isCurrent
+                      ? 'border-2 border-[#7C3AED] shadow-[0_0_30px_rgba(124,58,237,0.3)]'
+                      : isPopular
                       ? 'border-2 border-[#7C3AED]/50 shadow-[0_0_30px_rgba(124,58,237,0.2)]'
                       : 'border border-[#7C3AED]/20'
                   }`}
@@ -193,11 +232,14 @@ export default function BillingClient({
                   {/* Price */}
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="font-mono font-extrabold text-3xl text-[#F1F0F5]">₹{discountedPrice}</span>
-                    {referralDiscountRs > 0 && (
+                    {(referralDiscountRs > 0 || promoDiscountRs > 0) && (
                       <span className="text-sm text-[#7B7A8E] line-through font-mono">₹{plan.priceRs}</span>
                     )}
                     <span className="text-sm text-[#7B7A8E]">/mo</span>
                   </div>
+                  {promoDiscountRs > 0 && (
+                    <p className="text-xs text-[#10B981] font-medium mb-1">Promo: −₹{promoDiscountRs}</p>
+                  )}
                   <p className="text-xs text-[#7B7A8E] mb-4">Up to {plan.employeeLimit} employees</p>
 
                   {/* Features */}
@@ -224,12 +266,60 @@ export default function BillingClient({
                         : 'bg-[#7C3AED] text-white hover:bg-[#6D28D9] disabled:opacity-50'
                     }`}
                   >
-                    {isCurrent ? 'Current Plan' : loading ? 'Loading…' : 'Subscribe'}
+                    {isCurrent ? 'Current Plan' : loading ? 'Loading…' : isPending ? 'Start 7-day Free Trial' : 'Subscribe'}
                   </button>
                 </div>
               )
             })}
           </div>
+        </div>
+
+        {/* Promo code section */}
+        <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-6 space-y-4">
+          <h2 className="text-[#F1F0F5] font-semibold text-base pb-3 border-b border-[#7C3AED]/10">Promo Code</h2>
+          {appliedPromo ? (
+            <div className="flex items-center justify-between rounded-xl bg-[#10B981]/10 border border-[#10B981]/20 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-[#10B981]">
+                  {appliedPromo.code} — <span className="font-mono">−₹{appliedPromo.discountRs}/month</span>
+                </p>
+                <p className="text-xs text-[#7B7A8E] mt-0.5">Applied to your next subscription</p>
+              </div>
+              <button
+                onClick={() => { setAppliedPromo(null); setPromoInput(''); setPromoMsg(null) }}
+                className="text-xs text-[#EF4444] hover:text-red-300 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoMsg(null) }}
+                  placeholder="Enter promo code"
+                  maxLength={20}
+                  className="flex-1 bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 text-sm font-mono uppercase"
+                />
+                <button
+                  onClick={() => validatePromo(selectedPlan ?? 'starter')}
+                  disabled={!promoInput.trim() || promoLoading}
+                  className="bg-[#7C3AED] text-white rounded-xl px-5 py-3 text-sm font-semibold hover:bg-[#6D28D9] transition-colors disabled:opacity-50"
+                >
+                  {promoLoading ? '…' : 'Apply'}
+                </button>
+              </div>
+              {!selectedPlan && !promoMsg && (
+                <p className="text-xs text-[#7B7A8E]">Select a plan above first, then apply your promo code.</p>
+              )}
+              {promoMsg && (
+                <p className={`text-sm ${promoMsg.type === 'success' ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {promoMsg.text}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Referral section */}
@@ -240,8 +330,8 @@ export default function BillingClient({
             <div>
               <p className="text-sm text-[#7B7A8E] mb-3">
                 Share your code — earn{' '}
-                <span className="font-semibold text-[#F1F0F5]">₹50/month off</span>{' '}
-                for each referral (max 3 per month = ₹150/month).{' '}
+                <span className="font-semibold text-[#F1F0F5]">₹20/month off</span>{' '}
+                for each referral (max 5 = ₹100/month).{' '}
                 <span className="text-[#F59E0B]">Discount activates only after your referred person makes their first payment.</span>
               </p>
               <div className="flex items-center gap-3">
@@ -258,7 +348,7 @@ export default function BillingClient({
               {activeReferrals > 0 && (
                 <p className="text-sm text-[#10B981] mt-2">
                   {activeReferrals} active referral{activeReferrals !== 1 ? 's' : ''} →{' '}
-                  <span className="font-semibold font-mono">₹{activeReferrals * 50}/month discount</span>
+                  <span className="font-semibold font-mono">₹{activeReferrals * 20}/month discount</span>
                 </p>
               )}
             </div>

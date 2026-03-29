@@ -6,6 +6,7 @@ import { Suspense } from 'react'
 import TrialBanner from '@/components/TrialBanner'
 import InstallPrompt from '@/components/InstallPrompt'
 import { Analytics } from '@vercel/analytics/next'
+import SWRProvider from '@/components/SWRProvider'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
@@ -33,9 +34,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans bg-background text-text antialiased">
-        <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
-          {children}
-        </AppShell>
+        <SWRProvider>
+          <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
+            {children}
+          </AppShell>
+        </SWRProvider>
         <InstallPrompt />
         <Analytics />
       </body>

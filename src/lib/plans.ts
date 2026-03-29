@@ -1,4 +1,11 @@
 export const PLANS = {
+  micro: {
+    id: 'micro',
+    name: 'Micro',
+    priceRs: 125,
+    employeeLimit: 5,
+    razorpayPlanId: process.env.RAZORPAY_PLAN_MICRO_ID ?? '',
+  },
   starter: {
     id: 'starter',
     name: 'Starter',
@@ -24,5 +31,5 @@ export const PLANS = {
 
 export type PlanId = keyof typeof PLANS
 
-export const REFERRAL_DISCOUNT_RS = 50
-export const MAX_REFERRALS = 3
+export const REFERRAL_DISCOUNT_RS = 20
+export const MAX_REFERRALS = 5

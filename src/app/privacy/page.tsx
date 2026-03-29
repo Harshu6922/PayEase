@@ -2,8 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — PayEase',
-  description: 'How PayEase collects, uses, and protects your data.',
+  title: 'Privacy Policy — PayEase Buddy',
+  description: 'How PayEase Buddy collects, uses, and protects your data.',
 }
 
 const SECTIONS = [
@@ -13,7 +13,7 @@ const SECTIONS = [
   },
   {
     title: '2. How We Use Your Information',
-    body: `We use your data solely to provide the PayEase service — processing payroll, generating reports, and sending notifications you configure. We do not sell, rent, or share your data with third parties for marketing purposes.`,
+    body: `We use your data solely to provide the PayEase Buddy service — processing payroll, generating reports, and sending notifications you configure. We do not sell, rent, or share your data with third parties for marketing purposes.`,
   },
   {
     title: '3. Data Storage & Security',
@@ -29,7 +29,7 @@ const SECTIONS = [
   },
   {
     title: '6. Cookies & Analytics',
-    body: `We use Vercel Analytics to understand how users interact with PayEase. This is privacy-safe and does not use cookies or track individuals across sites. No personal data is included in analytics.`,
+    body: `We use Vercel Analytics to understand how users interact with PayEase Buddy. This is privacy-safe and does not use cookies or track individuals across sites. No personal data is included in analytics.`,
   },
   {
     title: '7. Data Retention',
@@ -41,11 +41,11 @@ const SECTIONS = [
   },
   {
     title: '9. Changes to This Policy',
-    body: `We may update this policy occasionally. We will notify you by email or in-app notification before significant changes take effect. Continued use of PayEase after changes constitutes acceptance.`,
+    body: `We may update this policy occasionally. We will notify you by email or in-app notification before significant changes take effect. Continued use of PayEase Buddy after changes constitutes acceptance.`,
   },
   {
     title: '10. Contact',
-    body: `For privacy-related questions, email us at privacy@payease.in or use the contact form on our website.`,
+    body: `For privacy-related questions, email us at payeasebuddy@gmail.com or use the contact form on our website.`,
   },
 ]
 
@@ -66,7 +66,7 @@ export default function PrivacyPolicy() {
         </p>
 
         <p className="text-sm leading-relaxed mb-12" style={{ color: '#afa7c2' }}>
-          PayEase (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is committed to protecting the privacy of businesses and individuals who use our payroll management platform. This policy explains what data we collect, how we use it, and your rights.
+          PayEase Buddy (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is committed to protecting the privacy of businesses and individuals who use our payroll management platform. This policy explains what data we collect, how we use it, and your rights.
         </p>
 
         <div className="space-y-10">
@@ -80,7 +80,7 @@ export default function PrivacyPolicy() {
 
         <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(189,157,255,0.1)' }}>
           <p className="text-xs" style={{ color: '#6b6483' }}>
-            © {new Date().getFullYear()} PayEase. All rights reserved. &nbsp;
+            © {new Date().getFullYear()} PayEase Buddy. All rights reserved. &nbsp;
             <Link href="/terms" className="hover:text-[#bd9dff] transition-colors">Terms of Service</Link>
           </p>
         </div>

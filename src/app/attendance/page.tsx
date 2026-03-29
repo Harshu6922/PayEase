@@ -1,28 +1,25 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useAttendanceEmployees, useProfile } from '@/lib/hooks/useAppData'
 import { Employee } from '@/types'
 import AttendanceManager from './components/AttendanceManager'
 
-export default async function AttendancePage() {
-  const supabase = createClient()
+export default function AttendancePage() {
+  const { data: profile } = useProfile()
+  const { data: employees, isLoading } = useAttendanceEmployees()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (isLoading || !employees) {
+    return (
+      <div className="min-h-screen bg-[#0F0A1E] p-6 md:p-8 space-y-3">
+        <div className="h-8 w-40 bg-white/5 rounded-xl animate-pulse mb-6" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-14 bg-white/5 rounded-xl animate-pulse" />
+        ))}
+      </div>
+    )
+  }
 
-  const { data: profileData } = await supabase
-    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
+  const userRole: 'admin' | 'viewer' = (profile as any)?.role ?? 'viewer'
 
-  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
-  const companyId = (profileData as any)?.company_id
-
-  const { data } = await supabase
-    .from('employees')
-    .select('*')
-    .eq('company_id', companyId)
-    .eq('is_active', true)
-    .order('full_name')
-
-  const employees: Employee[] = (data || []) as Employee[]
-
-  return <AttendanceManager employees={employees} userRole={userRole} />
+  return <AttendanceManager employees={employees as Employee[]} userRole={userRole} />
 }

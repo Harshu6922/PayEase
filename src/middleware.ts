@@ -39,17 +39,15 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return response
 
-  // Enforce MFA if enrolled
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  // Run MFA check and profile fetch in parallel
+  const [{ data: aal }, { data: profile }] = await Promise.all([
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle(),
+  ])
+
   if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
     return NextResponse.redirect(new URL('/verify-mfa', request.url))
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('company_id')
-    .eq('id', user.id)
-    .maybeSingle()
 
   if (!profile?.company_id) {
     if (!pathname.startsWith('/onboarding')) {
@@ -66,7 +64,7 @@ export async function middleware(request: NextRequest) {
 
   if (!sub) return response
 
-  let isLocked = sub.status === 'locked' || sub.status === 'cancelled'
+  let isLocked = sub.status === 'locked' || sub.status === 'cancelled' || sub.status === 'pending'
   if (sub.status === 'trial' && sub.trial_ends_at) {
     if (new Date(sub.trial_ends_at) < new Date()) isLocked = true
   }

@@ -36,6 +36,14 @@ export async function POST(req: NextRequest) {
   if (!sub) return NextResponse.json({ ok: true })
 
   switch (event.event) {
+    case 'subscription.authenticated': {
+      // Mandate accepted — start 7-day free trial
+      await adminClient.from('subscriptions').update({
+        status: 'trial',
+        trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      }).eq('company_id', sub.company_id)
+      break
+    }
     case 'subscription.activated':
     case 'subscription.charged': {
       const periodEnd = event?.payload?.subscription?.entity?.current_end
@@ -59,7 +67,7 @@ export async function POST(req: NextRequest) {
           const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
           const email = authUser?.user?.email
           if (email && company && subRow) {
-            const planPrices: Record<string, number> = { starter: 299, growth: 499, business: 999 }
+            const planPrices: Record<string, number> = { micro: 125, starter: 299, growth: 499, business: 999 }
             await sendPaymentConfirmationEmail(email, (company as any).name, subRow.plan, planPrices[subRow.plan] ?? 0)
           }
         }

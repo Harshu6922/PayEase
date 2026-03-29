@@ -1,31 +1,24 @@
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import WorkerListClient from './components/WorkerListClient'
 
 export default async function WorkEntriesPage() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profileData } = await supabase
-    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
-  const companyId = (profileData as any)?.company_id
+  const { companyId, userRole, supabase } = await getServerSession()
   if (!companyId) redirect('/login')
-  const userRole: 'admin' | 'viewer' = (profileData as any)?.role ?? 'viewer'
 
-  const { data: companyData } = await supabase
-    .from('companies').select('name').eq('id', companyId).maybeSingle()
-  const companyName = (companyData as { name: string } | null)?.name ?? 'My Company'
+  const [{ data: companyData }, { data: workers }] = await Promise.all([
+    supabase.from('companies').select('name').eq('id', companyId).maybeSingle(),
+    supabase.from('employees')
+      .select('id, full_name, employee_id')
+      .eq('company_id', companyId).eq('worker_type', 'commission').eq('is_active', true).order('full_name'),
+  ])
 
-  const { data: workers } = await supabase
-    .from('employees')
-    .select('id, full_name, employee_id')
-    .eq('company_id', companyId)
-    .eq('worker_type', 'commission')
-    .eq('is_active', true)
-    .order('full_name')
-
-  const commissionWorkers = (workers || []) as { id: string; full_name: string; employee_id: string }[]
-
-  return <WorkerListClient workers={commissionWorkers} companyName={companyName} companyId={companyId} userRole={userRole} />
+  return (
+    <WorkerListClient
+      workers={(workers || []) as { id: string; full_name: string; employee_id: string }[]}
+      companyName={(companyData as any)?.name ?? 'My Company'}
+      companyId={companyId}
+      userRole={userRole}
+    />
+  )
 }

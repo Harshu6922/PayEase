@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { PLANS, REFERRAL_DISCOUNT_RS, MAX_REFERRALS, type PlanId } from './plans'
 
-export type SubscriptionStatus = 'trial' | 'active' | 'locked' | 'cancelled'
+export type SubscriptionStatus = 'pending' | 'trial' | 'active' | 'locked' | 'cancelled'
 
 export interface CompanySubscription {
   plan: PlanId
@@ -49,7 +49,7 @@ export async function getCompanySubscription(companyId: string): Promise<Company
     trialEndsAt,
     employeeLimit: PLANS[plan].employeeLimit,
     daysLeftInTrial,
-    isLocked: status === 'locked' || status === 'cancelled',
+    isLocked: status === 'locked' || status === 'cancelled' || status === 'pending',
     razorpaySubscriptionId: row.razorpay_subscription_id ?? null,
   }
 }

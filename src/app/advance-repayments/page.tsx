@@ -1,25 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from '@/lib/supabase/session'
 import { redirect } from 'next/navigation'
 import AdvanceRepaymentsClient, { type RepaymentRow } from './components/AdvanceRepaymentsClient'
 
 export default async function AdvanceRepaymentsPage() {
-  const supabase = createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: profileData } = await supabase
-    .from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
-  const companyId = (profileData as any)?.company_id
+  const { companyId, supabase } = await getServerSession()
   if (!companyId) redirect('/login')
 
   const { data: raw } = await supabase
     .from('advance_repayments')
-    .select(`
-      id, amount, repayment_date, method, note,
-      employee_advances(amount, advance_date),
-      employees(full_name, employee_id)
-    `)
+    .select('id, amount, repayment_date, method, note, employee_advances(amount, advance_date), employees(full_name, employee_id)')
     .eq('company_id', companyId)
     .order('repayment_date', { ascending: false })
 

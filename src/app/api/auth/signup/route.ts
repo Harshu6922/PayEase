@@ -59,12 +59,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: profileErr.message }, { status: 500 })
   }
 
-  // 4. Create subscription (7-day trial)
+  // 4. Create subscription (pending — trial starts after autopay mandate is set up)
   await adminClient.from('subscriptions').insert({
     company_id: companyId,
     plan: 'starter',
-    status: 'trial',
-    trial_ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'pending',
   })
 
   // 5. Generate referral code

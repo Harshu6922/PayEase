@@ -2,18 +2,18 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — PayEase',
-  description: 'Terms and conditions for using PayEase.',
+  title: 'Terms of Service — PayEase Buddy',
+  description: 'Terms and conditions for using PayEase Buddy.',
 }
 
 const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
-    body: `By creating an account or using PayEase, you agree to these Terms of Service. If you do not agree, do not use the service. These terms apply to all users including admins, viewers, and employees accessing the self-service portal.`,
+    body: `By creating an account or using PayEase Buddy, you agree to these Terms of Service. If you do not agree, do not use the service. These terms apply to all users including admins, viewers, and employees accessing the self-service portal.`,
   },
   {
     title: '2. Description of Service',
-    body: `PayEase is a cloud-based payroll and workforce management platform. We provide tools for managing employees, tracking attendance, processing payroll, and generating reports. The service is provided on a subscription basis.`,
+    body: `PayEase Buddy is a cloud-based payroll and workforce management platform. We provide tools for managing employees, tracking attendance, processing payroll, and generating reports. The service is provided on a subscription basis.`,
   },
   {
     title: '3. Account Responsibilities',
@@ -29,11 +29,11 @@ const SECTIONS = [
   },
   {
     title: '6. Acceptable Use',
-    body: `You may only use PayEase for lawful purposes. You must not attempt to reverse engineer, hack, or exploit the platform. You must not use the service to store or transmit illegal, fraudulent, or harmful content. We reserve the right to suspend accounts that violate these terms without prior notice.`,
+    body: `You may only use PayEase Buddy for lawful purposes. You must not attempt to reverse engineer, hack, or exploit the platform. You must not use the service to store or transmit illegal, fraudulent, or harmful content. We reserve the right to suspend accounts that violate these terms without prior notice.`,
   },
   {
     title: '7. Data Ownership',
-    body: `You retain full ownership of all data you input into PayEase including employee records, payroll data, and company information. We do not claim any rights over your data. Upon account deletion, all your data is permanently removed within 30 days.`,
+    body: `You retain full ownership of all data you input into PayEase Buddy including employee records, payroll data, and company information. We do not claim any rights over your data. Upon account deletion, all your data is permanently removed within 30 days.`,
   },
   {
     title: '8. Service Availability',
@@ -41,7 +41,7 @@ const SECTIONS = [
   },
   {
     title: '9. Limitation of Liability',
-    body: `PayEase is provided "as is". We are not liable for any indirect, incidental, or consequential damages arising from the use of our service. Our maximum liability to you in any month shall not exceed the subscription amount paid in that month.`,
+    body: `PayEase Buddy is provided "as is". We are not liable for any indirect, incidental, or consequential damages arising from the use of our service. Our maximum liability to you in any month shall not exceed the subscription amount paid in that month.`,
   },
   {
     title: '10. Termination',
@@ -57,7 +57,7 @@ const SECTIONS = [
   },
   {
     title: '13. Contact',
-    body: `For questions about these terms, contact us at support@payease.in or use the contact form on our website.`,
+    body: `For questions about these terms, contact us at payeasebuddy@gmail.com or use the contact form on our website.`,
   },
 ]
 
@@ -78,7 +78,7 @@ export default function TermsOfService() {
         </p>
 
         <p className="text-sm leading-relaxed mb-12" style={{ color: '#afa7c2' }}>
-          Please read these Terms of Service carefully before using PayEase. These terms form a legally binding agreement between you and PayEase.
+          Please read these Terms of Service carefully before using PayEase Buddy. These terms form a legally binding agreement between you and PayEase Buddy.
         </p>
 
         <div className="space-y-10">
@@ -92,7 +92,7 @@ export default function TermsOfService() {
 
         <div className="mt-16 pt-8" style={{ borderTop: '1px solid rgba(189,157,255,0.1)' }}>
           <p className="text-xs" style={{ color: '#6b6483' }}>
-            © {new Date().getFullYear()} PayEase. All rights reserved. &nbsp;
+            © {new Date().getFullYear()} PayEase Buddy. All rights reserved. &nbsp;
             <Link href="/privacy" className="hover:text-[#bd9dff] transition-colors">Privacy Policy</Link>
           </p>
         </div>
