@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verifyPassword, generateToken } from '@/lib/viewer-auth'
+import { isRateLimited, clearRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const { phone, business_id, password } = await req.json()
   if (!phone || !business_id || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  }
+
+  const rateLimitKey = `viewer_login:${business_id}:${phone}`
+  if (await isRateLimited(rateLimitKey)) {
+    return NextResponse.json({ error: 'Too many attempts. Please try again in 15 minutes.' }, { status: 429 })
   }
 
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!) as any
@@ -30,6 +36,8 @@ export async function POST(req: NextRequest) {
     token,
     token_expires_at: expiresAt,
   })
+
+  await clearRateLimit(rateLimitKey)
 
   return NextResponse.json({ token, role: viewer.role, business_id })
 }
