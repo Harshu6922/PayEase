@@ -100,5 +100,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Send welcome email
+  try {
+    const { sendWelcomeEmail } = await import('@/lib/email')
+    await sendWelcomeEmail(email, companyName)
+  } catch {}
+
   return NextResponse.json({ success: true })
 }

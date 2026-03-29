@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { sendPaymentConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   const adminClient = createAdminClient(
@@ -48,6 +49,21 @@ export async function POST(req: NextRequest) {
         .update({ active: true })
         .eq('referred_company_id', sub.company_id)
         .eq('active', false)
+
+      // Send payment confirmation email to admin
+      try {
+        const { data: company } = await adminClient.from('companies').select('name').eq('id', sub.company_id).maybeSingle()
+        const { data: subRow } = await adminClient.from('subscriptions').select('plan').eq('company_id', sub.company_id).maybeSingle()
+        const { data: profile } = await adminClient.from('profiles').select('id').eq('company_id', sub.company_id).eq('role', 'admin').maybeSingle()
+        if (profile?.id) {
+          const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
+          const email = authUser?.user?.email
+          if (email && company && subRow) {
+            const planPrices: Record<string, number> = { starter: 299, growth: 499, business: 999 }
+            await sendPaymentConfirmationEmail(email, (company as any).name, subRow.plan, planPrices[subRow.plan] ?? 0)
+          }
+        }
+      } catch {}
       break
     }
     case 'subscription.cancelled':
