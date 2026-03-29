@@ -26,7 +26,7 @@ export default function AppShell({ children, banner }: { children: React.ReactNo
     setSidebarOpen(false)
   }, [pathname])
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/'
+  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/' || pathname.startsWith('/employee-portal')
   if (isAuthPage) return <>{children}</>
 
   return (

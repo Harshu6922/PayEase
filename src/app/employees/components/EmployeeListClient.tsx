@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { Search, Calendar } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import type { Employee } from '@/types'
@@ -10,6 +10,7 @@ import AddEmployeeModal from './AddEmployeeModal'
 import EditEmployeeModal from './EditEmployeeModal'
 import ToggleActiveButton from './ToggleActiveButton'
 import DeleteEmployeeButton from './DeleteEmployeeButton'
+import SetPortalPasswordButton from './SetPortalPasswordButton'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -295,6 +296,7 @@ export default function EmployeeListClient({
                           </Link>
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <EditEmployeeModal employee={emp} />
+                            <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} />
                             <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
                             <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
                           </div>
@@ -405,6 +407,7 @@ export default function EmployeeListClient({
                                 View
                               </Link>
                               <EditEmployeeModal employee={emp} />
+                              <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} />
                               <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
                               <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
                             </div>
