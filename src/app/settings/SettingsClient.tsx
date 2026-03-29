@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
 import { createClient } from '@/lib/supabase/client'
-import { Copy, Check, LogOut, Trash2, Shield, UserPlus, MessageCircle, Eye, EyeOff } from 'lucide-react'
+import { Copy, Check, LogOut, Trash2, Shield, UserPlus, MessageCircle, Eye, EyeOff, ShieldCheck, ShieldOff, QrCode } from 'lucide-react'
 import { staggerContainer, fadeInUp } from '@/lib/animations'
 
 interface Member {
@@ -278,6 +278,11 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
                 </p>
               </div>
             </div>
+          </motion.section>
+
+          {/* Two-Factor Authentication */}
+          <motion.section variants={fadeInUp}>
+            <TwoFactorSection />
           </motion.section>
 
           {/* WhatsApp Notifications */}
@@ -618,6 +623,146 @@ function ViewersSection(_: { companyId: string }) {
             </button>
           </form>
         </div>
+      </div>
+    </>
+  )
+}
+
+function TwoFactorSection() {
+  const [status, setStatus] = useState<'loading' | 'enabled' | 'disabled'>('loading')
+  const [factorId, setFactorId] = useState<string | null>(null)
+  const [enrolling, setEnrolling] = useState(false)
+  const [qrCode, setQrCode] = useState<string | null>(null)
+  const [secret, setSecret] = useState<string | null>(null)
+  const [pendingFactorId, setPendingFactorId] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient() as any
+      const { data } = await supabase.auth.mfa.listFactors()
+      const totp = data?.totp?.find((f: any) => f.status === 'verified')
+      if (totp) { setFactorId(totp.id); setStatus('enabled') }
+      else setStatus('disabled')
+    }
+    load()
+  }, [])
+
+  async function startEnroll() {
+    setEnrolling(true); setMsg(null)
+    const supabase = createClient() as any
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'PayEase' })
+    if (error) { setMsg({ type: 'error', text: error.message }); setEnrolling(false); return }
+    setQrCode(data.totp.qr_code)
+    setSecret(data.totp.secret)
+    setPendingFactorId(data.id)
+  }
+
+  async function confirmEnroll() {
+    if (code.length !== 6 || !pendingFactorId) return
+    setBusy(true); setMsg(null)
+    const supabase = createClient() as any
+    const { data: challenge } = await supabase.auth.mfa.challenge({ factorId: pendingFactorId })
+    const { error } = await supabase.auth.mfa.verify({ factorId: pendingFactorId, challengeId: challenge.id, code })
+    if (error) { setMsg({ type: 'error', text: 'Invalid code. Try again.' }); setCode(''); setBusy(false); return }
+    setStatus('enabled'); setFactorId(pendingFactorId)
+    setEnrolling(false); setQrCode(null); setSecret(null); setPendingFactorId(null); setCode('')
+    setMsg({ type: 'success', text: '2FA enabled successfully.' })
+    setBusy(false)
+  }
+
+  async function disable() {
+    if (!factorId || !confirm('Disable two-factor authentication? Your account will be less secure.')) return
+    setBusy(true)
+    const supabase = createClient() as any
+    const { error } = await supabase.auth.mfa.unenroll({ factorId })
+    if (error) { setMsg({ type: 'error', text: error.message }); setBusy(false); return }
+    setStatus('disabled'); setFactorId(null)
+    setMsg({ type: 'success', text: '2FA disabled.' })
+    setBusy(false)
+  }
+
+  return (
+    <>
+      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#afa7c2] mb-4 block">Two-Factor Authentication</span>
+      <div className="p-8 rounded-2xl space-y-5" style={glassCard}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              {status === 'enabled'
+                ? <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                : <ShieldOff className="h-4 w-4" style={{ color: '#afa7c2' }} />}
+              <p className="text-sm font-semibold text-[#ebe1fe]">
+                {status === 'loading' ? 'Checking…' : status === 'enabled' ? '2FA Enabled' : '2FA Disabled'}
+              </p>
+            </div>
+            <p className="text-xs text-[#afa7c2] max-w-md">
+              {status === 'enabled'
+                ? 'Your account is protected. You\'ll need your authenticator app every time you log in.'
+                : 'Add an extra layer of security. After enabling, you\'ll need Google Authenticator or Authy to log in.'}
+            </p>
+          </div>
+          {status === 'enabled' && (
+            <button onClick={disable} disabled={busy}
+              className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold disabled:opacity-40 transition-all"
+              style={{ border: '1px solid rgba(239,68,68,0.3)', color: '#EF4444' }}>
+              {busy ? 'Disabling…' : 'Disable'}
+            </button>
+          )}
+          {status === 'disabled' && !enrolling && (
+            <button onClick={startEnroll}
+              className="flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+              style={{ background: '#bd9dff', color: '#0F0A1E' }}>
+              Enable 2FA
+            </button>
+          )}
+        </div>
+
+        {enrolling && qrCode && (
+          <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(189,157,255,0.04)', border: '1px solid rgba(189,157,255,0.1)' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <QrCode className="h-4 w-4" style={{ color: '#bd9dff' }} />
+              <p className="text-sm font-semibold text-[#ebe1fe]">Scan with your authenticator app</p>
+            </div>
+            <p className="text-xs text-[#afa7c2]">
+              Open <span className="text-[#ebe1fe]">Google Authenticator</span> or <span className="text-[#ebe1fe]">Authy</span>, tap the + button, and scan this QR code.
+            </p>
+            <div className="flex justify-center">
+              <img src={qrCode} alt="2FA QR Code" className="w-44 h-44 rounded-xl" style={{ background: '#fff', padding: 8 }} />
+            </div>
+            <p className="text-[10px] text-center text-[#afa7c2]">
+              Can't scan? Enter manually: <span className="font-mono text-[#bd9dff] break-all">{secret}</span>
+            </p>
+            <div>
+              <label className={labelCls}>Enter the 6-digit code to confirm</label>
+              <div className="flex gap-2">
+                <input
+                  type="text" inputMode="numeric" maxLength={6}
+                  value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
+                  onKeyDown={e => e.key === 'Enter' && confirmEnroll()}
+                  placeholder="000000"
+                  className="flex-1 text-center font-mono tracking-widest text-lg rounded-xl px-4 py-3 outline-none"
+                  style={{ background: 'rgba(189,157,255,0.06)', border: '1px solid rgba(189,157,255,0.15)', color: '#ebe1fe' }}
+                />
+                <button onClick={confirmEnroll} disabled={code.length !== 6 || busy}
+                  className="px-5 rounded-xl font-bold text-sm disabled:opacity-40 transition-all"
+                  style={{ background: '#bd9dff', color: '#0F0A1E' }}>
+                  {busy ? '…' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+            <button onClick={() => { setEnrolling(false); setQrCode(null); setCode('') }}
+              className="text-xs text-[#afa7c2] hover:text-[#ebe1fe] transition-colors">
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {msg && (
+          <p className={`text-sm ${msg.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>{msg.text}</p>
+        )}
       </div>
     </>
   )
