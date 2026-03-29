@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { verifyPassword, generateToken } from '@/lib/viewer-auth'
+import { isRateLimited, clearRateLimit } from '@/lib/rate-limit'
 
 export async function POST(req: NextRequest) {
   const { company_id, employee_display_id, password } = await req.json()
 
   if (!company_id || !employee_display_id || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  }
+
+  const rateLimitKey = `emp_login:${company_id}:${employee_display_id.toLowerCase()}`
+  if (await isRateLimited(rateLimitKey)) {
+    return NextResponse.json({ error: 'Too many attempts. Please try again in 15 minutes.' }, { status: 429 })
   }
 
   const db = createAdminClient(
@@ -39,6 +45,8 @@ export async function POST(req: NextRequest) {
     token,
     token_expires_at: tokenExpiresAt,
   })
+
+  await clearRateLimit(rateLimitKey)
 
   return NextResponse.json({
     token,

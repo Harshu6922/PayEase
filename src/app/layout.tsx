@@ -5,6 +5,7 @@ import AppShell from '@/components/AppShell'
 import { Suspense } from 'react'
 import TrialBanner from '@/components/TrialBanner'
 import InstallPrompt from '@/components/InstallPrompt'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
@@ -36,6 +37,7 @@ export default function RootLayout({
           {children}
         </AppShell>
         <InstallPrompt />
+        <Analytics />
       </body>
     </html>
   )

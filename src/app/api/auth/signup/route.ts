@@ -9,6 +9,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email, password and company name are required' }, { status: 400 })
   }
 
+  const { isRateLimited } = await import('@/lib/rate-limit')
+  const rateLimitKey = `signup:${email.toLowerCase().trim()}`
+  if (await isRateLimited(rateLimitKey)) {
+    return NextResponse.json({ error: 'Too many attempts. Please try again in 15 minutes.' }, { status: 429 })
+  }
+
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

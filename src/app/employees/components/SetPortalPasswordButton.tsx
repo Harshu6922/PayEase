@@ -99,7 +99,7 @@ export default function SetPortalPasswordButton({ employeeUuid, employeeName }: 
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSet()}
-                  placeholder="New password (min 4 chars)"
+                  placeholder="New password (min 8 chars)"
                   className="w-full rounded-lg text-xs outline-none"
                   style={{
                     background: 'rgba(189,157,255,0.06)',
@@ -120,7 +120,7 @@ export default function SetPortalPasswordButton({ employeeUuid, employeeName }: 
               <div className="flex gap-2">
                 <button
                   onClick={handleSet}
-                  disabled={loading || password.length < 4}
+                  disabled={loading || password.length < 8}
                   className="flex-1 py-2 rounded-lg text-xs font-bold transition-all disabled:opacity-40"
                   style={{ background: '#bd9dff', color: '#0F0A1E' }}
                 >
