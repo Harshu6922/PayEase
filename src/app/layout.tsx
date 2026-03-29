@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: 'PayEase',
   description: 'Manage employees, attendance, and payroll efficiently',
   manifest: '/manifest.json',
+  icons: { icon: '/favicon.ico', apple: '/icons/icon-192.png' },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
