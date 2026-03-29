@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         await adminClient.from('referral_discounts').insert({
           referrer_company_id: refCodeRow.company_id,
           referred_company_id: companyId,
-          active: true,
+          active: false,
         })
       }
     }

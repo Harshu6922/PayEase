@@ -42,6 +42,12 @@ export async function POST(req: NextRequest) {
         status: 'active',
         current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       }).eq('company_id', sub.company_id)
+
+      // Activate referral discount for the referrer now that referred company has paid
+      await adminClient.from('referral_discounts')
+        .update({ active: true })
+        .eq('referred_company_id', sub.company_id)
+        .eq('active', false)
       break
     }
     case 'subscription.cancelled':
