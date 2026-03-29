@@ -9,6 +9,9 @@ export async function POST(req: NextRequest) {
   if (!company_id || !employee_display_id || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
+  if (company_id.length > 40 || employee_display_id.length > 30 || password.length > 128) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  }
 
   const rateLimitKey = `emp_login:${company_id}:${employee_display_id.toLowerCase()}`
   if (await isRateLimited(rateLimitKey)) {

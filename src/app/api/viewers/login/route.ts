@@ -8,6 +8,9 @@ export async function POST(req: NextRequest) {
   if (!phone || !business_id || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
+  if (business_id.length > 40 || phone.length > 20 || password.length > 128) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  }
 
   const rateLimitKey = `viewer_login:${business_id}:${phone}`
   if (await isRateLimited(rateLimitKey)) {

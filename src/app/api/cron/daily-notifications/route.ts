@@ -163,5 +163,14 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Cleanup: delete expired sessions and old rate limit entries
+  const expiredCutoff = new Date().toISOString()
+  const rateLimitCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString() // 1 hour ago
+  await Promise.all([
+    adminClient.from('employee_sessions').delete().lt('token_expires_at', expiredCutoff),
+    adminClient.from('viewer_sessions').delete().lt('token_expires_at', expiredCutoff),
+    adminClient.from('rate_limits').delete().lt('window_start', rateLimitCutoff),
+  ])
+
   return NextResponse.json({ sent: totalSent, failed: totalFailed })
 }
