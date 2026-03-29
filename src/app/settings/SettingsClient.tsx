@@ -344,9 +344,7 @@ function WhatsAppSection() {
   const [phoneNumberId, setPhoneNumberId] = useState('')
   const [templateName, setTemplateName] = useState('daily_employee_update')
   const [sendTime, setSendTime] = useState('18:00')
-  const [smsApiKey, setSmsApiKey] = useState('')
   const [showToken, setShowToken] = useState(false)
-  const [showSmsKey, setShowSmsKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -362,7 +360,6 @@ function WhatsAppSection() {
           setPhoneNumberId(d.settings.whatsapp_phone_number_id ?? '')
           setTemplateName(d.settings.template_name ?? 'daily_employee_update')
           setSendTime(d.settings.send_time ?? '18:00')
-          setSmsApiKey(d.settings.sms_api_key ?? '')
         }
         setLoaded(true)
       })
@@ -379,7 +376,6 @@ function WhatsAppSection() {
         whatsapp_phone_number_id: phoneNumberId.trim() || null,
         template_name: templateName.trim() || 'daily_employee_update',
         send_time: sendTime,
-        sms_api_key: smsApiKey.trim() || null,
       }),
     })
     const d = await res.json()
@@ -481,30 +477,10 @@ function WhatsAppSection() {
           </div>
         </div>
 
-        {/* SMS fallback */}
-        <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(189,157,255,0.03)', border: '1px solid rgba(189,157,255,0.08)' }}>
-          <div>
-            <p className="text-sm font-semibold text-[#ebe1fe] mb-0.5">SMS Fallback <span className="text-xs font-normal text-[#afa7c2]">(Fast2SMS — for employees without WhatsApp)</span></p>
-            <p className="text-xs text-[#afa7c2]">Employees with notification method set to &quot;SMS&quot; will receive a plain text SMS instead. Works on any basic phone. Get a free API key at fast2sms.com.</p>
-          </div>
-          <div>
-            <label className={labelCls}>Fast2SMS API Key</label>
-            <div className="flex gap-2">
-              <input
-                type={showSmsKey ? 'text' : 'password'}
-                value={smsApiKey}
-                onChange={e => setSmsApiKey(e.target.value)}
-                placeholder="Your Fast2SMS API key"
-                className={`${inputCls} ${inputFocusStyle} flex-1 font-mono text-xs`}
-                style={inputStyle}
-              />
-              <button onClick={() => setShowSmsKey(v => !v)}
-                className="px-3 rounded-xl flex-shrink-0 transition-colors"
-                style={{ background: 'rgba(189,157,255,0.08)', border: '1px solid rgba(189,157,255,0.15)', color: '#afa7c2' }}>
-                {showSmsKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+        {/* SMS fallback note */}
+        <div className="rounded-xl p-4" style={{ background: 'rgba(189,157,255,0.03)', border: '1px solid rgba(189,157,255,0.08)' }}>
+          <p className="text-sm font-semibold text-[#ebe1fe] mb-0.5">SMS Fallback <span className="text-xs font-normal text-[#afa7c2]">(Fast2SMS)</span></p>
+          <p className="text-xs text-[#afa7c2]">Employees with &quot;Notify Via: SMS&quot; will receive a plain text SMS automatically. SMS is handled centrally — no setup needed here.</p>
         </div>
 
         {/* Template preview */}

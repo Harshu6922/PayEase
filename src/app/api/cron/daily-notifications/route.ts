@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
 
   const { data: configs } = await adminClient
     .from('notification_settings')
-    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key')
+    .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name')
     .eq('enabled', true)
 
   if (!configs || configs.length === 0) {
@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
   let totalSent = 0, totalFailed = 0
 
   for (const config of configs) {
-    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name, sms_api_key } = config as any
+    const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name } = config as any
 
     const { data: company } = await adminClient.from('companies').select('name').eq('id', company_id).maybeSingle()
     const companyName = (company as any)?.name ?? 'Your Company'
@@ -153,9 +153,9 @@ export async function GET(req: NextRequest) {
             `₹${monthlyEarnings.toLocaleString('en-IN')}`,
             `₹${advanceBalance.toLocaleString('en-IN')}`]
         )
-      } else if (method === 'sms' && sms_api_key) {
+      } else if (method === 'sms' && process.env.FAST2SMS_API_KEY) {
         const msg = `Hi ${e.full_name}, update from ${companyName}:\nHours today: ${hrs} hrs\nThis month: Rs.${monthlyEarnings.toLocaleString('en-IN')}\nAdvance: Rs.${advanceBalance.toLocaleString('en-IN')}\n- PayEase`
-        sent = await sendSMS(sms_api_key, phone, msg)
+        sent = await sendSMS(process.env.FAST2SMS_API_KEY, phone, msg)
       }
 
       if (sent) totalSent++
