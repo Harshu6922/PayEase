@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/', '/login', '/signup', '/billing', '/api/razorpay/webhook', '/api/auth/signup', '/api/auth/setup-company', '/onboarding', '/auth', '/contact', '/api/contact', '/viewer', '/api/viewers', '/api/cron', '/super-admin', '/api/super-admin']
+const PUBLIC_PATHS = ['/', '/login', '/signup', '/billing', '/api/razorpay/webhook', '/api/auth/signup', '/api/auth/setup-company', '/onboarding', '/auth', '/contact', '/api/contact', '/viewer', '/api/viewers', '/api/cron', '/super-admin', '/api/super-admin', '/verify-mfa']
 
 export async function middleware(request: NextRequest) {
   const response = await updateSession(request)
@@ -38,6 +38,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return response
+
+  // Enforce MFA if enrolled
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') {
+    return NextResponse.redirect(new URL('/verify-mfa', request.url))
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
