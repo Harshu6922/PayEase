@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+
+Disallow: /dashboard
+Disallow: /employees
+Disallow: /attendance
+Disallow: /reports
+Disallow: /payments
+Disallow: /advances
+Disallow: /expenses
+Disallow: /settings
+Disallow: /billing
+Disallow: /onboarding
+Disallow: /viewer
+Disallow: /employee-portal
+Disallow: /super-admin
+Disallow: /verify-mfa
+Disallow: /api/
+
+Sitemap: https://pay-ease.vercel.app/sitemap.xml

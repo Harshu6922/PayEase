@@ -102,6 +102,32 @@ async function calcEmployeeData(empId: string, workerType: string, monthlySalary
   return { hrs, monthlyEarnings, advanceBalance }
 }
 
+async function sendTrialEndingEmails() {
+  const { sendTrialEndingEmail } = await import('@/lib/email')
+  const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
+  const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+
+  const { data: trials } = await adminClient
+    .from('subscriptions')
+    .select('company_id, trial_ends_at')
+    .eq('status', 'trial')
+    .gte('trial_ends_at', twoDaysFromNow.toISOString())
+    .lte('trial_ends_at', threeDaysFromNow.toISOString())
+
+  for (const t of trials ?? []) {
+    try {
+      const daysLeft = Math.ceil((new Date((t as any).trial_ends_at).getTime() - Date.now()) / 86400000)
+      const { data: company } = await adminClient.from('companies').select('name').eq('id', (t as any).company_id).maybeSingle()
+      const { data: profile } = await adminClient.from('profiles').select('id').eq('company_id', (t as any).company_id).eq('role', 'admin').maybeSingle()
+      if (profile?.id) {
+        const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
+        const email = authUser?.user?.email
+        if (email && company) await sendTrialEndingEmail(email, (company as any).name, daysLeft)
+      }
+    } catch {}
+  }
+}
+
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -110,6 +136,9 @@ export async function GET(req: NextRequest) {
 
   const today = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 7) + '-01'
+
+  // Send trial ending emails (2 days before expiry)
+  await sendTrialEndingEmails()
 
   const { data: configs } = await adminClient
     .from('notification_settings')
