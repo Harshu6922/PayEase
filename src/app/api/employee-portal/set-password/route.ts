@@ -39,5 +39,9 @@ export async function POST(req: NextRequest) {
     .eq('id', employee_uuid)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Invalidate all existing sessions for this employee
+  await db.from('employee_sessions').delete().eq('employee_id', employee_uuid)
+
   return NextResponse.json({ success: true })
 }

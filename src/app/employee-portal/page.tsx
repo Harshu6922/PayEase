@@ -324,9 +324,16 @@ export default function EmployeePortal() {
     if (t) setToken(t)
   }, [])
 
-  function signOut() {
+  async function signOut() {
+    const t = localStorage.getItem('employee_portal_token')
     localStorage.removeItem('employee_portal_token')
     setToken(null)
+    if (t) {
+      await fetch('/api/employee-portal/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}` },
+      }).catch(() => {})
+    }
   }
 
   if (!token) return <LoginForm onLogin={setToken} />
