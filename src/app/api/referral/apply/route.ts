@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
   const { error } = await adminClient.from('referral_discounts').insert({
     referrer_company_id: (refCode as any).company_id,
     referred_company_id: companyId,
-    active: true,
+    active: false,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

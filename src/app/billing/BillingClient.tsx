@@ -29,7 +29,6 @@ const PLAN_TAG: Record<string, string> = {
   business: 'For large operations',
 }
 
-const inputCls = 'bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 w-full text-sm'
 
 export default function BillingClient({
   subscription,
@@ -242,7 +241,8 @@ export default function BillingClient({
               <p className="text-sm text-[#7B7A8E] mb-3">
                 Share your code — earn{' '}
                 <span className="font-semibold text-[#F1F0F5]">₹50/month off</span>{' '}
-                for each referral (max 3 per month = ₹150/month)
+                for each referral (max 3 per month = ₹150/month).{' '}
+                <span className="text-[#F59E0B]">Discount activates only after your referred person makes their first payment.</span>
               </p>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-lg font-bold text-[#A855F7] bg-[#7C3AED]/10 border border-[#7C3AED]/20 px-4 py-2 rounded-xl tracking-widest">
