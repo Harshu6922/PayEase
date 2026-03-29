@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Navbar from './Navbar'
+import SupportBanner from './SupportBanner'
 
 const bottomTabs = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -63,6 +64,7 @@ export default function AppShell({ children, banner }: { children: React.ReactNo
 
       {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <SupportBanner />
         {banner}
         {/* Mobile top bar */}
         <Navbar onMenuOpen={() => setSidebarOpen(true)} />
