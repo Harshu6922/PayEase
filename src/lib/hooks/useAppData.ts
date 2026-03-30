@@ -116,7 +116,7 @@ export function useAdvances() {
 
       return { advances, employees: employees ?? [], totalOutstanding, givenThisMonth, recoveredThisMonth }
     },
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   )
 }
 
@@ -135,7 +135,7 @@ export function useExpenses(month: string) {
       ])
       return { expenses: (expenses || []) as any[], templates: (templates || []) as any[] }
     },
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   )
 }
 
@@ -159,7 +159,7 @@ export function usePayments(month: string) {
         employees: (employees || []) as any[],
       }
     },
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   )
 }
 
@@ -228,7 +228,7 @@ export function useAdvanceRepayments() {
         employee_display_id: r.employees?.employee_id ?? '—',
       }))
     },
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   )
 }
 
@@ -340,6 +340,6 @@ export function useReports(month: string) {
         advanceRepaidThisMonth,
       }
     },
-    { revalidateOnFocus: false }
+    { revalidateOnFocus: false, revalidateOnMount: true }
   )
 }
