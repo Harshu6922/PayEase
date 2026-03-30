@@ -127,9 +127,13 @@ export default function PayrollSummaryPDF({
                   {prev > 0 ? `+${formatINR(prev)}` : '—'}
                 </Text>
               )}
-              <Text style={[styles.colNet, styles.td, { color: netInPdf <= 0 ? (grossNet > 0 && paid >= grossNet ? '#16a34a' : '#dc2626') : '#16a34a' }]}>
-                {netInPdf <= 0
-                  ? (grossNet > 0 && paid >= grossNet ? 'Paid' : `(${formatINR(Math.abs(netInPdf))})`)
+              <Text style={[styles.colNet, styles.td, {
+                color: netInPdf < -0.01 ? '#f97316' : netInPdf <= 0.01 ? '#16a34a' : '#111827'
+              }]}>
+                {netInPdf < -0.01
+                  ? `+${formatINR(Math.abs(netInPdf))} over`
+                  : netInPdf <= 0.01
+                  ? 'Paid'
                   : formatINR(netInPdf)}
               </Text>
             </View>
