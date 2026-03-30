@@ -7,6 +7,7 @@ import TrialBanner from '@/components/TrialBanner'
 import InstallPrompt from '@/components/InstallPrompt'
 import { Analytics } from '@vercel/analytics/next'
 import SWRProvider from '@/components/SWRProvider'
+import AppGuard from '@/components/AppGuard'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
@@ -36,7 +37,7 @@ export default function RootLayout({
       <body className="font-sans bg-background text-text antialiased">
         <SWRProvider>
           <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
-            {children}
+            <AppGuard>{children}</AppGuard>
           </AppShell>
         </SWRProvider>
         <InstallPrompt />
