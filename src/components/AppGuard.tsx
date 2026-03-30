@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import useSWR from 'swr'
+import Prefetcher from './Prefetcher'
 
 const supabase = createClient()
 
@@ -51,5 +52,10 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
     if (data.needsBilling) { router.replace('/billing'); return }
   }, [data, isUnguarded, router])
 
-  return <>{children}</>
+  return (
+    <>
+      {!isUnguarded && <Prefetcher />}
+      {children}
+    </>
+  )
 }
