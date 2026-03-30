@@ -35,6 +35,7 @@ export default function PaymentModal({
 
   const [payments, setPayments] = useState<Payment[]>([])
   const [advances, setAdvances] = useState<EmployeeAdvance[]>([])
+  const [repayments, setRepayments] = useState<{ id: string; amount: number; repayment_date: string; method: string; note: string | null }[]>([])
   const [advanceRepaidThisMonth, setAdvanceRepaidThisMonth] = useState(0)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'full' | 'parts' | null>(null)
@@ -49,7 +50,7 @@ export default function PaymentModal({
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [paymentsRes, advancesRes, repaidRes] = await Promise.all([
+      const [paymentsRes, advancesRes, repaymentsRes] = await Promise.all([
         supabase
           .from('payments')
           .select('*')
@@ -62,15 +63,17 @@ export default function PaymentModal({
           .order('advance_date', { ascending: false }),
         supabase
           .from('advance_repayments')
-          .select('amount')
+          .select('id, amount, repayment_date, method, note')
           .eq('employee_id', employee.id)
-          .eq('method', 'salary_deduction')
-          .like('repayment_date', `${month}%`),
+          .order('repayment_date', { ascending: false }),
       ])
       if (paymentsRes.data) setPayments(paymentsRes.data)
       if (advancesRes.data) setAdvances(advancesRes.data)
+      if (repaymentsRes.data) setRepayments(repaymentsRes.data)
       setAdvanceRepaidThisMonth(
-        (repaidRes.data || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+        (repaymentsRes.data || [])
+          .filter((r: any) => r.method === 'salary_deduction' && r.repayment_date.startsWith(month))
+          .reduce((s: number, r: any) => s + Number(r.amount), 0)
       )
       setLoading(false)
     }
@@ -159,10 +162,11 @@ export default function PaymentModal({
   // Combined history
   type HistoryItem = {
     date: string
-    type: 'salary' | 'advance'
+    type: 'salary' | 'advance' | 'repayment'
     amount: number
     note: string | null
     month?: string
+    method?: string
   }
   const history: HistoryItem[] = [
     ...payments.map(p => ({
@@ -177,6 +181,13 @@ export default function PaymentModal({
       type: 'advance' as const,
       amount: Number(a.amount),
       note: a.note ?? null,
+    })),
+    ...repayments.map(r => ({
+      date: r.repayment_date,
+      type: 'repayment' as const,
+      amount: Number(r.amount),
+      note: r.note,
+      method: r.method,
     })),
   ].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -339,9 +350,12 @@ export default function PaymentModal({
                   <div key={i} className="flex items-start justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2">
                     <div>
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {item.type === 'advance' ? 'Advance' : 'Salary'}
+                        {item.type === 'advance' ? 'Advance Given' : item.type === 'repayment' ? 'Advance Repaid' : 'Salary'}
                         {item.type === 'salary' && item.month && item.month !== month && (
                           <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({item.month})</span>
+                        )}
+                        {item.type === 'repayment' && item.method && (
+                          <span className="ml-1 text-xs text-gray-400 dark:text-gray-500 capitalize">· {item.method.replace('_', ' ')}</span>
                         )}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -349,8 +363,8 @@ export default function PaymentModal({
                         {item.note && <> · <span className="italic">{item.note}</span></>}
                       </p>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-white ml-4 whitespace-nowrap">
-                      {formatRs(item.amount)}
+                    <span className={`text-sm font-semibold ml-4 whitespace-nowrap ${item.type === 'repayment' ? 'text-green-500' : item.type === 'advance' ? 'text-orange-400' : 'text-gray-900 dark:text-white'}`}>
+                      {item.type === 'repayment' ? '−' : item.type === 'advance' ? '+' : ''}{formatRs(item.amount)}
                     </span>
                   </div>
                 ))}
