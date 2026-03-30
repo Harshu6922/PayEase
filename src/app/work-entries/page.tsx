@@ -1,24 +1,20 @@
-import { getServerSession } from '@/lib/supabase/session'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useProfile, useWorkEntries } from '@/lib/hooks/useAppData'
 import WorkerListClient from './components/WorkerListClient'
 
-export default async function WorkEntriesPage() {
-  const { companyId, userRole, supabase } = await getServerSession()
-  if (!companyId) redirect('/login')
+export default function WorkEntriesPage() {
+  const { data: profile } = useProfile()
+  const { data } = useWorkEntries()
 
-  const [{ data: companyData }, { data: workers }] = await Promise.all([
-    supabase.from('companies').select('name').eq('id', companyId).maybeSingle(),
-    supabase.from('employees')
-      .select('id, full_name, employee_id')
-      .eq('company_id', companyId).eq('worker_type', 'commission').eq('is_active', true).order('full_name'),
-  ])
+  if (!data || !profile) return null
 
   return (
     <WorkerListClient
-      workers={(workers || []) as { id: string; full_name: string; employee_id: string }[]}
-      companyName={(companyData as any)?.name ?? 'My Company'}
-      companyId={companyId}
-      userRole={userRole}
+      workers={data.workers}
+      companyName={data.companyName}
+      companyId={profile.company_id}
+      userRole={profile.role as any}
     />
   )
 }

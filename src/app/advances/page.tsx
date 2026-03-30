@@ -1,57 +1,23 @@
-import { getServerSession } from '@/lib/supabase/session'
-import { redirect } from 'next/navigation'
-import AdvancesClient, { type AdvanceWithBalance } from './components/AdvancesClient'
+'use client'
 
-export default async function AdvancesPage() {
-  const { companyId, userRole, supabase } = await getServerSession()
-  if (!companyId) redirect('/login')
+import { useProfile, useAdvances } from '@/lib/hooks/useAppData'
+import AdvancesClient from './components/AdvancesClient'
 
-  const now = new Date()
-  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const startOfMonth = `${monthPrefix}-01`
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+export default function AdvancesPage() {
+  const { data: profile } = useProfile()
+  const { data } = useAdvances()
 
-  const [{ data: employees }, { data: advancesRaw }, { data: monthRepayments }] = await Promise.all([
-    supabase.from('employees')
-      .select('id, full_name, employee_id')
-      .eq('company_id', companyId).eq('is_active', true).order('full_name'),
-    supabase.from('employee_advances')
-      .select('id, employee_id, company_id, amount, advance_date, note, employees(full_name, employee_id), advance_repayments(amount)')
-      .eq('company_id', companyId).order('advance_date', { ascending: false }),
-    supabase.from('advance_repayments')
-      .select('amount')
-      .eq('company_id', companyId).gte('repayment_date', startOfMonth).lte('repayment_date', endOfMonth),
-  ])
-
-  const advances: AdvanceWithBalance[] = (advancesRaw || []).map((a: any) => {
-    const repaid_total = (a.advance_repayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
-    return {
-      id: a.id,
-      employee_id: a.employee_id,
-      company_id: a.company_id,
-      amount: Number(a.amount),
-      advance_date: a.advance_date,
-      note: a.note,
-      repaid_total,
-      remaining: Number(a.amount) - repaid_total,
-      employee_name: a.employees?.full_name ?? '—',
-      employee_display_id: a.employees?.employee_id ?? '—',
-    }
-  })
-
-  const totalOutstanding = advances.reduce((s, a) => s + (a.remaining > 0 ? a.remaining : 0), 0)
-  const givenThisMonth = advances.filter(a => a.advance_date.startsWith(monthPrefix)).reduce((s, a) => s + a.amount, 0)
-  const recoveredThisMonth = (monthRepayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+  if (!data || !profile) return null
 
   return (
     <AdvancesClient
-      initialAdvances={advances}
-      companyId={companyId}
-      employees={employees || []}
-      totalOutstanding={totalOutstanding}
-      givenThisMonth={givenThisMonth}
-      recoveredThisMonth={recoveredThisMonth}
-      userRole={userRole}
+      initialAdvances={data.advances as any}
+      companyId={profile.company_id}
+      employees={data.employees as any}
+      totalOutstanding={data.totalOutstanding}
+      givenThisMonth={data.givenThisMonth}
+      recoveredThisMonth={data.recoveredThisMonth}
+      userRole={profile.role as any}
     />
   )
 }

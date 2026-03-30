@@ -1,20 +1,20 @@
-import { getServerSession } from '@/lib/supabase/session'
-import { redirect } from 'next/navigation'
-import { CommissionItem } from '@/types'
+'use client'
+
+import { useProfile, useCommissionItems } from '@/lib/hooks/useAppData'
 import CommissionItemsManager from './components/CommissionItemsManager'
+import { CommissionItem } from '@/types'
 
-export default async function CommissionPage() {
-  const { companyId, userRole, supabase } = await getServerSession()
-  if (!companyId) redirect('/login')
+export default function CommissionPage() {
+  const { data: profile } = useProfile()
+  const { data: items } = useCommissionItems()
 
-  const { data: items } = await supabase
-    .from('commission_items').select('*').eq('company_id', companyId).order('name')
+  if (!items || !profile) return null
 
   return (
     <CommissionItemsManager
-      items={(items || []) as CommissionItem[]}
-      companyId={companyId}
-      userRole={userRole}
+      items={items as CommissionItem[]}
+      companyId={profile.company_id}
+      userRole={profile.role as any}
     />
   )
 }
