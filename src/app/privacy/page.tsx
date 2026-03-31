@@ -45,7 +45,7 @@ const SECTIONS = [
   },
   {
     title: '10. Contact',
-    body: `For privacy-related questions, email us at privacy@payease.in or use the contact form on our website.`,
+    body: `For privacy-related questions, email us at payeasebuddy@gmail.com or use the contact form on our website.`,
   },
 ]
 

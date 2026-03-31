@@ -176,8 +176,8 @@ export default function ContactPage() {
         {/* Support email note */}
         <p className="text-center text-xs text-text-muted">
           Or email us at{' '}
-          <a href="mailto:support@payease.in" className="text-primary hover:text-primary-light transition-colors">
-            support@payease.in
+          <a href="mailto:payeasebuddy@gmail.com" className="text-primary hover:text-primary-light transition-colors">
+            payeasebuddy@gmail.com
           </a>
         </p>
       </motion.div>

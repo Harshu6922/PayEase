@@ -57,7 +57,7 @@ const SECTIONS = [
   },
   {
     title: '13. Contact',
-    body: `For questions about these terms, contact us at support@payease.in or use the contact form on our website.`,
+    body: `For questions about these terms, contact us at payeasebuddy@gmail.com or use the contact form on our website.`,
   },
 ]
 
