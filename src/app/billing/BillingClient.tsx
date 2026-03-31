@@ -40,6 +40,10 @@ export default function BillingClient({
   const [referralInput, setReferralInput] = useState('')
   const [referralMsg, setReferralMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [promoInput, setPromoInput] = useState('')
+  const [promoMsg, setPromoMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [promoValidating, setPromoValidating] = useState(false)
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount_type: 'fixed' | 'percent'; discount_value: number; discountRs: number } | null>(null)
 
   useEffect(() => {
     const pending = localStorage.getItem('pendingReferralCode')
@@ -49,12 +53,35 @@ export default function BillingClient({
     }
   }, [])
 
+  async function validatePromo() {
+    if (!promoInput.trim()) return
+    setPromoValidating(true); setPromoMsg(null)
+    const res = await fetch('/api/promo/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: promoInput.trim() }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setPromoMsg({ type: 'error', text: data.error })
+      setAppliedPromo(null)
+    } else {
+      const planPrice = 499 // use growth as reference; actual discount shown per card
+      const discountRs = data.discount_type === 'fixed'
+        ? Number(data.discount_value)
+        : Math.round(planPrice * Number(data.discount_value) / 100)
+      setAppliedPromo({ code: promoInput.trim().toUpperCase(), discount_type: data.discount_type, discount_value: data.discount_value, discountRs })
+      setPromoMsg({ type: 'success', text: data.discount_type === 'fixed' ? `₹${data.discount_value} off applied!` : `${data.discount_value}% off applied!` })
+    }
+    setPromoValidating(false)
+  }
+
   async function handleSubscribe(plan: PlanId) {
     setLoading(true)
     const res = await fetch('/api/razorpay/create-subscription', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, promoCode: appliedPromo?.code }),
     })
     const data = await res.json()
     if (!res.ok) { alert(data.error); setLoading(false); return }
@@ -160,7 +187,12 @@ export default function BillingClient({
             {(Object.values(PLANS) as (typeof PLANS)[PlanId][]).map(plan => {
               const isCurrent = currentPlanId === plan.id
               const isPopular = plan.id === 'growth'
-              const discountedPrice = Math.max(0, plan.priceRs - referralDiscountRs)
+              const promoDiscount = appliedPromo
+                ? appliedPromo.discount_type === 'fixed'
+                  ? Number(appliedPromo.discount_value)
+                  : Math.round(plan.priceRs * Number(appliedPromo.discount_value) / 100)
+                : 0
+              const discountedPrice = Math.max(0, plan.priceRs - referralDiscountRs - promoDiscount)
 
               return (
                 <div
@@ -193,7 +225,7 @@ export default function BillingClient({
                   {/* Price */}
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="font-mono font-extrabold text-3xl text-[#F1F0F5]">₹{discountedPrice}</span>
-                    {referralDiscountRs > 0 && (
+                    {(referralDiscountRs > 0 || promoDiscount > 0) && (
                       <span className="text-sm text-[#7B7A8E] line-through font-mono">₹{plan.priceRs}</span>
                     )}
                     <span className="text-sm text-[#7B7A8E]">/mo</span>
@@ -230,6 +262,52 @@ export default function BillingClient({
               )
             })}
           </div>
+        </div>
+
+        {/* Promo Code section */}
+        <div className="backdrop-blur-md bg-white/5 border border-[#7C3AED]/20 rounded-xl p-6 space-y-4">
+          <h2 className="text-[#F1F0F5] font-semibold text-base pb-3 border-b border-[#7C3AED]/10">Promo Code</h2>
+          {appliedPromo ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#10B981] font-semibold">
+                  ✓ <span className="font-mono">{appliedPromo.code}</span> applied —{' '}
+                  {appliedPromo.discount_type === 'fixed' ? `₹${appliedPromo.discount_value} off` : `${appliedPromo.discount_value}% off`} every plan
+                </p>
+              </div>
+              <button
+                onClick={() => { setAppliedPromo(null); setPromoMsg(null); setPromoInput('') }}
+                className="text-xs text-[#7B7A8E] hover:text-[#EF4444] transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-[#7B7A8E]">Have a promo code? Enter it below for a discount:</p>
+              <div className="flex gap-2">
+                <input
+                  value={promoInput}
+                  onChange={e => setPromoInput(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && validatePromo()}
+                  placeholder="Enter promo code"
+                  className="flex-1 bg-[#0F0A1E] border border-[#7C3AED]/30 rounded-xl px-4 py-3 text-[#F1F0F5] placeholder:text-[#7B7A8E]/50 focus:outline-none focus:border-[#7C3AED]/50 focus:ring-1 focus:ring-[#7C3AED]/50 text-sm font-mono uppercase"
+                />
+                <button
+                  onClick={validatePromo}
+                  disabled={!promoInput.trim() || promoValidating}
+                  className="bg-[#7C3AED] text-white rounded-xl px-5 py-3 text-sm font-semibold hover:bg-[#6D28D9] transition-colors disabled:opacity-50"
+                >
+                  {promoValidating ? 'Checking…' : 'Apply'}
+                </button>
+              </div>
+              {promoMsg && (
+                <p className={`text-sm ${promoMsg.type === 'success' ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                  {promoMsg.text}
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         {/* Referral section */}
