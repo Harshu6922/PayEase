@@ -34,13 +34,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     backgroundColor: '#f9fafb',
   },
-  colName:   { width: '22%' },
-  colDays:   { width: '8%', textAlign: 'right' },
-  colEarn:   { width: '13%', textAlign: 'right' },
-  colOt:     { width: '10%', textAlign: 'right' },
-  colDeduct: { width: '11%', textAlign: 'right' },
-  colAdv:    { width: '11%', textAlign: 'right' },
-  colPrev:   { width: '12%', textAlign: 'right' },
+  colName:   { width: '19%' },
+  colDays:   { width: '6%', textAlign: 'right' },
+  colEarn:   { width: '12%', textAlign: 'right' },
+  colOt:     { width: '9%', textAlign: 'right' },
+  colDeduct: { width: '10%', textAlign: 'right' },
+  colAdv:    { width: '10%', textAlign: 'right' },
+  colPrev:   { width: '10%', textAlign: 'right' },
+  colPaid:   { width: '11%', textAlign: 'right' },
   colNet:    { width: '13%', textAlign: 'right' },
   th: { fontSize: 8, fontWeight: 'bold', color: '#374151' },
   td: { fontSize: 8, color: '#111827' },
@@ -97,7 +98,8 @@ export default function PayrollSummaryPDF({
           <Text style={[styles.colDeduct, styles.th]}>Deductions</Text>
           <Text style={[styles.colAdv, styles.th]}>Advances</Text>
           {hasPrevBalance && <Text style={[styles.colPrev, styles.th]}>Prev Bal</Text>}
-          <Text style={[styles.colNet, styles.th]}>Net Payable</Text>
+          <Text style={[styles.colPaid, styles.th]}>Paid</Text>
+          <Text style={[styles.colNet, styles.th]}>Remaining</Text>
         </View>
 
         {rows.map(row => {
@@ -127,7 +129,10 @@ export default function PayrollSummaryPDF({
                   {prev > 0 ? `+${formatINR(prev)}` : '—'}
                 </Text>
               )}
-              <Text style={[styles.colNet, styles.td, { color: netInPdf < -0.01 ? '#f97316' : netInPdf <= 0.01 ? '#16a34a' : '#16a34a' }]}>
+              <Text style={[styles.colPaid, styles.td, { color: paid > 0 ? '#16a34a' : '#9ca3af' }]}>
+                {paid > 0 ? formatINR(paid) : '—'}
+              </Text>
+              <Text style={[styles.colNet, styles.td, { color: netInPdf < -0.01 ? '#f97316' : netInPdf <= 0.01 ? '#16a34a' : '#111827' }]}>
                 {netInPdf < -0.01
                   ? `+${formatINR(Math.abs(netInPdf))} over`
                   : netInPdf <= 0.01
