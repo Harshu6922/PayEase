@@ -28,7 +28,6 @@ const navigation = [
     items: [
       { name: 'Employees', href: '/employees', icon: Users },
       { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
-      { name: 'Daily Attendance', href: '/daily-attendance', icon: CalendarDays },
     ],
   },
   {

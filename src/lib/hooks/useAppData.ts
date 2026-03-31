@@ -193,17 +193,6 @@ export function useWorkEntries() {
   )
 }
 
-export function useDailyWorkers() {
-  const { data: profile } = useProfile()
-  return useSWR(
-    profile?.company_id ? ['daily-workers', profile.company_id] : null,
-    async ([, companyId]) => {
-      const { data } = await supabase.from('employees').select('*').eq('company_id', companyId).eq('worker_type', 'daily').eq('is_active', true).order('full_name')
-      return (data || []) as any[]
-    },
-    { revalidateOnFocus: false }
-  )
-}
 
 export function useAdvanceRepayments() {
   const { data: profile } = useProfile()
@@ -289,7 +278,6 @@ export function useReports(month: string) {
         { data: attendance },
         { data: workEntries },
         { data: agentRates },
-        { data: dailyAttendance },
         { data: advancesRaw },
         { data: monthPayments },
         { data: monthAdvanceRepayments },
@@ -299,7 +287,6 @@ export function useReports(month: string) {
         supabase.from('attendance_records').select('employee_id, date, worked_hours, overtime_hours, overtime_amount, deduction_amount').eq('company_id', companyId).gte('date', startDate).lte('date', endDate),
         supabase.from('work_entries').select('employee_id, item_id, quantity, date, total_amount').eq('company_id', companyId).gte('date', startDate).lte('date', endDate),
         supabase.from('agent_item_rates').select('employee_id, item_id, rate').eq('company_id', companyId),
-        supabase.from('daily_attendance').select('employee_id, date, hours_worked, pay_amount').eq('company_id', companyId).gte('date', startDate).lte('date', endDate),
         supabase.from('employee_advances').select('id, employee_id, amount, advance_date, advance_repayments(amount)').eq('company_id', companyId),
         supabase.from('payments').select('*').eq('company_id', companyId).eq('month', selectedMonthStr),
         supabase.from('advance_repayments').select('employee_id, amount').eq('company_id', companyId).eq('method', 'salary_deduction').gte('repayment_date', startDate).lte('repayment_date', endDate),
@@ -334,7 +321,6 @@ export function useReports(month: string) {
         attendance: (attendance || []) as any[],
         workEntries: (workEntries || []) as any[],
         agentRates: (agentRates || []) as any[],
-        dailyAttendance: (dailyAttendance || []) as any[],
         outstandingByEmployee,
         monthPayments: (monthPayments || []) as any[],
         advanceRepaidThisMonth,

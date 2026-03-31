@@ -13,7 +13,6 @@ import {
   useDashboard,
   useCommissionItems,
   useWorkEntries,
-  useDailyWorkers,
   useCharts,
 } from '@/lib/hooks/useAppData'
 
@@ -24,7 +23,6 @@ export default function Prefetcher() {
   useDashboard()
   useCommissionItems()
   useWorkEntries()
-  useDailyWorkers()
   useCharts()
   return null
 }

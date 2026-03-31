@@ -33,7 +33,6 @@ function ReportsContent() {
         attendance={data.attendance}
         workEntries={data.workEntries}
         agentRates={data.agentRates}
-        dailyAttendance={data.dailyAttendance}
         outstandingByEmployee={data.outstandingByEmployee}
         companyName={data.companyName}
         companyId={data.companyId}

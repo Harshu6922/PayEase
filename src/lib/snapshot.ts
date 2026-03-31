@@ -18,18 +18,16 @@ export async function generateSnapshot(companyId: string) {
     { data: employees },
     { data: attendance },
     { data: workEntries },
-    { data: dailyAtt },
     { data: payments },
     { data: advances },
     { data: todayAtt },
   ] = await Promise.all([
-    db.from('employees').select('id,full_name,worker_type,monthly_salary').eq('company_id', companyId).eq('is_active', true),
-    db.from('attendance').select('employee_id,worked_hours,overtime_amount,deduction_amount').eq('company_id', companyId).like('date', `${month}%`),
+    db.from('employees').select('id,full_name,worker_type,monthly_salary,daily_rate').eq('company_id', companyId).eq('is_active', true),
+    db.from('attendance_records').select('employee_id,worked_hours,overtime_amount,deduction_amount').eq('company_id', companyId).like('date', `${month}%`),
     db.from('work_entries').select('employee_id,total_amount').eq('company_id', companyId).like('date', `${month}%`),
-    db.from('daily_attendance').select('employee_id,pay_amount').eq('company_id', companyId).like('date', `${month}%`),
     db.from('payments').select('employee_id,amount').eq('company_id', companyId).eq('month', month),
     db.from('employee_advances').select('employee_id,amount,repaid_amount').eq('company_id', companyId),
-    db.from('attendance').select('employee_id').eq('company_id', companyId).eq('date', todayStr),
+    db.from('attendance_records').select('employee_id').eq('company_id', companyId).eq('date', todayStr),
   ])
 
   const emp = employees ?? []
@@ -51,8 +49,11 @@ export async function generateSnapshot(companyId: string) {
       earned = (workEntries ?? []).filter((w: any) => w.employee_id === e.id)
         .reduce((s: number, w: any) => s + Number(w.total_amount ?? 0), 0)
     } else if (e.worker_type === 'daily') {
-      earned = (dailyAtt ?? []).filter((d: any) => d.employee_id === e.id)
-        .reduce((s: number, d: any) => s + Number(d.pay_amount ?? 0), 0)
+      const att = (attendance ?? []).filter((a: any) => a.employee_id === e.id)
+      const worked = att.filter((a: any) => Number(a.worked_hours) > 0).length
+      const ot = att.reduce((s: number, a: any) => s + Number(a.overtime_amount ?? 0), 0)
+      const ded = att.reduce((s: number, a: any) => s + Number(a.deduction_amount ?? 0), 0)
+      earned = Math.round((Number(e.daily_rate ?? 0) * worked + ot - ded) * 100) / 100
     } else {
       const att = (attendance ?? []).filter((a: any) => a.employee_id === e.id)
       const worked = att.filter((a: any) => Number(a.worked_hours) > 0).length

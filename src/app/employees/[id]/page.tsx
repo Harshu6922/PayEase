@@ -115,9 +115,11 @@ export default function EmployeeDetailPage() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl flex flex-col justify-between h-28" style={glassCard}>
-            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#afa7c2' }}>Monthly Salary</span>
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#afa7c2' }}>
+              {employee.worker_type === 'daily' ? 'Daily Rate' : 'Monthly Salary'}
+            </span>
             <span className="text-xl font-bold" style={{ color: '#D4A847' }}>
-              ₹{Number(employee.monthly_salary).toLocaleString('en-IN')}
+              ₹{Number(employee.worker_type === 'daily' ? employee.daily_rate : employee.monthly_salary).toLocaleString('en-IN')}
             </span>
           </div>
           <div className="p-5 rounded-2xl flex flex-col justify-between h-28" style={glassCard}>

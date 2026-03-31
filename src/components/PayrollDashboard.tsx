@@ -46,12 +46,6 @@ interface AgentRate {
   rate: number
 }
 
-interface DailyAttendanceRecord {
-  employee_id: string
-  date: string
-  hours_worked: number
-  pay_amount: number
-}
 
 interface PayrollDashboardProps {
   initialMonth: string // YYYY-MM
@@ -59,7 +53,6 @@ interface PayrollDashboardProps {
   attendance: AttendanceRecord[]
   workEntries: WorkEntry[]
   agentRates: AgentRate[]
-  dailyAttendance: DailyAttendanceRecord[]
   outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }>
   generateAction: (data: any) => Promise<void>
   companyName: string
@@ -75,7 +68,6 @@ function calculatePayroll(
   attendance: AttendanceRecord[],
   workEntries: WorkEntry[],
   agentRates: AgentRate[],
-  dailyAttendance: DailyAttendanceRecord[],
   workingDays: number,
   outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {}
 ) {
@@ -95,9 +87,13 @@ function calculatePayroll(
       total_worked_days = uniqueDates.size
 
     } else if (emp.worker_type === 'daily') {
-      const empDailyAtt = dailyAttendance.filter(a => a.employee_id === emp.id)
-      earned_salary = empDailyAtt.reduce((sum, a) => sum + Number(a.pay_amount ?? 0), 0)
-      total_worked_days = empDailyAtt.length
+      const empAttendance = attendance.filter(a => a.employee_id === emp.id)
+      empAttendance.forEach(record => {
+        if (Number(record.worked_hours) > 0) total_worked_days += 1
+        total_overtime_amount += Number(record.overtime_amount || 0)
+        total_deduction_amount += Number(record.deduction_amount || 0)
+      })
+      earned_salary = total_worked_days * Number(emp.daily_rate ?? 0)
 
     } else {
       const empAttendance = attendance.filter(a => a.employee_id === emp.id)
@@ -194,7 +190,6 @@ export default function PayrollDashboard({
   attendance,
   workEntries,
   agentRates,
-  dailyAttendance,
   outstandingByEmployee,
   generateAction,
   companyName,
@@ -229,8 +224,8 @@ export default function PayrollDashboard({
   const daysInPrevMonth = useMemo(() => getDaysInMonth(prevMonth), [prevMonth])
 
   const computedPayroll = useMemo(() => {
-    return calculatePayroll(employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee)
-  }, [employees, attendance, workEntries, agentRates, dailyAttendance, actualDaysInMonth, outstandingByEmployee])
+    return calculatePayroll(employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee)
+  }, [employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee])
 
   const prevBalances = useMemo((): Record<string, number> => {
     if (!paidUpToDay) return {}
