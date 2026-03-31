@@ -262,7 +262,7 @@ export default function PaymentModal({
             {advanceDeduction > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Advance Deduction</span>
-                <span className="font-semibold text-orange-600">− {formatRs(advanceDeduction)}</span>
+                <span className="font-semibold text-orange-600">− {formatRs(advanceDeduction + totalCashRepaid)}</span>
               </div>
             )}
             {totalCashRepaid > 0 && (
