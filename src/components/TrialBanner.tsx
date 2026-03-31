@@ -1,32 +1,23 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { getCompanySubscription } from '@/lib/subscription'
+import TrialBannerUI from './TrialBannerUI'
 
-import Link from 'next/link'
-import { X, Zap } from 'lucide-react'
-import { useState } from 'react'
+export default async function TrialBanner() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
 
-export default function TrialBanner() {
-  const [dismissed, setDismissed] = useState(false)
-  if (dismissed) return null
+    const { data: profile } = await supabase
+      .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+    const companyId = (profile as any)?.company_id
+    if (!companyId) return null
 
-  return (
-    <div className="bg-[#1A1035] border-b border-[#7C3AED]/20 px-4 py-2 flex items-center justify-between gap-3 shrink-0">
-      <div className="flex items-center gap-2 min-w-0">
-        <Zap className="h-3.5 w-3.5 text-primary-light flex-shrink-0" />
-        <p className="text-xs text-text-muted truncate">
-          You&apos;re on a free trial.{' '}
-          <Link href="/billing" className="text-primary-light font-medium hover:underline">
-            Upgrade
-          </Link>{' '}
-          to unlock all features.
-        </p>
-      </div>
-      <button
-        onClick={() => setDismissed(true)}
-        className="text-text-muted hover:text-text flex-shrink-0 transition-colors"
-        aria-label="Dismiss"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  )
+    const subscription = await getCompanySubscription(companyId)
+    if (!subscription || subscription.status !== 'trial') return null
+
+    return <TrialBannerUI daysLeft={subscription.daysLeftInTrial} />
+  } catch {
+    return null
+  }
 }
