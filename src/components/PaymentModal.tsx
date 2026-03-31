@@ -36,6 +36,7 @@ export default function PaymentModal({
   const [payments, setPayments] = useState<Payment[]>([])
   const [advances, setAdvances] = useState<EmployeeAdvance[]>([])
   const [advanceRepaidThisMonth, setAdvanceRepaidThisMonth] = useState(0)
+  const [freshOutstanding, setFreshOutstanding] = useState<{ totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'full' | 'parts' | null>(null)
   const [partialAmount, setPartialAmount] = useState('')
@@ -49,7 +50,7 @@ export default function PaymentModal({
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [paymentsRes, advancesRes, repaidRes] = await Promise.all([
+      const [paymentsRes, advancesRes, repaidRes, allRepaymentsRes] = await Promise.all([
         supabase
           .from('payments')
           .select('*')
@@ -66,19 +67,43 @@ export default function PaymentModal({
           .eq('employee_id', employee.id)
           .eq('method', 'salary_deduction')
           .like('repayment_date', `${month}%`),
+        supabase
+          .from('advance_repayments')
+          .select('advance_id, amount')
+          .eq('employee_id', employee.id),
       ])
       if (paymentsRes.data) setPayments(paymentsRes.data)
       if (advancesRes.data) setAdvances(advancesRes.data)
       setAdvanceRepaidThisMonth(
         (repaidRes.data || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
       )
+
+      // Calculate fresh outstanding from DB (ignores stale prop)
+      const repaidByAdvance: Record<string, number> = {}
+      ;(allRepaymentsRes.data || []).forEach((r: any) => {
+        repaidByAdvance[r.advance_id] = (repaidByAdvance[r.advance_id] ?? 0) + Number(r.amount)
+      })
+      const outstandingAdvancesList: { id: string; remaining: number; advance_date: string }[] = []
+      let total = 0
+      ;(advancesRes.data || []).forEach((a: any) => {
+        const remaining = Number(a.amount) - (repaidByAdvance[a.id] ?? 0)
+        if (remaining > 0) {
+          outstandingAdvancesList.push({ id: a.id, remaining, advance_date: a.advance_date })
+          total += remaining
+        }
+      })
+      outstandingAdvancesList.sort((a, b) => a.advance_date.localeCompare(b.advance_date))
+      setFreshOutstanding({ totalOutstanding: total, advances: outstandingAdvancesList })
+
       setLoading(false)
     }
     fetchData()
   }, [employee.id])
 
+  // Use freshly fetched outstanding (falls back to prop until fetch completes)
+  const liveOutstanding = freshOutstanding ?? outstandingAdvances
   // Auto-deduct advances from payable
-  const advanceDeduction = Math.min(outstandingAdvances?.totalOutstanding ?? 0, currentMonthPayable)
+  const advanceDeduction = Math.min(liveOutstanding?.totalOutstanding ?? 0, currentMonthPayable)
   const netMonthPayable = Math.round((currentMonthPayable - advanceDeduction) * 100) / 100
 
   const paymentsThisMonth = payments
@@ -107,7 +132,7 @@ export default function PaymentModal({
     // Auto-create advance repayments (FIFO) when paying in full
     if (autoRepayAdvances && advanceDeduction > 0) {
       let toDistribute = advanceDeduction
-      for (const adv of outstandingAdvances.advances) {
+      for (const adv of (liveOutstanding?.advances ?? [])) {
         if (toDistribute <= 0) break
         const toRepay = Math.min(toDistribute, adv.remaining)
         const { error: repErr } = await supabase.from('advance_repayments').insert({
