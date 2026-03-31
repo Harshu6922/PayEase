@@ -240,27 +240,40 @@ export default function AttendanceManager({
             <p className="text-[#afa7c2] text-lg">Mark today's attendance for your team</p>
           </div>
 
-          {/* Date pill with navigation */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigateDate('prev')}
-              className="p-2 rounded-full bg-[rgba(28,22,46,0.6)] border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-[rgba(28,22,46,0.6)] backdrop-blur-xl border border-[#bd9dff]/10">
-              <Calendar className="h-4 w-4 text-[#bd9dff]" />
-              <span className="font-medium text-[#ebe1fe] text-sm">{formattedDate}</span>
-              {isToday && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-[#bd9dff]/20 text-[#bd9dff] px-2 py-0.5 rounded-full">Today</span>
-              )}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Date pill with navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigateDate('prev')}
+                className="p-2 rounded-full bg-[rgba(28,22,46,0.6)] border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-[rgba(28,22,46,0.6)] backdrop-blur-xl border border-[#bd9dff]/10">
+                <Calendar className="h-4 w-4 text-[#bd9dff]" />
+                <span className="font-medium text-[#ebe1fe] text-sm">{formattedDate}</span>
+                {isToday && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-[#bd9dff]/20 text-[#bd9dff] px-2 py-0.5 rounded-full">Today</span>
+                )}
+              </div>
+              <button
+                onClick={() => navigateDate('next')}
+                className="p-2 rounded-full bg-[rgba(28,22,46,0.6)] border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
-            <button
-              onClick={() => navigateDate('next')}
-              className="p-2 rounded-full bg-[rgba(28,22,46,0.6)] border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+
+            {/* Save button — top */}
+            {userRole === 'admin' && (
+              <button
+                onClick={handleSave}
+                disabled={loading || fetching}
+                className="px-6 py-3 rounded-full bg-[#b28cff] text-[#2e006c] font-bold text-sm hover:shadow-[0_0_24px_rgba(189,157,255,0.4)] transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {loading ? 'Saving…' : 'Save Attendance'}
+              </button>
+            )}
           </div>
         </section>
 
