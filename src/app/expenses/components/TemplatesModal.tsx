@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -14,7 +15,17 @@ interface Props {
   onChanged: (templates: ExpenseTemplate[]) => void
 }
 
-const row = { hidden: { opacity: 0, y: 4 }, show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: 'easeOut' as const } } }
+const inp: React.CSSProperties = {
+  width: '100%', borderRadius: 10, padding: '9px 12px', fontSize: 13,
+  color: '#ebe1fe', background: 'rgba(189,157,255,0.05)',
+  border: '1px solid rgba(189,157,255,0.12)', outline: 'none',
+  boxSizing: 'border-box',
+}
+const lbl: React.CSSProperties = {
+  display: 'block', fontSize: 11, fontWeight: 600,
+  textTransform: 'uppercase', letterSpacing: '0.08em',
+  color: '#afa7c2', marginBottom: 5,
+}
 
 const emptyForm = { category: 'Other', description: '', amount: '', paid_to: '', note: '' }
 
@@ -84,34 +95,50 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
     setDeleting(null)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <motion.div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0"
+        style={{ background: 'rgba(10,7,20,0.7)', backdropFilter: 'blur(6px)' }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
         onClick={onClose}
       />
       <motion.div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col"
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+        style={{
+          position: 'relative', width: '100%', maxWidth: 520,
+          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+          background: 'rgba(22,17,38,0.97)',
+          backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+          border: '1px solid rgba(189,157,255,0.15)',
+          borderRadius: 20, boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">Recurring Templates</h2>
-          <div className="flex items-center gap-2">
+        {/* Header */}
+        <div style={{ padding: '18px 22px 14px', borderBottom: '1px solid rgba(189,157,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#ebe1fe', margin: 0 }}>Recurring Templates</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button onClick={openAdd}
-              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
-              <Plus className="h-3.5 w-3.5" /> Add Template
+              style={{ display: 'flex', alignItems: 'center', gap: 6, borderRadius: 10, background: 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.25)', padding: '7px 12px', fontSize: 12, fontWeight: 600, color: '#bd9dff', cursor: 'pointer' }}>
+              <Plus size={13} /> Add Template
             </button>
-            <button onClick={onClose} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-gray-600">
-              <X className="h-4 w-4" />
+            <button onClick={onClose}
+              style={{ color: '#afa7c2', background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+        {/* Body */}
+        <div style={{ overflowY: 'auto', flex: 1, padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {error && (
+            <div style={{ padding: '9px 12px', borderRadius: 10, background: 'rgba(255,110,132,0.1)', border: '1px solid rgba(255,110,132,0.2)', color: '#ff6e84', fontSize: 12 }}>
+              {error}
+            </div>
+          )}
+
           {/* Inline form */}
           <AnimatePresence>
             {formOpen && (
@@ -119,52 +146,49 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
                 onSubmit={handleSave}
                 initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 space-y-3"
+                style={{ overflow: 'hidden', borderRadius: 14, border: '1px solid rgba(189,157,255,0.2)', background: 'rgba(189,157,255,0.04)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}
               >
-                <p className="text-sm font-semibold text-indigo-800">{editing ? 'Edit Template' : 'New Template'}</p>
-                {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
-                <div className="grid grid-cols-2 gap-3">
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#bd9dff', margin: 0 }}>
+                  {editing ? 'Edit Template' : 'New Template'}
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                    <label style={lbl}>Category</label>
                     <select value={form.category} onChange={e => set('category', e.target.value)}
-                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:border-indigo-500 focus:outline-none">
-                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      style={{ ...inp, appearance: 'none' as any }}>
+                      {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#1c162e' }}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (Rs.) *</label>
+                    <label style={lbl}>Amount (₹) *</label>
                     <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => set('amount', e.target.value)}
-                      placeholder="0.00"
-                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      placeholder="0.00" style={inp} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+                  <label style={lbl}>Description *</label>
                   <input type="text" value={form.description} onChange={e => set('description', e.target.value)}
-                    placeholder="e.g. Monthly rent, Maid salary…"
-                    className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                    placeholder="e.g. Monthly rent, Maid salary…" style={inp} />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Paid To</label>
+                    <label style={lbl}>Paid To</label>
                     <input type="text" value={form.paid_to} onChange={e => set('paid_to', e.target.value)}
-                      placeholder="Vendor / person"
-                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      placeholder="Vendor / person" style={inp} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
+                    <label style={lbl}>Note</label>
                     <input type="text" value={form.note} onChange={e => set('note', e.target.value)}
-                      placeholder="Optional"
-                      className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                      placeholder="Optional" style={inp} />
                   </div>
                 </div>
-                <div className="flex gap-2 pt-1">
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button type="button" onClick={() => setFormOpen(false)} disabled={saving}
-                    className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50">
+                    style={{ flex: 1, padding: '9px 0', borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#afa7c2', background: 'transparent', border: '1px solid rgba(189,157,255,0.15)', cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
                     Cancel
                   </button>
                   <button type="submit" disabled={saving}
-                    className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50">
+                    style={{ flex: 1, padding: '9px 0', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#0F0A1E', background: '#bd9dff', border: 'none', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
                     {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Template'}
                   </button>
                 </div>
@@ -174,35 +198,43 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
 
           {/* Template list */}
           {templates.length === 0 && !formOpen ? (
-            <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-8">No templates yet. Add one to get started.</p>
+            <p style={{ textAlign: 'center', fontSize: 13, color: '#6b6080', padding: '32px 0' }}>
+              No templates yet. Add one to get started.
+            </p>
           ) : (
-            <motion.div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {templates.map(t => (
-                <motion.div key={t.id} variants={row}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-3 group hover:bg-white hover:shadow-sm transition-all">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.description}</p>
-                    <p className="text-xs text-gray-400">{t.category}{t.paid_to ? ` · ${t.paid_to}` : ''}</p>
+                <div key={t.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, borderRadius: 12, border: '1px solid rgba(189,157,255,0.1)', background: 'rgba(189,157,255,0.03)', padding: '10px 14px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: '#ebe1fe', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.description}
+                    </p>
+                    <p style={{ fontSize: 11, color: '#6b6080', margin: '2px 0 0' }}>
+                      {t.category}{t.paid_to ? ` · ${t.paid_to}` : ''}
+                    </p>
                   </div>
-                  <span className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                    Rs. {Number(t.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#ebe1fe', whiteSpace: 'nowrap' }}>
+                    ₹{Number(t.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <button onClick={() => openEdit(t)}
-                      className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
-                      <Pencil className="h-3.5 w-3.5" />
+                      style={{ padding: 6, borderRadius: 8, background: 'none', border: 'none', color: '#afa7c2', cursor: 'pointer' }}>
+                      <Pencil size={13} />
                     </button>
                     <button onClick={() => handleDelete(t.id)} disabled={deleting === t.id}
-                      className="p-1.5 rounded-md text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
-                      <Trash2 className="h-3.5 w-3.5" />
+                      style={{ padding: 6, borderRadius: 8, background: 'none', border: 'none', color: 'rgba(255,110,132,0.6)', cursor: 'pointer', opacity: deleting === t.id ? 0.5 : 1 }}>
+                      <Trash2 size={13} />
                     </button>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           )}
         </div>
       </motion.div>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }

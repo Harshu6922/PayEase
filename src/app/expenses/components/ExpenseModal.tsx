@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
+import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, type Expense } from './ExpensesManager'
 
@@ -13,8 +15,20 @@ interface Props {
   onClose: () => void
 }
 
+const inp: React.CSSProperties = {
+  width: '100%', borderRadius: 12, padding: '10px 14px', fontSize: 13,
+  color: '#ebe1fe', background: 'rgba(189,157,255,0.05)',
+  border: '1px solid rgba(189,157,255,0.12)', outline: 'none',
+  boxSizing: 'border-box',
+}
+const lbl: React.CSSProperties = {
+  display: 'block', fontSize: 11, fontWeight: 600,
+  textTransform: 'uppercase', letterSpacing: '0.08em',
+  color: '#afa7c2', marginBottom: 6,
+}
+
 export default function ExpenseModal({ expense, companyId, defaultMonth, onSave, onClose }: Props) {
-  const supabase = createClient() as unknown as any
+  const supabase = createClient() as any
 
   const today = new Date().toISOString().split('T')[0]
   const defaultDate = defaultMonth
@@ -39,12 +53,9 @@ export default function ExpenseModal({ expense, companyId, defaultMonth, onSave,
   useEffect(() => {
     if (expense) {
       setForm({
-        date:        expense.date,
-        category:    expense.category,
-        description: expense.description,
-        amount:      String(expense.amount),
-        paid_to:     expense.paid_to ?? '',
-        note:        expense.note ?? '',
+        date: expense.date, category: expense.category,
+        description: expense.description, amount: String(expense.amount),
+        paid_to: expense.paid_to ?? '', note: expense.note ?? '',
       })
     }
   }, [expense])
@@ -55,134 +66,120 @@ export default function ExpenseModal({ expense, companyId, defaultMonth, onSave,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
     if (!form.description.trim()) { setError('Description is required.'); return }
     const amount = parseFloat(form.amount)
     if (isNaN(amount) || amount <= 0) { setError('Enter a valid amount greater than 0.'); return }
-
     setSaving(true)
     const payload = {
-      company_id:  companyId,
-      date:        form.date,
-      category:    form.category,
-      description: form.description.trim(),
-      amount,
-      paid_to:     form.paid_to.trim() || null,
-      note:        form.note.trim() || null,
+      company_id: companyId, date: form.date, category: form.category,
+      description: form.description.trim(), amount,
+      paid_to: form.paid_to.trim() || null, note: form.note.trim() || null,
     }
-
     if (expense) {
-      const { data, error: err } = await supabase
-        .from('expenses').update(payload).eq('id', expense.id).select('*').single()
+      const { data, error: err } = await supabase.from('expenses').update(payload).eq('id', expense.id).select('*').single()
       if (err) { setError(err.message); setSaving(false); return }
       onSave(data as Expense)
     } else {
-      const { data, error: err } = await supabase
-        .from('expenses').insert(payload).select('*').single()
+      const { data, error: err } = await supabase.from('expenses').insert(payload).select('*').single()
       if (err) { setError(err.message); setSaving(false); return }
       onSave(data as Expense)
     }
     setSaving(false)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <motion.div className="fixed inset-0" onClick={onClose}
+        style={{ background: 'rgba(10,7,20,0.7)', backdropFilter: 'blur(6px)' }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} />
       <motion.div
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        onClick={onClose}
-      />
-      <motion.div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-md"
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+        style={{
+          position: 'relative', width: '100%', maxWidth: 480,
+          background: 'rgba(22,17,38,0.97)',
+          backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+          border: '1px solid rgba(189,157,255,0.15)',
+          borderRadius: 20, boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
+        }}
       >
-        <div className="px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-900">
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid rgba(189,157,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#ebe1fe', margin: 0 }}>
             {expense ? 'Edit Expense' : 'Add Expense'}
           </h2>
+          <button onClick={onClose} style={{ color: '#afa7c2', background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex' }}>
+            <X size={16} />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} style={{ padding: '20px 24px 24px' }}>
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{error}</div>
+            <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 10, background: 'rgba(255,110,132,0.1)', border: '1px solid rgba(255,110,132,0.2)', color: '#ff6e84', fontSize: 13 }}>
+              {error}
+            </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+              <label style={lbl}>Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                style={{ ...inp, colorScheme: 'dark' }} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+              <label style={lbl}>Category</label>
               <select
                 value={isCustom ? '__custom__' : form.category}
                 onChange={e => {
-                  if (e.target.value === '__custom__') {
-                    set('category', customCategory || '')
-                  } else {
-                    set('category', e.target.value)
-                    setCustomCategory('')
-                  }
+                  if (e.target.value === '__custom__') set('category', customCategory || '')
+                  else { set('category', e.target.value); setCustomCategory('') }
                 }}
-                className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:border-indigo-500 focus:outline-none"
+                style={{ ...inp, appearance: 'none' as any }}
               >
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                <option value="__custom__">Custom…</option>
+                {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#1c162e' }}>{c}</option>)}
+                <option value="__custom__" style={{ background: '#1c162e' }}>Custom…</option>
               </select>
               {isCustom && (
-                <input
-                  type="text"
-                  value={form.category}
+                <input type="text" value={form.category} autoFocus
                   onChange={e => { set('category', e.target.value); setCustomCategory(e.target.value) }}
-                  placeholder="Enter custom category"
-                  className="mt-2 block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  autoFocus
-                />
+                  placeholder="Custom category" style={{ ...inp, marginTop: 8 }} />
               )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span className="text-red-500">*</span></label>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lbl}>Description <span style={{ color: '#ff6e84' }}>*</span></label>
             <input type="text" value={form.description} onChange={e => set('description', e.target.value)}
-              placeholder="e.g. Electricity bill, Plumber visit…"
-              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              placeholder="e.g. Electricity bill, Plumber visit…" style={inp} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount (Rs.) <span className="text-red-500">*</span></label>
+              <label style={lbl}>Amount (₹) <span style={{ color: '#ff6e84' }}>*</span></label>
               <input type="number" value={form.amount} onChange={e => set('amount', e.target.value)}
-                min="0.01" step="0.01" placeholder="0.00"
-                className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                min="0.01" step="0.01" placeholder="0.00" style={inp} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Paid To <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+              <label style={lbl}>Paid To <span style={{ color: '#6b6080', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>(optional)</span></label>
               <input type="text" value={form.paid_to} onChange={e => set('paid_to', e.target.value)}
-                placeholder="Vendor / person name"
-                className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+                placeholder="Vendor / person name" style={inp} />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note <span className="text-gray-400 font-normal text-xs">(optional)</span></label>
+          <div style={{ marginBottom: 20 }}>
+            <label style={lbl}>Note <span style={{ color: '#6b6080', fontWeight: 400, textTransform: 'none', fontSize: 10 }}>(optional)</span></label>
             <input type="text" value={form.note} onChange={e => set('note', e.target.value)}
-              placeholder="Any additional details…"
-              className="block w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              placeholder="Any additional details…" style={inp} />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={onClose} disabled={saving}
-              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors">
+              style={{ flex: 1, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, color: '#afa7c2', background: 'transparent', border: '1px solid rgba(189,157,255,0.15)', cursor: 'pointer', opacity: saving ? 0.5 : 1 }}>
               Cancel
             </button>
             <button type="submit" disabled={saving}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors">
+              style={{ flex: 1, padding: '11px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, color: '#0F0A1E', background: '#bd9dff', border: 'none', cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
               {saving ? 'Saving…' : expense ? 'Save Changes' : 'Add Expense'}
             </button>
           </div>
@@ -190,4 +187,6 @@ export default function ExpenseModal({ expense, companyId, defaultMonth, onSave,
       </motion.div>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : null
 }
