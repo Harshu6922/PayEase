@@ -157,13 +157,10 @@ export default function AttendanceManager({
   };
 
   const handleSave = async () => {
+    if (!companyId) { setError('Company not loaded yet. Please wait.'); return; }
     setLoading(true); setError(null); setSuccess(null);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error('Active session not found. Please log in again.');
-      const { data: profile, error: profileErr } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
-      if (profileErr || !profile?.company_id) throw new Error('Could not verify company association.');
-      const verifiedCompanyId = profile.company_id;
+      const verifiedCompanyId = companyId;
       const [yearStr, monthStr] = globalDate.split('-');
       const daysInMonth = new Date(parseInt(yearStr), parseInt(monthStr), 0).getDate();
 

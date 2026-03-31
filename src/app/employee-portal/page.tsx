@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { springScaleIn } from '@/lib/animations'
 import { LogOut, Eye, EyeOff } from 'lucide-react'
@@ -59,8 +60,9 @@ const inputStyle: React.CSSProperties = {
 
 // ─── Login form ───────────────────────────────────────────────────────────────
 
-function LoginForm({ onLogin }: { onLogin: (token: string) => void }) {
-  const [companyId, setCompanyId] = useState('')
+function LoginFormInner({ onLogin }: { onLogin: (token: string) => void }) {
+  const searchParams = useSearchParams()
+  const [companyId, setCompanyId] = useState(searchParams.get('c') ?? '')
   const [employeeId, setEmployeeId] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
@@ -336,6 +338,6 @@ export default function EmployeePortal() {
     }
   }
 
-  if (!token) return <LoginForm onLogin={setToken} />
+  if (!token) return <Suspense fallback={null}><LoginFormInner onLogin={setToken} /></Suspense>
   return <Dashboard token={token} onSignOut={signOut} />
 }

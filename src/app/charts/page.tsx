@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns'
-import ChartsView from './ChartsView'
+import dynamic from 'next/dynamic'
+import { PageSkeleton } from '@/components/SkeletonLoader'
+
+const ChartsView = dynamic(() => import('./ChartsView'), {
+  loading: () => <PageSkeleton />,
+  ssr: false,
+})
 
 export default async function ChartsPage() {
   const supabase = await createClient()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { formatINR } from '@/lib/payroll-utils'
@@ -215,6 +215,7 @@ export default function PayrollDashboard({
   userRole = 'admin',
 }: PayrollDashboardProps) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -308,7 +309,7 @@ export default function PayrollDashboard({
   const navigateMonth = (dir: 'prev' | 'next') => {
     const newMonth = dir === 'prev' ? prevMonthStr(selectedMonth) : nextMonthStr(selectedMonth)
     setSelectedMonth(newMonth)
-    router.push(`/reports?month=${newMonth}`)
+    startTransition(() => { router.push(`/reports?month=${newMonth}`) })
   }
 
   const handleGenerate = async () => {
@@ -420,10 +421,10 @@ export default function PayrollDashboard({
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div
-              className="px-5 py-2.5 rounded-xl font-semibold text-sm text-[#ebe1fe] min-w-[160px] text-center"
-              style={{ background: 'rgba(28,22,46,0.6)', border: '1px solid rgba(189,157,255,0.15)' }}
+              className="px-5 py-2.5 rounded-xl font-semibold text-sm min-w-[160px] text-center transition-opacity"
+              style={{ background: 'rgba(28,22,46,0.6)', border: '1px solid rgba(189,157,255,0.15)', color: '#ebe1fe', opacity: isPending ? 0.5 : 1 }}
             >
-              {formatMonth(selectedMonth)}
+              {isPending ? '…' : formatMonth(selectedMonth)}
             </div>
             <button
               onClick={() => navigateMonth('next')}

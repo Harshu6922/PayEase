@@ -48,6 +48,7 @@ export default async function EmployeesPage() {
       atSeatLimit={atSeatLimit}
       employeeLimit={employeeLimit}
       isSubscribed={isSubscribed}
+      companyId={companyId ?? ''}
     />
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { springScaleIn } from '@/lib/animations'
 
@@ -99,11 +100,17 @@ export default function LoginPage() {
           </motion.button>
 
           {/* Footer */}
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-3">
             <div className="flex items-center justify-center gap-2">
               <ShieldCheck className="h-3.5 w-3.5 text-text-muted" />
               <span className="text-[11px] text-text-muted/80 uppercase tracking-widest font-medium">Secure sign-in · No password needed</span>
             </div>
+            <p className="text-xs" style={{ color: '#afa7c2' }}>
+              Are you an employee?{' '}
+              <Link href="/employee-portal" className="font-semibold transition-colors" style={{ color: '#bd9dff' }}>
+                Access your portal →
+              </Link>
+            </p>
           </div>
         </div>
       </motion.div>

@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import PayrollDashboard from '@/components/PayrollDashboard'
+import dynamic from 'next/dynamic'
 import { redirect } from 'next/navigation'
+import { PageSkeleton } from '@/components/SkeletonLoader'
+
+const PayrollDashboard = dynamic(() => import('@/components/PayrollDashboard'), {
+  loading: () => <PageSkeleton />,
+  ssr: false,
+})
 
 export default async function ReportsPage({
   searchParams,

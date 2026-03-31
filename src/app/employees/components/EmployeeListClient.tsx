@@ -106,6 +106,7 @@ interface Props {
   atSeatLimit: boolean
   employeeLimit: number
   isSubscribed: boolean
+  companyId: string
 }
 
 // ---------------------------------------------------------------------------
@@ -113,12 +114,20 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 export default function EmployeeListClient({
-  employees, userRole, atSeatLimit, employeeLimit, isSubscribed,
+  employees, userRole, atSeatLimit, employeeLimit, isSubscribed, companyId,
 }: Props) {
+  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('All')
   const [hoveredRow, setHoveredRow] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleSearchChange(val: string) {
+    setSearchInput(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setSearch(val), 250)
+  }
 
   const filtered = employees.filter(emp => {
     const matchesFilter =
@@ -178,8 +187,8 @@ export default function EmployeeListClient({
             <input
               ref={searchRef}
               type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              value={searchInput}
+              onChange={e => handleSearchChange(e.target.value)}
               placeholder="Search by name or employee ID..."
               className="bg-transparent border-none outline-none w-full text-sm"
               style={{ color: '#ebe1fe' }}
@@ -296,7 +305,7 @@ export default function EmployeeListClient({
                           </Link>
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <EditEmployeeModal employee={emp} />
-                            <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} />
+                            <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} companyId={companyId} employeeDisplayId={emp.employee_id} employeePhone={(emp as any).phone_number} />
                             <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
                             <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
                           </div>
@@ -407,7 +416,7 @@ export default function EmployeeListClient({
                                 View
                               </Link>
                               <EditEmployeeModal employee={emp} />
-                              <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} />
+                              <SetPortalPasswordButton employeeUuid={emp.id} employeeName={emp.full_name} companyId={companyId} employeeDisplayId={emp.employee_id} employeePhone={(emp as any).phone_number} />
                               <ToggleActiveButton id={emp.id} isActive={emp.is_active} />
                               <DeleteEmployeeButton id={emp.id} name={emp.full_name} />
                             </div>
