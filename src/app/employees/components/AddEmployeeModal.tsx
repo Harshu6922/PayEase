@@ -44,7 +44,7 @@ export default function AddEmployeeModal({
     full_name: '',
     employee_id: '',
     phone_number: '',
-    notification_method: 'whatsapp' as 'whatsapp' | 'sms' | 'none',
+    notification_method: 'sms' as 'whatsapp' | 'sms' | 'none',
     monthly_salary: '',
     standard_working_hours: '8',
     overtime_multiplier: '1.0',
@@ -116,7 +116,7 @@ export default function AddEmployeeModal({
         full_name: '',
         employee_id: '',
         phone_number: '',
-        notification_method: 'whatsapp',
+        notification_method: 'sms',
         monthly_salary: '',
         standard_working_hours: '8',
         overtime_multiplier: '1.0',
@@ -224,7 +224,6 @@ export default function AddEmployeeModal({
                   <select name="notification_method" value={formData.notification_method}
                     onChange={handleChange} className={selectCls}
                     disabled={!formData.phone_number.trim()}>
-                    <option value="whatsapp">WhatsApp</option>
                     <option value="sms">SMS</option>
                     <option value="none">None</option>
                   </select>
@@ -234,11 +233,21 @@ export default function AddEmployeeModal({
               {/* Worker Type */}
               <div>
                 <label className={labelCls}>Worker Type</label>
-                <select name="worker_type" value={formData.worker_type} onChange={handleChange} className={selectCls}>
-                  <option value="salaried">Salaried</option>
-                  <option value="daily">Daily</option>
-                  <option value="commission">Commission</option>
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['salaried', 'daily', 'commission'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, worker_type: type }))}
+                      className="py-2.5 rounded-xl text-sm font-semibold capitalize transition-all"
+                      style={formData.worker_type === type
+                        ? { background: 'rgba(189,157,255,0.2)', border: '1px solid rgba(189,157,255,0.5)', color: '#bd9dff' }
+                        : { background: 'rgba(189,157,255,0.04)', border: '1px solid rgba(189,157,255,0.1)', color: '#afa7c2' }}
+                    >
+                      {type === 'salaried' ? 'Salaried' : type === 'daily' ? 'Daily' : 'Commission'}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Monthly Salary — salaried only */}

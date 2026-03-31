@@ -168,7 +168,9 @@ export default function AttendanceManager({
         const state = records[emp.id];
         const status = state?.status || 'Absent';
         const standardHours = Number(emp.standard_working_hours) || 8;
-        const dailyWage = Number(emp.monthly_salary) / daysInMonth;
+        const dailyWage = emp.worker_type === 'daily'
+          ? Number(emp.daily_rate ?? 0)
+          : Number(emp.monthly_salary) / daysInMonth;
         const hourlyRate = dailyWage / standardHours;
         let startTime = state?.overrideStartTime || (status === 'Absent' ? '00:00' : globalStartTime);
         let endTime = state?.overrideEndTime || (status === 'Absent' ? '00:00' : globalEndTime);
@@ -240,7 +242,18 @@ export default function AttendanceManager({
             <p className="text-[#afa7c2] text-lg">Mark today's attendance for your team</p>
           </div>
 
-          {/* Date pill with navigation */}
+          {/* Save button (top) + Date pill with navigation */}
+          <div className="flex items-center gap-3">
+            {userRole === 'admin' && (
+              <button
+                onClick={handleSave}
+                disabled={loading || fetching}
+                className="px-5 py-2.5 rounded-2xl font-bold text-sm transition-all disabled:opacity-50"
+                style={{ background: '#b28cff', color: '#2e006c' }}
+              >
+                {loading ? 'Saving…' : 'Save Attendance'}
+              </button>
+            )}
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigateDate('prev')}
@@ -261,6 +274,7 @@ export default function AttendanceManager({
             >
               <ChevronRight className="h-4 w-4" />
             </button>
+          </div>
           </div>
         </section>
 
