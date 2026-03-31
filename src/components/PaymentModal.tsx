@@ -36,6 +36,7 @@ export default function PaymentModal({
   const [payments, setPayments] = useState<Payment[]>([])
   const [advances, setAdvances] = useState<EmployeeAdvance[]>([])
   const [advanceRepaidThisMonth, setAdvanceRepaidThisMonth] = useState(0)
+  const [cashRepayments, setCashRepayments] = useState<{ id: string; amount: number; repayment_date: string; note: string | null }[]>([])
   const [freshOutstanding, setFreshOutstanding] = useState<{ totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] } | null>(null)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'full' | 'parts' | null>(null)
@@ -50,7 +51,7 @@ export default function PaymentModal({
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      const [paymentsRes, advancesRes, repaidRes, allRepaymentsRes] = await Promise.all([
+      const [paymentsRes, advancesRes, repaidRes, allRepaymentsRes, cashRepaymentsRes] = await Promise.all([
         supabase
           .from('payments')
           .select('*')
@@ -71,9 +72,16 @@ export default function PaymentModal({
           .from('advance_repayments')
           .select('advance_id, amount')
           .eq('employee_id', employee.id),
+        supabase
+          .from('advance_repayments')
+          .select('id, amount, repayment_date, note')
+          .eq('employee_id', employee.id)
+          .eq('method', 'cash')
+          .order('repayment_date', { ascending: false }),
       ])
       if (paymentsRes.data) setPayments(paymentsRes.data)
       if (advancesRes.data) setAdvances(advancesRes.data)
+      if (cashRepaymentsRes.data) setCashRepayments(cashRepaymentsRes.data)
       setAdvanceRepaidThisMonth(
         (repaidRes.data || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
       )
@@ -181,10 +189,12 @@ export default function PaymentModal({
     recordPayment(amt, paymentDate, note, false)
   }
 
+  const totalCashRepaid = cashRepayments.reduce((s, r) => s + Number(r.amount), 0)
+
   // Combined history
   type HistoryItem = {
     date: string
-    type: 'salary' | 'advance'
+    type: 'salary' | 'advance' | 'repayment'
     amount: number
     note: string | null
     month?: string
@@ -202,6 +212,12 @@ export default function PaymentModal({
       type: 'advance' as const,
       amount: Number(a.amount),
       note: a.note ?? null,
+    })),
+    ...cashRepayments.map(r => ({
+      date: r.repayment_date,
+      type: 'repayment' as const,
+      amount: Number(r.amount),
+      note: r.note,
     })),
   ].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -247,6 +263,12 @@ export default function PaymentModal({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Advance Deduction</span>
                 <span className="font-semibold text-orange-600">− {formatRs(advanceDeduction)}</span>
+              </div>
+            )}
+            {totalCashRepaid > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Repaid (Cash)</span>
+                <span className="font-semibold text-blue-500">+ {formatRs(totalCashRepaid)}</span>
               </div>
             )}
             {advanceDeduction > 0 && (
@@ -364,7 +386,7 @@ export default function PaymentModal({
                   <div key={i} className="flex items-start justify-between rounded-md bg-gray-50 dark:bg-gray-700 px-3 py-2">
                     <div>
                       <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                        {item.type === 'advance' ? 'Advance' : 'Salary'}
+                        {item.type === 'advance' ? 'Advance' : item.type === 'repayment' ? 'Advance Repaid (Cash)' : 'Salary'}
                         {item.type === 'salary' && item.month && item.month !== month && (
                           <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">({item.month})</span>
                         )}
