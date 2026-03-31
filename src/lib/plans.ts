@@ -1,4 +1,11 @@
 export const PLANS = {
+  micro: {
+    id: 'micro',
+    name: 'Micro',
+    priceRs: 149,
+    employeeLimit: 5,
+    razorpayPlanId: process.env.RAZORPAY_PLAN_MICRO_ID ?? '',
+  },
   starter: {
     id: 'starter',
     name: 'Starter',

@@ -24,6 +24,7 @@ const PLAN_FEATURES = [
 ]
 
 const PLAN_TAG: Record<string, string> = {
+  micro: 'Just getting started',
   starter: 'Perfect for small teams',
   growth: 'Built for growing businesses',
   business: 'For large operations',
@@ -183,7 +184,7 @@ export default function BillingClient({
           <h2 className="text-sm font-semibold text-[#7B7A8E] mb-4 uppercase tracking-wider">
             {currentPlanId ? 'Change Plan' : 'Choose a Plan'}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {(Object.values(PLANS) as (typeof PLANS)[PlanId][]).map(plan => {
               const isCurrent = currentPlanId === plan.id
               const isPopular = plan.id === 'growth'
