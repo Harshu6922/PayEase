@@ -8,10 +8,12 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 //   'none'     → skip
 // Admin digest: one summary message to admin phone covering ALL employees
 
-const adminClient = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getAdminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
@@ -72,30 +74,30 @@ async function sendSMS(apiKey: string, toPhone: string, message: string): Promis
 
 async function calcEmployeeData(empId: string, workerType: string, monthlySalary: number,
   dailyRate: number, stdHours: number, today: string, monthStart: string) {
-  const { data: todayAtt } = await adminClient.from('attendance')
+  const { data: todayAtt } = await getAdminClient().from('attendance')
     .select('status, time_in, time_out').eq('employee_id', empId).eq('date', today).maybeSingle()
   const hrs = hoursToday(todayAtt, stdHours ?? 8)
 
   let monthlyEarnings = 0
   if (workerType === 'salaried') {
-    const { data: monthAtt } = await adminClient.from('attendance').select('status')
+    const { data: monthAtt } = await getAdminClient().from('attendance').select('status')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     const days = (monthAtt ?? []).reduce(
       (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
     monthlyEarnings = Math.round((days / 26) * (monthlySalary ?? 0))
   } else if (workerType === 'daily') {
-    const { data: monthAtt } = await adminClient.from('attendance').select('status')
+    const { data: monthAtt } = await getAdminClient().from('attendance').select('status')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     const days = (monthAtt ?? []).reduce(
       (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
     monthlyEarnings = Math.round(days * (dailyRate ?? 0))
   } else if (workerType === 'commission') {
-    const { data: entries } = await adminClient.from('work_entries').select('total_amount')
+    const { data: entries } = await getAdminClient().from('work_entries').select('total_amount')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     monthlyEarnings = (entries ?? []).reduce((s: number, e: any) => s + Number(e.total_amount ?? 0), 0)
   }
 
-  const { data: advances } = await adminClient.from('employee_advances').select('amount')
+  const { data: advances } = await getAdminClient().from('employee_advances').select('amount')
     .eq('employee_id', empId).eq('is_repaid', false)
   const advanceBalance = (advances ?? []).reduce((s: number, a: any) => s + Number(a.amount ?? 0), 0)
 
@@ -107,7 +109,7 @@ async function sendTrialEndingEmails() {
   const twoDaysFromNow = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
   const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
 
-  const { data: trials } = await adminClient
+  const { data: trials } = await getAdminClient()
     .from('subscriptions')
     .select('company_id, trial_ends_at')
     .eq('status', 'trial')
@@ -117,10 +119,10 @@ async function sendTrialEndingEmails() {
   for (const t of trials ?? []) {
     try {
       const daysLeft = Math.ceil((new Date((t as any).trial_ends_at).getTime() - Date.now()) / 86400000)
-      const { data: company } = await adminClient.from('companies').select('name').eq('id', (t as any).company_id).maybeSingle()
-      const { data: profile } = await adminClient.from('profiles').select('id').eq('company_id', (t as any).company_id).eq('role', 'admin').maybeSingle()
+      const { data: company } = await getAdminClient().from('companies').select('name').eq('id', (t as any).company_id).maybeSingle()
+      const { data: profile } = await getAdminClient().from('profiles').select('id').eq('company_id', (t as any).company_id).eq('role', 'admin').maybeSingle()
       if (profile?.id) {
-        const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
+        const { data: authUser } = await getAdminClient().auth.admin.getUserById(profile.id)
         const email = authUser?.user?.email
         if (email && company) await sendTrialEndingEmail(email, (company as any).name, daysLeft)
       }
@@ -140,7 +142,7 @@ export async function GET(req: NextRequest) {
   // Send trial ending emails (2 days before expiry)
   await sendTrialEndingEmails()
 
-  const { data: configs } = await adminClient
+  const { data: configs } = await getAdminClient()
     .from('notification_settings')
     .select('company_id, whatsapp_token, whatsapp_phone_number_id, template_name')
     .eq('enabled', true)
@@ -154,10 +156,10 @@ export async function GET(req: NextRequest) {
   for (const config of configs) {
     const { company_id, whatsapp_token, whatsapp_phone_number_id, template_name } = config as any
 
-    const { data: company } = await adminClient.from('companies').select('name').eq('id', company_id).maybeSingle()
+    const { data: company } = await getAdminClient().from('companies').select('name').eq('id', company_id).maybeSingle()
     const companyName = (company as any)?.name ?? 'Your Company'
 
-    const { data: employees } = await adminClient.from('employees')
+    const { data: employees } = await getAdminClient().from('employees')
       .select('id, full_name, phone_number, worker_type, monthly_salary, daily_rate, standard_working_hours, notification_method')
       .eq('company_id', company_id).eq('is_active', true)
 
@@ -196,9 +198,9 @@ export async function GET(req: NextRequest) {
   const expiredCutoff = new Date().toISOString()
   const rateLimitCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString() // 1 hour ago
   await Promise.all([
-    adminClient.from('employee_sessions').delete().lt('token_expires_at', expiredCutoff),
-    adminClient.from('viewer_sessions').delete().lt('token_expires_at', expiredCutoff),
-    adminClient.from('rate_limits').delete().lt('window_start', rateLimitCutoff),
+    getAdminClient().from('employee_sessions').delete().lt('token_expires_at', expiredCutoff),
+    getAdminClient().from('viewer_sessions').delete().lt('token_expires_at', expiredCutoff),
+    getAdminClient().from('rate_limits').delete().lt('window_start', rateLimitCutoff),
   ])
 
   return NextResponse.json({ sent: totalSent, failed: totalFailed })

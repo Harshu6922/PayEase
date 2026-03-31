@@ -1,10 +1,10 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = 'PayEase <noreply@payease.in>'
+function getResend() { return new Resend(process.env.RESEND_API_KEY) }
 
 export async function sendTrialEndingEmail(to: string, companyName: string, daysLeft: number) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `Your PayEase trial ends in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`,
@@ -28,7 +28,7 @@ export async function sendTrialEndingEmail(to: string, companyName: string, days
 }
 
 export async function sendPaymentConfirmationEmail(to: string, companyName: string, planName: string, amountRs: number) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: `Payment confirmed — PayEase ${planName} Plan`,
@@ -55,7 +55,7 @@ export async function sendPaymentConfirmationEmail(to: string, companyName: stri
 }
 
 export async function sendWelcomeEmail(to: string, companyName: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to,
     subject: 'Welcome to PayEase — your trial has started',

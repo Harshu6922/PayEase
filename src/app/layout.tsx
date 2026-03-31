@@ -5,6 +5,7 @@ import AppShell from '@/components/AppShell'
 import { Suspense } from 'react'
 import TrialBanner from '@/components/TrialBanner'
 import InstallPrompt from '@/components/InstallPrompt'
+import Prefetcher from '@/components/Prefetcher'
 import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -36,6 +37,7 @@ export default function RootLayout({
         <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
           {children}
         </AppShell>
+        <Prefetcher />
         <InstallPrompt />
         <Analytics />
       </body>
