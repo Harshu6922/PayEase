@@ -285,9 +285,9 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
             <TwoFactorSection />
           </motion.section>
 
-          {/* WhatsApp Notifications */}
+          {/* WhatsApp Notifications — Advanced */}
           <motion.section variants={fadeInUp}>
-            <WhatsAppSection />
+            <WhatsAppSectionCollapsible />
           </motion.section>
 
           {/* External Viewers */}
@@ -522,6 +522,30 @@ function WhatsAppSection() {
         </button>
       </div>
     </>
+  )
+}
+
+function WhatsAppSectionCollapsible() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest transition-colors mb-2"
+        style={{ color: open ? '#bd9dff' : '#afa7c2' }}
+      >
+        <span
+          className="inline-block transition-transform duration-200"
+          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', fontSize: 10 }}
+        >▶</span>
+        Advanced — WhatsApp Notifications
+        <span className="normal-case font-normal tracking-normal ml-1"
+          style={{ color: '#6b6080', fontSize: 10 }}>
+          (requires Meta Business API — most users don't need this)
+        </span>
+      </button>
+      {open && <WhatsAppSection />}
+    </div>
   )
 }
 
