@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -47,6 +48,11 @@ export default function AttendanceManager({
   const supabase = createClient() as unknown as SupabaseClient<Database>;
 
   const [globalDate, setGlobalDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarRect, setCalendarRect] = useState<DOMRect | null>(null);
+  const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
+  const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
+  const calAnchorRef = useRef<HTMLButtonElement>(null);
   const [globalStartTime, setGlobalStartTime] = useState('09:00');
   const [globalEndTime, setGlobalEndTime] = useState('17:00');
 
@@ -109,6 +115,106 @@ export default function AttendanceManager({
     }
     fetchCompanyId();
   }, [supabase]);
+
+  useEffect(() => {
+    if (!showCalendar) return;
+    function handleOutside(e: MouseEvent) {
+      if (calAnchorRef.current && calAnchorRef.current.contains(e.target as Node)) return;
+      setShowCalendar(false);
+    }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [showCalendar]);
+
+  function openCalendar() {
+    if (calAnchorRef.current) {
+      setCalendarRect(calAnchorRef.current.getBoundingClientRect());
+      const d = new Date(globalDate + 'T00:00:00');
+      setCalViewYear(d.getFullYear());
+      setCalViewMonth(d.getMonth());
+    }
+    setShowCalendar(v => !v);
+  }
+
+  function buildCalendarDays(year: number, month: number) {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days: (number | null)[] = Array(firstDay).fill(null);
+    for (let d = 1; d <= daysInMonth; d++) days.push(d);
+    while (days.length % 7 !== 0) days.push(null);
+    return days;
+  }
+
+  const calendarPortal = showCalendar && calendarRect && typeof document !== 'undefined' ? createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        top: calendarRect.bottom + 8,
+        left: calendarRect.left + calendarRect.width / 2,
+        transform: 'translateX(-50%)',
+        zIndex: 99999,
+        background: 'rgba(22,17,38,0.98)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid rgba(189,157,255,0.2)',
+        borderRadius: 16,
+        padding: 16,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+        width: 280,
+        userSelect: 'none',
+      }}
+    >
+      {/* Month/year nav */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <button
+          type="button"
+          onClick={() => { const d = new Date(calViewYear, calViewMonth - 1); setCalViewYear(d.getFullYear()); setCalViewMonth(d.getMonth()); }}
+          style={{ background: 'none', border: 'none', color: '#afa7c2', cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}
+        ><ChevronLeft size={14} /></button>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#ebe1fe' }}>
+          {new Date(calViewYear, calViewMonth).toLocaleString('en-IN', { month: 'long', year: 'numeric' })}
+        </span>
+        <button
+          type="button"
+          onClick={() => { const d = new Date(calViewYear, calViewMonth + 1); setCalViewYear(d.getFullYear()); setCalViewMonth(d.getMonth()); }}
+          style={{ background: 'none', border: 'none', color: '#afa7c2', cursor: 'pointer', padding: '2px 6px', borderRadius: 6 }}
+        ><ChevronRight size={14} /></button>
+      </div>
+      {/* Day headers */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: '#6b6080', padding: '2px 0' }}>{d}</div>
+        ))}
+      </div>
+      {/* Days grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+        {buildCalendarDays(calViewYear, calViewMonth).map((day, i) => {
+          if (!day) return <div key={i} />;
+          const dateStr = `${calViewYear}-${String(calViewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+          const isSelected = dateStr === globalDate;
+          const isToday = dateStr === new Date().toISOString().split('T')[0];
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { setGlobalDate(dateStr); setShowCalendar(false); }}
+              style={{
+                borderRadius: 8, padding: '6px 0', fontSize: 12, fontWeight: isSelected ? 700 : 400,
+                border: isToday && !isSelected ? '1px solid rgba(189,157,255,0.3)' : '1px solid transparent',
+                background: isSelected ? '#bd9dff' : 'transparent',
+                color: isSelected ? '#0F0A1E' : isToday ? '#bd9dff' : '#ebe1fe',
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(189,157,255,0.1)'; }}
+              onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+            >{day}</button>
+          );
+        })}
+      </div>
+    </div>,
+    document.body
+  ) : null;
 
   const handleStatusChange = (empId: string, status: AttendanceStatus) => {
     const emp = employees.find(e => e.id === empId);
@@ -261,13 +367,19 @@ export default function AttendanceManager({
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-[rgba(28,22,46,0.6)] backdrop-blur-xl border border-[#bd9dff]/10">
+            <button
+              ref={calAnchorRef}
+              type="button"
+              onClick={openCalendar}
+              className="flex items-center gap-3 px-6 py-3 rounded-full bg-[rgba(28,22,46,0.6)] backdrop-blur-xl border border-[#bd9dff]/10 hover:border-[#bd9dff]/30 transition-colors cursor-pointer"
+            >
               <Calendar className="h-4 w-4 text-[#bd9dff]" />
               <span className="font-medium text-[#ebe1fe] text-sm">{formattedDate}</span>
               {isToday && (
                 <span className="text-[10px] font-bold uppercase tracking-wider bg-[#bd9dff]/20 text-[#bd9dff] px-2 py-0.5 rounded-full">Today</span>
               )}
-            </div>
+            </button>
+            {calendarPortal}
             <button
               onClick={() => navigateDate('next')}
               className="p-2 rounded-full bg-[rgba(28,22,46,0.6)] border border-[#bd9dff]/10 text-[#afa7c2] hover:text-[#ebe1fe] transition-colors"
