@@ -46,12 +46,19 @@ interface AgentRate {
   rate: number
 }
 
+interface LegacyDailyRecord {
+  employee_id: string
+  date: string
+  pay_amount: number
+}
+
 interface PayrollDashboardProps {
   initialMonth: string // YYYY-MM
   employees: Employee[]
   attendance: AttendanceRecord[]
   workEntries: WorkEntry[]
   agentRates: AgentRate[]
+  dailyAttendance?: LegacyDailyRecord[]
   outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }>
   generateAction: (data: any) => Promise<void>
   companyName: string
@@ -68,7 +75,8 @@ function calculatePayroll(
   workEntries: WorkEntry[],
   agentRates: AgentRate[],
   workingDays: number,
-  outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {}
+  outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {},
+  legacyDaily: LegacyDailyRecord[] = []
 ) {
   let totalPayable = 0
   let totalRecoverable = 0
@@ -86,13 +94,21 @@ function calculatePayroll(
       total_worked_days = uniqueDates.size
 
     } else if (emp.worker_type === 'daily') {
-      const empAttendance = attendance.filter(a => a.employee_id === emp.id)
-      empAttendance.forEach(record => {
-        if (Number(record.worked_hours) > 0) total_worked_days += 1
+      // New records from attendance_records
+      const newAtt = attendance.filter(a => a.employee_id === emp.id && Number(a.worked_hours) > 0)
+      const newDates = new Set(newAtt.map(a => a.date))
+      newAtt.forEach(record => {
         total_overtime_amount += Number(record.overtime_amount || 0)
         total_deduction_amount += Number(record.deduction_amount || 0)
       })
-      earned_salary = total_worked_days * Number(emp.daily_rate ?? 0)
+      const newDaysEarned = newAtt.length * Number(emp.daily_rate ?? 0)
+
+      // Legacy records from daily_attendance (exclude dates already in attendance_records)
+      const legacy = legacyDaily.filter(a => a.employee_id === emp.id && !newDates.has(a.date) && Number(a.pay_amount) > 0)
+      const legacyEarned = legacy.reduce((s, a) => s + Number(a.pay_amount), 0)
+
+      total_worked_days = newAtt.length + legacy.length
+      earned_salary = newDaysEarned + legacyEarned
 
     } else {
       const empAttendance = attendance.filter(a => a.employee_id === emp.id)
@@ -189,6 +205,7 @@ export default function PayrollDashboard({
   attendance,
   workEntries,
   agentRates,
+  dailyAttendance = [],
   outstandingByEmployee,
   generateAction,
   companyName,
@@ -223,8 +240,8 @@ export default function PayrollDashboard({
   const daysInPrevMonth = useMemo(() => getDaysInMonth(prevMonth), [prevMonth])
 
   const computedPayroll = useMemo(() => {
-    return calculatePayroll(employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee)
-  }, [employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee])
+    return calculatePayroll(employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance)
+  }, [employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance])
 
   const prevBalances = useMemo((): Record<string, number> => {
     if (!paidUpToDay) return {}
