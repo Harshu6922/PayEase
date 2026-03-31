@@ -80,10 +80,12 @@ export default function AttendanceManager({
       if (existing && existing.length > 0) {
         existing.forEach((record: AttendanceRecord) => {
           if (newRecords[record.employee_id]) {
+            const st = record.start_time?.substring(0, 5);
+            const et = record.end_time?.substring(0, 5);
             newRecords[record.employee_id] = {
               status: (record.status as AttendanceStatus) || 'Absent',
-              overrideStartTime: record.start_time.substring(0, 5) !== globalStartTime ? record.start_time.substring(0, 5) : undefined,
-              overrideEndTime: record.end_time.substring(0, 5) !== globalEndTime ? record.end_time.substring(0, 5) : undefined,
+              overrideStartTime: st && st !== '00:00' ? st : undefined,
+              overrideEndTime: et && et !== '00:00' ? et : undefined,
             };
           }
         });
