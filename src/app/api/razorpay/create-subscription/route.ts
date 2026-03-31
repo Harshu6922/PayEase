@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   // Validate promo code if provided
   let promoDiscountRs = 0
-  let validatedPromo: { id: string; discount_type: string; discount_value: number } | null = null
+  let validatedPromo: { id: string; discount_type: string; discount_value: number; uses_count: number } | null = null
   if (promoCode) {
     const { data: promo } = await adminClient
       .from('promo_codes')
