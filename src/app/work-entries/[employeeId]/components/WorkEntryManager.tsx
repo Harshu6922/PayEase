@@ -115,7 +115,7 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
         className="max-w-4xl mx-auto px-6 pt-12 pb-16"
         variants={staggerContainer}
         initial="hidden"
-        animate="show"
+        animate="visible"
       >
         {/* Back link */}
         <motion.div variants={fadeInUp} className="mb-10">
@@ -254,7 +254,7 @@ export default function WorkEntryManager({ employee, agentRates, initialEntries,
                 <div className="col-span-3 text-[10px] font-bold uppercase tracking-[0.2em] text-right" style={{ color: '#afa7c2' }}>Amount</div>
               </div>
 
-              <motion.div variants={staggerContainer} initial="hidden" animate="show">
+              <motion.div variants={staggerContainer} initial="hidden" animate="visible">
                 {entriesByDate.map(({ date, dayEntries }) => {
                   const dayTotal = dayEntries.reduce((sum, e) =>
                     sum + (Number(e.total_amount) || Number(e.quantity) * Number(e.rate)), 0)
