@@ -17,7 +17,7 @@ interface EmployeeData {
   daysPresent: number
   monthlyEarnings: number
   advanceBalance: number
-  attendance: Array<{ date: string; status: string; time_in?: string; time_out?: string }>
+  attendance: Array<{ date: string; status: string; start_time?: string; end_time?: string }>
   payments: Array<{ amount: number; payment_date: string; note?: string }>
 }
 

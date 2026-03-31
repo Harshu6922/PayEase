@@ -374,7 +374,9 @@ export default function PayrollDashboard({
           month={selectedMonth}
           companyName={companyName}
           row={row}
-          monthlySalary={emp.monthly_salary}
+          monthlySalary={Number(emp.monthly_salary ?? 0)}
+          dailyRate={Number((emp as any).daily_rate ?? 0)}
+          workerType={emp.worker_type}
           daysInMonth={actualDaysInMonth}
           prevBalance={pb}
           outstandingDays={od}

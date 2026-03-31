@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
   const monthStart = today.slice(0, 7) + '-01'
 
   const [{ data: attendance }, { data: advances }, { data: payments }, { data: workEntries }] = await Promise.all([
-    db.from('attendance')
-      .select('date, status, time_in, time_out')
+    db.from('attendance_records')
+      .select('date, status, start_time, end_time')
       .eq('employee_id', employee_id)
       .gte('date', monthStart)
       .order('date', { ascending: false }),

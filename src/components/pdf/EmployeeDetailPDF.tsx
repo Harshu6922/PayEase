@@ -33,6 +33,8 @@ export interface EmployeeDetailPDFProps {
   companyName: string;
   row: PayrollRow;
   monthlySalary: number;
+  dailyRate?: number;
+  workerType?: string;
   daysInMonth: number;
   prevBalance: number;
   outstandingDays: number;
@@ -44,13 +46,17 @@ export default function EmployeeDetailPDF({
   companyName,
   row,
   monthlySalary,
+  dailyRate = 0,
+  workerType = 'salaried',
   daysInMonth,
   prevBalance,
   outstandingDays,
   prevMonthName,
 }: EmployeeDetailPDFProps) {
   const monthLabel = format(parse(month, 'yyyy-MM', new Date()), 'MMMM yyyy');
-  const dailyWage = monthlySalary / daysInMonth;
+  const isDaily = workerType === 'daily';
+  const isCommission = workerType === 'commission';
+  const dailyWage = isDaily ? dailyRate : (daysInMonth > 0 ? monthlySalary / daysInMonth : 0);
   const netPayable = row.final_payable_salary + prevBalance;
 
   return (
@@ -68,14 +74,24 @@ export default function EmployeeDetailPDF({
           <Text style={styles.label}>Days Worked</Text>
           <Text style={styles.value}>{row.total_worked_days}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Monthly Salary</Text>
-          <Text style={styles.value}>{formatINR(monthlySalary)}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Daily Wage</Text>
-          <Text style={styles.value}>{formatINR(dailyWage)}</Text>
-        </View>
+        {!isDaily && !isCommission && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Monthly Salary</Text>
+            <Text style={styles.value}>{formatINR(monthlySalary)}</Text>
+          </View>
+        )}
+        {isDaily && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Daily Rate</Text>
+            <Text style={styles.value}>{formatINR(dailyRate)}/day</Text>
+          </View>
+        )}
+        {!isCommission && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Daily Wage</Text>
+            <Text style={styles.value}>{formatINR(dailyWage)}</Text>
+          </View>
+        )}
         <View style={styles.row}>
           <Text style={styles.label}>Earnings</Text>
           <Text style={styles.value}>{formatINR(row.earned_salary)}</Text>
