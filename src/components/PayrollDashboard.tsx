@@ -381,6 +381,7 @@ export default function PayrollDashboard({
           prevBalance={pb}
           outstandingDays={od}
           prevMonthName={prevMonthName}
+          paidAmount={paidByEmployee[row.employee_id] ?? 0}
         />
       ).toBlob()
       downloadPdf(blob, `payroll-${row.display_id}-${selectedMonth}.pdf`)

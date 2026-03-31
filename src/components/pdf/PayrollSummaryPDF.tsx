@@ -132,9 +132,9 @@ export default function PayrollSummaryPDF({
               <Text style={[styles.colPaid, styles.td, { color: paid > 0 ? '#16a34a' : '#9ca3af' }]}>
                 {paid > 0 ? formatINR(paid) : '—'}
               </Text>
-              <Text style={[styles.colNet, styles.td, { color: netInPdf < -0.01 ? '#f97316' : netInPdf <= 0.01 ? '#16a34a' : '#111827' }]}>
+              <Text style={[styles.colNet, styles.td, { color: netInPdf < -0.01 ? '#dc2626' : netInPdf <= 0.01 ? '#16a34a' : '#111827' }]}>
                 {netInPdf < -0.01
-                  ? `+${formatINR(Math.abs(netInPdf))} over`
+                  ? `(${formatINR(Math.abs(netInPdf))})`
                   : netInPdf <= 0.01
                   ? 'Paid'
                   : formatINR(netInPdf)}

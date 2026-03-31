@@ -39,6 +39,7 @@ export interface EmployeeDetailPDFProps {
   prevBalance: number;
   outstandingDays: number;
   prevMonthName: string;
+  paidAmount?: number;
 }
 
 export default function EmployeeDetailPDF({
@@ -52,12 +53,14 @@ export default function EmployeeDetailPDF({
   prevBalance,
   outstandingDays,
   prevMonthName,
+  paidAmount = 0,
 }: EmployeeDetailPDFProps) {
   const monthLabel = format(parse(month, 'yyyy-MM', new Date()), 'MMMM yyyy');
   const isDaily = workerType === 'daily';
   const isCommission = workerType === 'commission';
   const dailyWage = isDaily ? dailyRate : (daysInMonth > 0 ? monthlySalary / daysInMonth : 0);
   const netPayable = row.final_payable_salary + prevBalance;
+  const remaining = netPayable - paidAmount;
 
   return (
     <Document>
@@ -148,6 +151,31 @@ export default function EmployeeDetailPDF({
               : formatINR(netPayable)}
           </Text>
         </View>
+
+        {paidAmount > 0 && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Paid This Month</Text>
+            <Text style={[styles.value, { color: '#16a34a' }]}>
+              -{formatINR(paidAmount)}
+            </Text>
+          </View>
+        )}
+
+        {paidAmount > 0 && (
+          <>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <Text style={styles.netLabel}>Remaining</Text>
+              <Text style={[styles.netValue, { color: remaining < -0.01 ? '#dc2626' : remaining <= 0.01 ? '#16a34a' : '#111827' }]}>
+                {remaining < -0.01
+                  ? `(${formatINR(Math.abs(remaining))})`
+                  : remaining <= 0.01
+                  ? 'Fully Paid'
+                  : formatINR(remaining)}
+              </Text>
+            </View>
+          </>
+        )}
 
         <View style={styles.divider} />
 
