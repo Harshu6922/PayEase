@@ -86,16 +86,6 @@ export default async function ReportsPage({
     .select('employee_id, item_id, rate')
     .eq('company_id', companyId)
 
-  // Fetch daily attendance for daily workers
-  const { data: dailyAttendance, error: daErr } = await supabase
-    .from('daily_attendance')
-    .select('employee_id, date, hours_worked, pay_amount')
-    .eq('company_id', companyId)
-    .gte('date', startDate)
-    .lte('date', endDate)
-
-  if (daErr) console.error('[reports] daily_attendance error:', daErr.message)
-
   // Fetch ALL outstanding (unrepaid) advances per employee
   const { data: advancesRaw } = await supabase
     .from('employee_advances')
@@ -192,7 +182,6 @@ export default async function ReportsPage({
         attendance={(attendance || []) as any[]}
         workEntries={(workEntries || []) as any[]}
         agentRates={(agentRates || []) as any[]}
-        dailyAttendance={(dailyAttendance || []) as any[]}
         outstandingByEmployee={outstandingByEmployee}
         companyName={companyName}
         companyId={companyId}
