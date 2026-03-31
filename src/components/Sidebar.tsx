@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   Users, CalendarCheck, FileText, LayoutDashboard, LogOut, Banknote,
-  Tag, CalendarDays, ClipboardList, WalletCards, Receipt, X, BarChart2,
+  Tag, ClipboardList, WalletCards, Receipt, X, BarChart2,
   TrendingUp, Settings, CreditCard, RotateCcw, MessageCircle,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -28,7 +28,6 @@ const navigation = [
     items: [
       { name: 'Employees', href: '/employees', icon: Users },
       { name: 'Attendance', href: '/attendance', icon: CalendarCheck },
-      { name: 'Daily Attendance', href: '/daily-attendance', icon: CalendarDays },
     ],
   },
   {
