@@ -27,29 +27,42 @@ const STEPS = [
 
 const PLANS = [
   {
+    name: 'Micro', price: '₹125', sub: '/mo', popular: false,
+    features: [
+      { text: 'Up to 5 employees', ok: true },
+      { text: 'Full payroll — salary, OT & advances', ok: true },
+      { text: 'Attendance & daily labour tracking', ok: true },
+      { text: 'PDF payslips & payroll reports', ok: true },
+    ],
+    cta: 'Get Started',
+  },
+  {
     name: 'Starter', price: '₹299', sub: '/mo', popular: false,
     features: [
-      { text: 'Up to 10 employees', ok: true },
-      { text: 'Attendance & Payroll', ok: true },
-      { text: 'PDF Payslips', ok: true },
+      { text: 'Up to 15 employees', ok: true },
+      { text: 'Full payroll — salary, OT & advances', ok: true },
+      { text: 'Attendance & daily labour tracking', ok: true },
+      { text: 'Expenses, charts & analytics', ok: true },
     ],
     cta: 'Get Started',
   },
   {
     name: 'Growth', price: '₹499', sub: '/mo', popular: true,
     features: [
-      { text: 'Up to 30 employees', ok: true },
-      { text: 'Full Payroll Suite', ok: true },
-      { text: 'Advance Management', ok: true },
+      { text: 'Up to 75 employees', ok: true },
+      { text: 'Commission & daily wage workers', ok: true },
+      { text: 'Advance management', ok: true },
+      { text: 'Team access with role controls', ok: true },
     ],
     cta: 'Get Started',
   },
   {
     name: 'Business', price: '₹999', sub: '/mo', popular: false,
     features: [
-      { text: 'Unlimited employees', ok: true },
-      { text: 'Expense Tracking', ok: true },
-      { text: 'Priority Support', ok: true },
+      { text: 'Up to 500 employees', ok: true },
+      { text: 'Everything in Growth', ok: true },
+      { text: 'Expenses, charts & analytics', ok: true },
+      { text: 'For large operations', ok: true },
     ],
     cta: 'Get Started',
   },
@@ -314,7 +327,7 @@ export default function LandingPage() {
             <h2 className="font-sans font-bold text-3xl md:text-4xl text-text mb-4">Pricing Plans</h2>
             <p className="text-text-muted">Scalable pricing for startups and established businesses.</p>
           </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
             {PLANS.map((plan) => (
               <motion.div
                 key={plan.name}
