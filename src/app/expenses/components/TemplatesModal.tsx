@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES } from './ExpensesManager'
+import GlassSelect from '@/components/ui/GlassSelect'
 import type { ExpenseTemplate } from '@/types'
 
 interface Props {
@@ -154,10 +155,11 @@ export default function TemplatesModal({ companyId, initialTemplates, onClose, o
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={lbl}>Category</label>
-                    <select value={form.category} onChange={e => set('category', e.target.value)}
-                      style={{ ...inp, appearance: 'none' as any }}>
-                      {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#1c162e' }}>{c}</option>)}
-                    </select>
+                    <GlassSelect
+                      value={form.category}
+                      onChange={v => set('category', v)}
+                      options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                    />
                   </div>
                   <div>
                     <label style={lbl}>Amount (₹) *</label>

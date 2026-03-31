@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { X } from 'lucide-react'
+import GlassSelect from '@/components/ui/GlassSelect'
 
 interface Props {
   advanceId: string
@@ -103,10 +104,14 @@ export default function LogRepaymentModal({ advanceId, employeeId, companyId, re
 
           <div>
             <label className={labelCls}>Method <span className="text-red-400">*</span></label>
-            <select value={method} onChange={e => setMethod(e.target.value as 'cash' | 'salary_deduction')} className={inputCls}>
-              <option value="cash" style={{ background: '#1c162e' }}>Cash</option>
-              <option value="salary_deduction" style={{ background: '#1c162e' }}>Salary Deduction</option>
-            </select>
+            <GlassSelect
+              value={method}
+              onChange={v => setMethod(v as 'cash' | 'salary_deduction')}
+              options={[
+                { value: 'cash', label: 'Cash' },
+                { value: 'salary_deduction', label: 'Salary Deduction' },
+              ]}
+            />
           </div>
 
           <div>

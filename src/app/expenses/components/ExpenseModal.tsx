@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, type Expense } from './ExpensesManager'
+import GlassSelect from '@/components/ui/GlassSelect'
 
 interface Props {
   expense: Expense | null
@@ -129,17 +130,17 @@ export default function ExpenseModal({ expense, companyId, defaultMonth, onSave,
             </div>
             <div>
               <label style={lbl}>Category</label>
-              <select
+              <GlassSelect
                 value={isCustom ? '__custom__' : form.category}
-                onChange={e => {
-                  if (e.target.value === '__custom__') set('category', customCategory || '')
-                  else { set('category', e.target.value); setCustomCategory('') }
+                onChange={v => {
+                  if (v === '__custom__') set('category', customCategory || '')
+                  else { set('category', v); setCustomCategory('') }
                 }}
-                style={{ ...inp, appearance: 'none' as any }}
-              >
-                {CATEGORIES.map(c => <option key={c} value={c} style={{ background: '#1c162e' }}>{c}</option>)}
-                <option value="__custom__" style={{ background: '#1c162e' }}>Custom…</option>
-              </select>
+                options={[
+                  ...CATEGORIES.map(c => ({ value: c, label: c })),
+                  { value: '__custom__', label: 'Custom…' },
+                ]}
+              />
               {isCustom && (
                 <input type="text" value={form.category} autoFocus
                   onChange={e => { set('category', e.target.value); setCustomCategory(e.target.value) }}

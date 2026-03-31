@@ -9,6 +9,7 @@ import { motion } from 'framer-motion'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Employee } from '@/types'
+import GlassSelect from '@/components/ui/GlassSelect'
 
 interface Props {
   employee: Employee
@@ -167,24 +168,31 @@ export default function EditEmployeeModal({ employee }: Props) {
                 </div>
                 <div>
                   <label className={labelCls}>Notify Via</label>
-                  <select name="notification_method" value={formData.notification_method}
-                    onChange={handleChange} className={selectCls}
-                    disabled={!formData.phone_number.trim()}>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="sms">SMS</option>
-                    <option value="none">None</option>
-                  </select>
+                  <GlassSelect
+                    value={formData.notification_method}
+                    onChange={v => setFormData(prev => ({ ...prev, notification_method: v as 'whatsapp' | 'sms' | 'none' }))}
+                    disabled={!formData.phone_number.trim()}
+                    options={[
+                      { value: 'whatsapp', label: 'WhatsApp' },
+                      { value: 'sms', label: 'SMS' },
+                      { value: 'none', label: 'None' },
+                    ]}
+                  />
                 </div>
               </div>
 
               {/* Worker Type */}
               <div>
                 <label className={labelCls}>Worker Type</label>
-                <select name="worker_type" value={formData.worker_type} onChange={handleChange} className={selectCls}>
-                  <option value="salaried">Salaried</option>
-                  <option value="daily">Daily</option>
-                  <option value="commission">Commission</option>
-                </select>
+                <GlassSelect
+                  value={formData.worker_type}
+                  onChange={v => setFormData(prev => ({ ...prev, worker_type: v as 'salaried' | 'commission' | 'daily' }))}
+                  options={[
+                    { value: 'salaried', label: 'Salaried' },
+                    { value: 'daily', label: 'Daily' },
+                    { value: 'commission', label: 'Commission' },
+                  ]}
+                />
               </div>
 
               {/* Monthly Salary — salaried only */}

@@ -7,6 +7,7 @@ import { Plus, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { Database } from '@/types/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import GlassSelect from '@/components/ui/GlassSelect'
 
 const glassModal: React.CSSProperties = {
   background: 'rgba(22,17,38,0.97)',
@@ -221,12 +222,15 @@ export default function AddEmployeeModal({
                 </div>
                 <div>
                   <label className={labelCls}>Notify Via</label>
-                  <select name="notification_method" value={formData.notification_method}
-                    onChange={handleChange} className={selectCls}
-                    disabled={!formData.phone_number.trim()}>
-                    <option value="sms">SMS</option>
-                    <option value="none">None</option>
-                  </select>
+                  <GlassSelect
+                    value={formData.notification_method}
+                    onChange={v => setFormData(prev => ({ ...prev, notification_method: v as 'sms' | 'none' }))}
+                    disabled={!formData.phone_number.trim()}
+                    options={[
+                      { value: 'sms', label: 'SMS' },
+                      { value: 'none', label: 'None' },
+                    ]}
+                  />
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { X } from 'lucide-react'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import GlassSelect from '@/components/ui/GlassSelect'
 
 type EmployeeMinimal = { id: string; full_name: string; employee_id: string }
 
@@ -97,14 +98,12 @@ export default function AddAdvanceModal({ employees, companyId, onSaved, onClose
 
           <div>
             <label className={labelCls}>Employee</label>
-            <select name="employee_id" required value={formData.employee_id} onChange={handleChange} className={inputCls}>
-              <option value="" disabled style={{ background: '#1c162e' }}>Select employee...</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id} style={{ background: '#1c162e' }}>
-                  {emp.full_name} ({emp.employee_id})
-                </option>
-              ))}
-            </select>
+            <GlassSelect
+              value={formData.employee_id}
+              onChange={v => setFormData(prev => ({ ...prev, employee_id: v }))}
+              placeholder="Select employee..."
+              options={employees.map(emp => ({ value: emp.id, label: `${emp.full_name} (${emp.employee_id})` }))}
+            />
           </div>
 
           <div>
