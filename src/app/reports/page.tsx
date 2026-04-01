@@ -140,7 +140,7 @@ export default async function ReportsPage({
   // Fetch advance repayments (salary deductions) matched to this month's payment dates.
   // Using payment_date matching instead of a date range so cross-month payments (e.g. paid
   // on Apr 1 for March payroll) are correctly attributed to the right payroll month.
-  const paymentDates = [...new Set((monthPayments || []).map((p: any) => p.payment_date).filter(Boolean))]
+  const paymentDates = Array.from(new Set((monthPayments || []).map((p: any) => p.payment_date).filter(Boolean)))
   const advanceRepaidThisMonth: Record<string, number> = {}
   if (paymentDates.length > 0) {
     const { data: monthAdvanceRepayments } = await supabase
