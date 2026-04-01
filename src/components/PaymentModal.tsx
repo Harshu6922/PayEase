@@ -35,7 +35,7 @@ export default function PaymentModal({
 
   const [payments, setPayments] = useState<Payment[]>([])
   const [advances, setAdvances] = useState<EmployeeAdvance[]>([])
-  const [advanceRepaidThisMonth, setAdvanceRepaidThisMonth] = useState(0)
+  const [allSalaryDeductions, setAllSalaryDeductions] = useState<{ amount: number; repayment_date: string }[]>([])
   const [cashRepayments, setCashRepayments] = useState<{ id: string; amount: number; repayment_date: string; note: string | null }[]>([])
   const [freshOutstanding, setFreshOutstanding] = useState<{ totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,10 +64,9 @@ export default function PaymentModal({
           .order('advance_date', { ascending: false }),
         supabase
           .from('advance_repayments')
-          .select('amount')
+          .select('amount, repayment_date')
           .eq('employee_id', employee.id)
-          .eq('method', 'salary_deduction')
-          .like('repayment_date', `${month}%`),
+          .eq('method', 'salary_deduction'),
         supabase
           .from('advance_repayments')
           .select('advance_id, amount')
@@ -82,9 +81,7 @@ export default function PaymentModal({
       if (paymentsRes.data) setPayments(paymentsRes.data)
       if (advancesRes.data) setAdvances(advancesRes.data)
       if (cashRepaymentsRes.data) setCashRepayments(cashRepaymentsRes.data)
-      setAdvanceRepaidThisMonth(
-        (repaidRes.data || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
-      )
+      if (repaidRes.data) setAllSalaryDeductions(repaidRes.data)
 
       // Calculate fresh outstanding from DB (ignores stale prop)
       const repaidByAdvance: Record<string, number> = {}
@@ -110,14 +107,26 @@ export default function PaymentModal({
 
   // Use freshly fetched outstanding (falls back to prop until fetch completes)
   const liveOutstanding = freshOutstanding ?? outstandingAdvances
-  // Auto-deduct advances from payable
-  const advanceDeduction = Math.min(liveOutstanding?.totalOutstanding ?? 0, currentMonthPayable)
+
+  // Salary deductions matched to THIS month's payments by payment_date
+  const thisMonthPaymentDates = new Set(
+    payments.filter(p => p.month === month).map(p => p.payment_date)
+  )
+  const salaryDeductionsForThisMonth = allSalaryDeductions
+    .filter(r => thisMonthPaymentDates.has(r.repayment_date))
+    .reduce((s, r) => s + Number(r.amount), 0)
+
+  // Advance deduction: use salary deductions actually applied this month if any,
+  // otherwise use current outstanding (for employees not yet paid)
+  const advanceDeduction = salaryDeductionsForThisMonth > 0
+    ? salaryDeductionsForThisMonth
+    : Math.min(liveOutstanding?.totalOutstanding ?? 0, currentMonthPayable)
   const netMonthPayable = Math.round((currentMonthPayable - advanceDeduction) * 100) / 100
 
   const paymentsThisMonth = payments
     .filter(p => p.month === month)
     .reduce((sum, p) => sum + Number(p.amount), 0)
-  const remainingThisMonth = Math.round((netMonthPayable - paymentsThisMonth - advanceRepaidThisMonth) * 100) / 100
+  const remainingThisMonth = Math.round((netMonthPayable - paymentsThisMonth) * 100) / 100
 
   async function recordPayment(cashAmount: number, date: string, noteText: string, autoRepayAdvances: boolean) {
     setSaving(true)
