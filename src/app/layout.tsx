@@ -12,8 +12,37 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' })
 
 export const metadata: Metadata = {
-  title: 'PayEase',
-  description: 'Manage employees, attendance, and payroll efficiently',
+  metadataBase: new URL('https://www.payeasebuddy.co.in'),
+  title: {
+    default: 'PayEase — Payroll & Attendance Management for Indian Businesses',
+    template: '%s | PayEase',
+  },
+  description: 'PayEase is a simple payroll and attendance management app for small businesses in India. Manage salaried, daily, and commission workers, generate PDF payslips, track advances, and run payroll in minutes.',
+  keywords: [
+    'payroll software India', 'attendance management', 'salary management app',
+    'payslip generator India', 'small business payroll', 'employee management',
+    'daily wage worker app', 'advance management', 'payroll India',
+    'HR software small business', 'PayEase',
+  ],
+  authors: [{ name: 'PayEase', url: 'https://www.payeasebuddy.co.in' }],
+  creator: 'PayEase',
+  publisher: 'PayEase',
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true } },
+  openGraph: {
+    type: 'website',
+    locale: 'en_IN',
+    url: 'https://www.payeasebuddy.co.in',
+    siteName: 'PayEase',
+    title: 'PayEase — Payroll & Attendance Management for Indian Businesses',
+    description: 'Simple payroll software for Indian small businesses. Manage employees, attendance, advances, and generate payslips in minutes.',
+    images: [{ url: '/dashboard-preview.png', width: 1280, height: 800, alt: 'PayEase Dashboard' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PayEase — Payroll & Attendance Management for Indian Businesses',
+    description: 'Simple payroll software for Indian small businesses. Manage employees, attendance, advances, and generate payslips in minutes.',
+    images: ['/dashboard-preview.png'],
+  },
   manifest: '/manifest.json',
   icons: { icon: '/favicon.ico', apple: '/icons/icon-192.png' },
   appleWebApp: {
@@ -21,9 +50,7 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'PayEase',
   },
-  other: {
-    'theme-color': '#0F0A1E',
-  },
+  other: { 'theme-color': '#0F0A1E' },
 }
 
 export default function RootLayout({
