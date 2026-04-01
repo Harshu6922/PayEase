@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { createClient } from '@/lib/supabase/client'
-import { Search, Banknote, TrendingDown, CheckCircle, Plus } from 'lucide-react'
+import { Search, Banknote, TrendingDown, CheckCircle, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import LogRepaymentModal from './LogRepaymentModal'
 import AddAdvanceModal from './AddAdvanceModal'
 import { staggerContainer, fadeInUp } from '@/lib/animations'
@@ -20,6 +20,29 @@ export interface AdvanceWithBalance {
   remaining: number
   employee_name: string
   employee_display_id: string
+  repayments: { amount: number; repayment_date: string }[]
+}
+
+function currentMonthStr() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+function prevMonth(m: string) {
+  const [y, mo] = m.split('-').map(Number)
+  const d = new Date(y, mo - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function nextMonth(m: string) {
+  const [y, mo] = m.split('-').map(Number)
+  const d = new Date(y, mo, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function formatMonthLabel(m: string) {
+  const [y, mo] = m.split('-').map(Number)
+  return new Date(y, mo - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
 }
 
 const formatRs = (n: number) =>
@@ -61,16 +84,12 @@ export default function AdvancesClient({
   companyId,
   employees,
   totalOutstanding,
-  givenThisMonth,
-  recoveredThisMonth,
   userRole = 'admin',
 }: {
   initialAdvances: AdvanceWithBalance[]
   companyId: string
   employees: { id: string; full_name: string; employee_id: string }[]
   totalOutstanding: number
-  givenThisMonth: number
-  recoveredThisMonth: number
   userRole?: 'admin' | 'viewer'
 }) {
   const supabase = createClient() as unknown as any
@@ -79,6 +98,17 @@ export default function AdvancesClient({
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filter, setFilter] = useState<FilterKey>('all')
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthStr)
+
+  const givenThisMonth = useMemo(() =>
+    advances.filter(a => a.advance_date.startsWith(selectedMonth)).reduce((s, a) => s + a.amount, 0),
+  [advances, selectedMonth])
+
+  const recoveredThisMonth = useMemo(() =>
+    advances.reduce((s, a) =>
+      s + a.repayments.filter(r => r.repayment_date.startsWith(selectedMonth)).reduce((rs, r) => rs + r.amount, 0),
+    0),
+  [advances, selectedMonth])
 
   const refresh = async () => {
     const { data } = await supabase
@@ -86,14 +116,15 @@ export default function AdvancesClient({
       .select(`
         id, employee_id, company_id, amount, advance_date, note,
         employees(full_name, employee_id),
-        advance_repayments(amount)
+        advance_repayments(amount, repayment_date)
       `)
       .eq('company_id', companyId)
       .order('advance_date', { ascending: false })
 
     if (data) {
       setAdvances(data.map((a: any) => {
-        const repaid_total = (a.advance_repayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
+        const repayments = (a.advance_repayments || []).map((r: any) => ({ amount: Number(r.amount), repayment_date: r.repayment_date }))
+        const repaid_total = repayments.reduce((s: number, r: any) => s + r.amount, 0)
         return {
           id: a.id,
           employee_id: a.employee_id,
@@ -105,6 +136,7 @@ export default function AdvancesClient({
           remaining: Number(a.amount) - repaid_total,
           employee_name: a.employees?.full_name ?? '—',
           employee_display_id: a.employees?.employee_id ?? '—',
+          repayments,
         }
       }))
     }
@@ -150,16 +182,37 @@ export default function AdvancesClient({
             </h1>
             <p className="mt-2 text-[#afa7c2] text-sm">Track and manage employee salary advances</p>
           </div>
-          {userRole === 'admin' && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:shadow-[0_0_20px_rgba(189,157,255,0.3)] active:scale-95"
-              style={{ background: 'rgba(178,140,255,0.15)', border: '1px solid rgba(189,157,255,0.25)', color: '#bd9dff' }}
-            >
-              <Plus className="h-4 w-4" />
-              Give Advance
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {/* Month navigator */}
+            <div className="flex items-center gap-1 rounded-xl px-2 py-1.5" style={{ background: 'rgba(28,22,46,0.7)', border: '1px solid rgba(189,157,255,0.12)' }}>
+              <button
+                onClick={() => setSelectedMonth(m => prevMonth(m))}
+                className="p-1.5 rounded-lg text-[#afa7c2] hover:text-[#ebe1fe] hover:bg-[#bd9dff]/10 transition-all"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-semibold text-[#ebe1fe] min-w-[130px] text-center">
+                {formatMonthLabel(selectedMonth)}
+              </span>
+              <button
+                onClick={() => setSelectedMonth(m => nextMonth(m))}
+                disabled={selectedMonth >= currentMonthStr()}
+                className="p-1.5 rounded-lg text-[#afa7c2] hover:text-[#ebe1fe] hover:bg-[#bd9dff]/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+            {userRole === 'admin' && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all hover:shadow-[0_0_20px_rgba(189,157,255,0.3)] active:scale-95"
+                style={{ background: 'rgba(178,140,255,0.15)', border: '1px solid rgba(189,157,255,0.25)', color: '#bd9dff' }}
+              >
+                <Plus className="h-4 w-4" />
+                Give Advance
+              </button>
+            )}
+          </div>
         </header>
 
         {/* Stat cards */}
@@ -186,26 +239,26 @@ export default function AdvancesClient({
             style={{ background: 'rgba(28,22,46,0.6)', backdropFilter: 'blur(24px)', border: '1px solid rgba(189,157,255,0.1)' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#bd9dff]/5 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between mb-4">
-              <span className="text-[#afa7c2] text-sm font-medium">Given This Month</span>
+              <span className="text-[#afa7c2] text-sm font-medium">Given in {formatMonthLabel(selectedMonth).split(' ')[0]}</span>
               <div className="p-2 rounded-lg" style={{ background: 'rgba(189,157,255,0.1)' }}>
                 <TrendingDown className="h-4 w-4 text-[#bd9dff]" />
               </div>
             </div>
             <div className="text-3xl font-bold text-[#bd9dff]">{formatRs(givenThisMonth)}</div>
-            <p className="text-[#afa7c2] text-xs mt-1">Current pay cycle</p>
+            <p className="text-[#afa7c2] text-xs mt-1">{formatMonthLabel(selectedMonth)}</p>
           </motion.div>
 
           <motion.div variants={fadeInUp} className="p-6 rounded-2xl relative overflow-hidden"
             style={{ background: 'rgba(28,22,46,0.6)', backdropFilter: 'blur(24px)', border: '1px solid rgba(189,157,255,0.1)' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between mb-4">
-              <span className="text-[#afa7c2] text-sm font-medium">Recovered This Month</span>
+              <span className="text-[#afa7c2] text-sm font-medium">Recovered in {formatMonthLabel(selectedMonth).split(' ')[0]}</span>
               <div className="p-2 rounded-lg" style={{ background: 'rgba(16,185,129,0.1)' }}>
                 <CheckCircle className="h-4 w-4 text-emerald-400" />
               </div>
             </div>
             <div className="text-3xl font-bold text-emerald-400">{formatRs(recoveredThisMonth)}</div>
-            <p className="text-[#afa7c2] text-xs mt-1">Repaid this month</p>
+            <p className="text-[#afa7c2] text-xs mt-1">{formatMonthLabel(selectedMonth)}</p>
           </motion.div>
         </motion.section>
 
