@@ -76,7 +76,8 @@ function calculatePayroll(
   agentRates: AgentRate[],
   workingDays: number,
   outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {},
-  legacyDaily: LegacyDailyRecord[] = []
+  legacyDaily: LegacyDailyRecord[] = [],
+  advanceRepaidByEmployee: Record<string, number> = {}
 ) {
   let totalPayable = 0
   let totalRecoverable = 0
@@ -121,9 +122,15 @@ function calculatePayroll(
       earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
     }
 
-    const total_advances = outstandingByEmployee[emp.id]?.totalOutstanding ?? 0
-    const advance_deduction = total_advances
-    const final_payable_salary = Math.round((earned_salary + total_overtime_amount - total_deduction_amount - advance_deduction) * 100) / 100
+    const total_advances_outstanding = outstandingByEmployee[emp.id]?.totalOutstanding ?? 0
+    const net_before_advance = earned_salary + total_overtime_amount - total_deduction_amount
+    // Use recorded salary deduction for this month when available (handles cross-month payment dates).
+    // Fall back to live outstanding for months where no payment has been recorded yet.
+    const recorded_deduction = advanceRepaidByEmployee[emp.id]
+    const advance_deduction = recorded_deduction !== undefined
+      ? recorded_deduction
+      : Math.min(total_advances_outstanding, Math.max(0, net_before_advance))
+    const final_payable_salary = Math.round((net_before_advance - advance_deduction) * 100) / 100
 
     if (final_payable_salary >= 0) {
       totalPayable += final_payable_salary
@@ -140,7 +147,7 @@ function calculatePayroll(
       earned_salary,
       total_overtime_amount,
       total_deduction_amount,
-      total_advances,
+      total_advances: advance_deduction,
       final_payable_salary
     }
   })
@@ -241,8 +248,8 @@ export default function PayrollDashboard({
   const daysInPrevMonth = useMemo(() => getDaysInMonth(prevMonth), [prevMonth])
 
   const computedPayroll = useMemo(() => {
-    return calculatePayroll(employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance)
-  }, [employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance])
+    return calculatePayroll(employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance, advanceRepaidThisMonth)
+  }, [employees, attendance, workEntries, agentRates, actualDaysInMonth, outstandingByEmployee, dailyAttendance, advanceRepaidThisMonth])
 
   const prevBalances = useMemo((): Record<string, number> => {
     if (!paidUpToDay) return {}
@@ -259,11 +266,8 @@ export default function PayrollDashboard({
     localPayments.forEach(p => {
       map[p.employee_id] = (map[p.employee_id] ?? 0) + Number(p.amount)
     })
-    Object.entries(advanceRepaidThisMonth).forEach(([empId, amount]) => {
-      map[empId] = (map[empId] ?? 0) + amount
-    })
     return map
-  }, [localPayments, advanceRepaidThisMonth])
+  }, [localPayments])
 
   const remainingTotals = useMemo(() => {
     let totalRemaining = 0

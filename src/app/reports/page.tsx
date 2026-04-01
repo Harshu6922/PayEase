@@ -137,19 +137,22 @@ export default async function ReportsPage({
     .eq('company_id', companyId)
     .eq('month', selectedMonthStr)
 
-  // Fetch advance repayments made this month via salary deduction
-  const { data: monthAdvanceRepayments } = await supabase
-    .from('advance_repayments')
-    .select('employee_id, amount')
-    .eq('company_id', companyId)
-    .eq('method', 'salary_deduction')
-    .gte('repayment_date', startDate)
-    .lte('repayment_date', endDate)
-
+  // Fetch advance repayments (salary deductions) matched to this month's payment dates.
+  // Using payment_date matching instead of a date range so cross-month payments (e.g. paid
+  // on Apr 1 for March payroll) are correctly attributed to the right payroll month.
+  const paymentDates = [...new Set((monthPayments || []).map((p: any) => p.payment_date).filter(Boolean))]
   const advanceRepaidThisMonth: Record<string, number> = {}
-  ;(monthAdvanceRepayments || []).forEach((r: any) => {
-    advanceRepaidThisMonth[r.employee_id] = (advanceRepaidThisMonth[r.employee_id] ?? 0) + Number(r.amount)
-  })
+  if (paymentDates.length > 0) {
+    const { data: monthAdvanceRepayments } = await supabase
+      .from('advance_repayments')
+      .select('employee_id, amount')
+      .eq('company_id', companyId)
+      .eq('method', 'salary_deduction')
+      .in('repayment_date', paymentDates)
+    ;(monthAdvanceRepayments || []).forEach((r: any) => {
+      advanceRepaidThisMonth[r.employee_id] = (advanceRepaidThisMonth[r.employee_id] ?? 0) + Number(r.amount)
+    })
+  }
 
   // Action for saving the computed dashboard
   async function generatePayrollAction(payload: { month: number, year: number, computedRows: any[] }) {
