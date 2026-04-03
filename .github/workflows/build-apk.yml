@@ -1,0 +1,83 @@
+name: Build Android TWA (APK/AAB)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Generate keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android.keystore \
+            -alias payease \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass payease123 -keypass payease123 \
+            -dname "CN=PayEase, OU=Engineering, O=PayEase, L=Mumbai, ST=Maharashtra, C=IN"
+
+      - name: Create twa-manifest.json
+        run: |
+          cat > twa-manifest.json << 'EOF'
+          {
+            "packageId": "co.in.payeasebuddy",
+            "host": "www.payeasebuddy.co.in",
+            "name": "PayEase — Payroll & Attendance",
+            "launcherName": "PayEase",
+            "display": "standalone",
+            "orientation": "portrait",
+            "themeColor": "#100b1f",
+            "themeColorDark": "#100b1f",
+            "navigationColor": "#100b1f",
+            "navigationColorDark": "#100b1f",
+            "backgroundColor": "#100b1f",
+            "enableNotifications": false,
+            "startUrl": "/dashboard",
+            "iconUrl": "https://www.payeasebuddy.co.in/icons/icon-512.png",
+            "maskableIconUrl": "https://www.payeasebuddy.co.in/icons/icon-512.png",
+            "splashScreenFadeOutDuration": 300,
+            "signingKey": {
+              "path": "../android.keystore",
+              "alias": "payease"
+            },
+            "appVersionCode": 1,
+            "appVersionName": "1.0.0",
+            "shortcuts": [],
+            "webManifestUrl": "https://www.payeasebuddy.co.in/manifest.json",
+            "fallbackType": "customtabs",
+            "features": {},
+            "enableSiteSettingsShortcut": true,
+            "isChromeOSOnly": false,
+            "fullScopeUrl": "https://www.payeasebuddy.co.in/",
+            "minSdkVersion": 19,
+            "targetSdkVersion": 34
+          }
+          EOF
+
+      - name: Build TWA
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: payease123
+          BUBBLEWRAP_KEY_PASSWORD: payease123
+        run: |
+          mkdir twa && cp twa-manifest.json twa/ && cd twa
+          bubblewrap build --skipPwaValidation
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: payease-android-build
+          path: |
+            twa/app-release-bundle.aab
+            twa/app-release-signed.apk
+            android.keystore
+          retention-days: 30
