@@ -129,7 +129,7 @@ function calculatePayroll(
     const recorded_deduction = advanceRepaidByEmployee[emp.id]
     const advance_deduction = recorded_deduction !== undefined
       ? recorded_deduction
-      : Math.min(total_advances_outstanding, Math.max(0, net_before_advance))
+      : total_advances_outstanding
     const final_payable_salary = Math.round((net_before_advance - advance_deduction) * 100) / 100
 
     if (final_payable_salary >= 0) {
