@@ -467,7 +467,7 @@ export default function PayrollDashboard({
               </div>
             </div>
             <div className="text-3xl font-bold text-[#D4A847] mb-1">
-              {formatINR(computedPayroll.totalPayable)}
+              {formatINR(computedPayroll.netPayout)}
             </div>
             <p className="text-[#afa7c2] text-xs font-medium">
               {formatINR(remainingTotals.totalRemaining)} remaining to pay
@@ -759,7 +759,7 @@ export default function PayrollDashboard({
                       -{formatINR(totalDeductions)}
                     </td>
                     <td className="px-6 py-4 text-right text-sm font-bold text-[#D4A847]">
-                      {formatINR(computedPayroll.totalPayable)}
+                      {formatINR(computedPayroll.netPayout)}
                     </td>
                     <td className="px-6 py-4 text-right text-sm font-bold text-[#ebe1fe]">
                       {formatINR(remainingTotals.totalRemaining)}
