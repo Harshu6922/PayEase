@@ -60,6 +60,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`dark ${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+      </head>
       <body className="font-sans bg-background text-text antialiased">
         <AppShell banner={<Suspense fallback={null}><TrialBanner /></Suspense>}>
           {children}
