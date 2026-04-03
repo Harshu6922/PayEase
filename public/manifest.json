@@ -1,14 +1,44 @@
 {
-  "name": "PayEase",
+  "id": "co.in.payeasebuddy",
+  "name": "PayEase — Payroll & Attendance",
   "short_name": "PayEase",
-  "description": "Manage employees, attendance, and payroll efficiently",
+  "description": "Simple payroll and attendance management for Indian small businesses. Manage salaried, daily, and commission workers, track advances, and generate payslips.",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1C2333",
-  "theme_color": "#1C2333",
   "orientation": "portrait",
+  "background_color": "#100b1f",
+  "theme_color": "#100b1f",
+  "categories": ["business", "productivity", "finance"],
+  "lang": "en-IN",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/dashboard-preview.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "PayEase Dashboard — Payroll Overview"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Reports",
+      "short_name": "Reports",
+      "description": "View payroll reports",
+      "url": "/reports",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Attendance",
+      "short_name": "Attendance",
+      "description": "Mark attendance",
+      "url": "/attendance",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
