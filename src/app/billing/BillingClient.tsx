@@ -319,8 +319,8 @@ export default function BillingClient({
             <div>
               <p className="text-sm text-[#7B7A8E] mb-3">
                 Share your code — earn{' '}
-                <span className="font-semibold text-[#F1F0F5]">₹50/month off</span>{' '}
-                for each referral (max 3 per month = ₹150/month).{' '}
+                <span className="font-semibold text-[#F1F0F5]">₹20/month off</span>{' '}
+                for each referral (max 5 per month = ₹100/month).{' '}
                 <span className="text-[#F59E0B]">Discount activates only after your referred person makes their first payment.</span>
               </p>
               <div className="flex items-center gap-3">
