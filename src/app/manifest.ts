@@ -2,18 +2,49 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'PayEase',
+    id: 'co.in.payeasebuddy',
+    name: 'PayEase — Payroll & Attendance',
     short_name: 'PayEase',
-    description: 'Payroll management for your company',
-    start_url: '/',
+    description: 'Simple payroll and attendance management for Indian small businesses. Manage salaried, daily, and commission workers, track advances, and generate payslips.',
+    start_url: '/dashboard',
+    scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#ffffff',
-    theme_color: '#4f46e5',
+    background_color: '#100b1f',
+    theme_color: '#100b1f',
+    categories: ['business', 'productivity', 'finance'],
+    lang: 'en-IN',
+    dir: 'ltr',
     icons: [
-      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+    screenshots: [
+      {
+        src: '/dashboard-preview.png',
+        sizes: '1280x800',
+        type: 'image/png',
+        // @ts-expect-error – form_factor is valid in the spec but not yet in TS types
+        form_factor: 'wide',
+        label: 'PayEase Dashboard — Payroll Overview',
+      },
+    ],
+    shortcuts: [
+      {
+        name: 'Reports',
+        short_name: 'Reports',
+        description: 'View payroll reports',
+        url: '/reports',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
+      },
+      {
+        name: 'Attendance',
+        short_name: 'Attendance',
+        description: 'Mark attendance',
+        url: '/attendance',
+        icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }],
+      },
     ],
   }
 }

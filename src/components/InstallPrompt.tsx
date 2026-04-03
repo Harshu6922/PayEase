@@ -10,6 +10,13 @@ export default function InstallPrompt() {
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return
     if (localStorage.getItem('pwa_dismissed')) return
 
