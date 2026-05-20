@@ -15,7 +15,11 @@ function filterByRole(data: any, role: string) {
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization')
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Tokens are 64 hex chars (32 random bytes). Reject anything that doesn't look right
+  // to avoid expensive lookups on attacker-controlled input.
+  if (!token || token.length !== 64 || !/^[a-f0-9]+$/.test(token)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!) as any
 

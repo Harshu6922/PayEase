@@ -4,7 +4,9 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization')
   const token = auth?.replace('Bearer ', '').trim()
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!token || token.length !== 64 || !/^[a-f0-9]+$/.test(token)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const db = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +43,7 @@ export async function GET(req: NextRequest) {
       .gte('date', monthStart)
       .order('date', { ascending: false }),
     db.from('employee_advances')
-      .select('amount, advance_date, is_repaid')
+      .select('amount, advance_date, advance_repayments(amount)')
       .eq('employee_id', employee_id)
       .order('advance_date', { ascending: false }),
     db.from('payments')
@@ -70,10 +72,12 @@ export async function GET(req: NextRequest) {
     monthlyEarnings = (workEntries ?? []).reduce((s: number, e: any) => s + Number(e.total_amount ?? 0), 0)
   }
 
-  // Pending advance balance
-  const advanceBalance = (advances ?? [])
-    .filter((a: any) => !a.is_repaid)
-    .reduce((s: number, a: any) => s + Number(a.amount ?? 0), 0)
+  // Pending advance balance = sum of (amount - repayments), clamped per-advance
+  const advanceBalance = (advances ?? []).reduce((s: number, a: any) => {
+    const repaid = (a.advance_repayments ?? []).reduce((rs: number, r: any) => rs + Number(r.amount ?? 0), 0)
+    const remaining = Number(a.amount ?? 0) - repaid
+    return s + Math.max(0, remaining)
+  }, 0)
 
   return NextResponse.json({
     employee: emp,

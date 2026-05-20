@@ -6,7 +6,21 @@ import { MAX_REFERRALS } from '@/lib/plans'
 
 export async function POST(req: NextRequest) {
   const { companyName, ownerName, city, teamSize, referralCode } = await req.json()
-  if (!companyName) return NextResponse.json({ error: 'Company name required' }, { status: 400 })
+  if (typeof companyName !== 'string' || companyName.trim().length < 2 || companyName.length > 100) {
+    return NextResponse.json({ error: 'Company name must be 2-100 chars' }, { status: 400 })
+  }
+  if (ownerName !== undefined && (typeof ownerName !== 'string' || ownerName.length > 100)) {
+    return NextResponse.json({ error: 'Invalid owner name' }, { status: 400 })
+  }
+  if (city !== undefined && (typeof city !== 'string' || city.length > 100)) {
+    return NextResponse.json({ error: 'Invalid city' }, { status: 400 })
+  }
+  if (teamSize !== undefined && (typeof teamSize !== 'string' || teamSize.length > 30)) {
+    return NextResponse.json({ error: 'Invalid team size' }, { status: 400 })
+  }
+  if (referralCode !== undefined && (typeof referralCode !== 'string' || referralCode.length > 64)) {
+    return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -67,10 +81,12 @@ export async function POST(req: NextRequest) {
         .gte('created_at', monthStart)
         .lt('created_at', monthEnd)
       if ((existing ?? []).length < MAX_REFERRALS) {
+        // Discount stays inactive until the referred company actually pays
+        // (activated by the razorpay webhook on subscription.charged).
         await adminClient.from('referral_discounts').insert({
           referrer_company_id: (refRow as any).company_id,
           referred_company_id: companyId,
-          active: true,
+          active: false,
         })
       }
     }

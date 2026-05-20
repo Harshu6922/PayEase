@@ -1,13 +1,21 @@
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
-const WINDOW_MS = 15 * 60 * 1000 // 15 minutes
-const MAX_ATTEMPTS = 5
+const DEFAULT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+const DEFAULT_MAX_ATTEMPTS = 5
+
+export interface RateLimitOptions {
+  windowMs?: number
+  maxAttempts?: number
+}
 
 /**
  * Returns true if the request should be blocked (rate limit exceeded).
  * Key should be descriptive, e.g. "emp_login:companyId:employeeId"
  */
-export async function isRateLimited(key: string): Promise<boolean> {
+export async function isRateLimited(key: string, opts: RateLimitOptions = {}): Promise<boolean> {
+  const WINDOW_MS = opts.windowMs ?? DEFAULT_WINDOW_MS
+  const MAX_ATTEMPTS = opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS
+
   const db = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

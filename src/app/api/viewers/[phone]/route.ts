@@ -7,10 +7,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: { phone: s
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: profile } = await (supabase as any).from('profiles').select('company_id').eq('id', user.id).maybeSingle()
-  if (!profile?.company_id) return NextResponse.json({ error: 'No company' }, { status: 400 })
+  const { data: profile } = await (supabase as any).from('profiles').select('company_id, role').eq('id', user.id).maybeSingle()
+  if (!profile?.company_id || profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const phone = decodeURIComponent(params.phone)
+  if (phone.length > 20) return NextResponse.json({ error: 'Invalid phone' }, { status: 400 })
   const db = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!) as any
 
   await db.from('viewer_sessions').delete().eq('company_id', profile.company_id).eq('phone', phone)

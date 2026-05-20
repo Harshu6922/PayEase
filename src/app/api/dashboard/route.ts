@@ -30,12 +30,16 @@ export async function GET() {
     supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).eq('worker_type', 'commission'),
     supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('is_active', true).eq('worker_type', 'daily'),
     supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('date', today),
-    supabase.from('advances').select('amount', { count: 'exact' }).eq('company_id', companyId).eq('status', 'outstanding'),
+    supabase.from('employee_advances').select('amount, advance_repayments(amount)').eq('company_id', companyId),
     supabase.from('expenses').select('amount').eq('company_id', companyId).gte('date', `${currentMonth}-01`),
     supabase.from('employees').select('id, full_name, worker_type, monthly_salary').eq('company_id', companyId).eq('is_active', true).order('full_name').limit(5),
   ])
 
-  const totalAdvances = advancesData?.reduce((sum, a) => sum + ((a as any).amount ?? 0), 0) ?? 0
+  const totalAdvances = (advancesData ?? []).reduce((sum: number, a: any) => {
+    const repaid = (a.advance_repayments ?? []).reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0)
+    const remaining = Number(a.amount ?? 0) - repaid
+    return sum + Math.max(0, remaining)
+  }, 0)
   const totalExpenses = expensesData?.reduce((sum, e) => sum + ((e as any).amount ?? 0), 0) ?? 0
 
   return NextResponse.json({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { verifyBearer } from '@/lib/security'
 
 // Runs daily at 12:30 UTC (6:00 PM IST)
 // Routing: notification_method per employee
@@ -74,19 +75,19 @@ async function sendSMS(apiKey: string, toPhone: string, message: string): Promis
 
 async function calcEmployeeData(empId: string, workerType: string, monthlySalary: number,
   dailyRate: number, stdHours: number, today: string, monthStart: string) {
-  const { data: todayAtt } = await getAdminClient().from('attendance')
+  const { data: todayAtt } = await getAdminClient().from('attendance_records')
     .select('status, time_in, time_out').eq('employee_id', empId).eq('date', today).maybeSingle()
   const hrs = hoursToday(todayAtt, stdHours ?? 8)
 
   let monthlyEarnings = 0
   if (workerType === 'salaried') {
-    const { data: monthAtt } = await getAdminClient().from('attendance').select('status')
+    const { data: monthAtt } = await getAdminClient().from('attendance_records').select('status')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     const days = (monthAtt ?? []).reduce(
       (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
     monthlyEarnings = Math.round((days / 26) * (monthlySalary ?? 0))
   } else if (workerType === 'daily') {
-    const { data: monthAtt } = await getAdminClient().from('attendance').select('status')
+    const { data: monthAtt } = await getAdminClient().from('attendance_records').select('status')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     const days = (monthAtt ?? []).reduce(
       (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
@@ -97,9 +98,15 @@ async function calcEmployeeData(empId: string, workerType: string, monthlySalary
     monthlyEarnings = (entries ?? []).reduce((s: number, e: any) => s + Number(e.total_amount ?? 0), 0)
   }
 
-  const { data: advances } = await getAdminClient().from('employee_advances').select('amount')
-    .eq('employee_id', empId).eq('is_repaid', false)
-  const advanceBalance = (advances ?? []).reduce((s: number, a: any) => s + Number(a.amount ?? 0), 0)
+  // Advance balance = total advances - total repayments (clamped to >= 0 per advance)
+  const { data: advances } = await getAdminClient().from('employee_advances')
+    .select('amount, advance_repayments(amount)')
+    .eq('employee_id', empId)
+  const advanceBalance = (advances ?? []).reduce((s: number, a: any) => {
+    const repaid = (a.advance_repayments ?? []).reduce((rs: number, r: any) => rs + Number(r.amount ?? 0), 0)
+    const remaining = Number(a.amount ?? 0) - repaid
+    return s + Math.max(0, remaining)
+  }, 0)
 
   return { hrs, monthlyEarnings, advanceBalance }
 }
@@ -131,8 +138,7 @@ async function sendTrialEndingEmails() {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!verifyBearer(req.headers.get('authorization'), process.env.CRON_SECRET)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

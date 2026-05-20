@@ -5,8 +5,21 @@ import { nanoid } from 'nanoid'
 export async function POST(req: NextRequest) {
   const { email, password, companyName, referralCode } = await req.json()
 
-  if (!email || !password || !companyName) {
-    return NextResponse.json({ error: 'Email, password and company name are required' }, { status: 400 })
+  // Strict input validation
+  if (typeof email !== 'string' || typeof password !== 'string' || typeof companyName !== 'string') {
+    return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
+  }
+  if (email.length < 5 || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Invalid email' }, { status: 400 })
+  }
+  if (password.length < 8 || password.length > 128) {
+    return NextResponse.json({ error: 'Password must be 8-128 characters' }, { status: 400 })
+  }
+  if (companyName.trim().length < 2 || companyName.length > 100) {
+    return NextResponse.json({ error: 'Company name must be 2-100 characters' }, { status: 400 })
+  }
+  if (referralCode !== undefined && (typeof referralCode !== 'string' || referralCode.length > 64)) {
+    return NextResponse.json({ error: 'Invalid referral code' }, { status: 400 })
   }
 
   const { isRateLimited } = await import('@/lib/rate-limit')

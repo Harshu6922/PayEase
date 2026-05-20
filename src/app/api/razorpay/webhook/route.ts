@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { sendPaymentConfirmationEmail } from '@/lib/email'
+import { safeEqual } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET
+  if (!secret) return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -11,13 +15,10 @@ export async function POST(req: NextRequest) {
   const body = await req.text()
   const signature = req.headers.get('x-razorpay-signature') ?? ''
 
-  // Verify webhook signature
-  const expectedSig = crypto
-    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET!)
-    .update(body)
-    .digest('hex')
+  // Verify webhook signature with constant-time comparison
+  const expectedSig = crypto.createHmac('sha256', secret).update(body).digest('hex')
 
-  if (expectedSig !== signature) {
+  if (!safeEqual(expectedSig, signature)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
           const { data: authUser } = await adminClient.auth.admin.getUserById(profile.id)
           const email = authUser?.user?.email
           if (email && company && subRow) {
-            const planPrices: Record<string, number> = { starter: 299, growth: 499, business: 999 }
+            const planPrices: Record<string, number> = { micro: 125, starter: 299, growth: 499, business: 999 }
             await sendPaymentConfirmationEmail(email, (company as any).name, subRow.plan, planPrices[subRow.plan] ?? 0)
           }
         }

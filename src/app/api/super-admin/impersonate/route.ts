@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { safeEqual } from '@/lib/security'
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-super-admin-secret')
-  if (secret !== process.env.SUPER_ADMIN_SECRET) {
+  const expected = process.env.SUPER_ADMIN_SECRET
+  if (!expected) return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
+  const provided = req.headers.get('x-super-admin-secret')
+  if (!safeEqual(provided, expected)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

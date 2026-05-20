@@ -5,7 +5,9 @@ import { MAX_REFERRALS } from '@/lib/plans'
 
 export async function POST(req: NextRequest) {
   const { code } = await req.json()
-  if (!code) return NextResponse.json({ error: 'Code required' }, { status: 400 })
+  if (typeof code !== 'string' || code.length === 0 || code.length > 64) {
+    return NextResponse.json({ error: 'Code required' }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
     .lt('created_at', monthEnd)
 
   if ((existing ?? []).length >= MAX_REFERRALS) {
-    return NextResponse.json({ error: 'Referrer has reached the 3-referral monthly limit' }, { status: 400 })
+    return NextResponse.json({ error: `Referrer has reached the ${MAX_REFERRALS}-referral monthly limit` }, { status: 400 })
   }
 
   // Check this company hasn't already been referred

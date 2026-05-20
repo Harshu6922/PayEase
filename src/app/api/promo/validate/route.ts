@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { isRateLimited } from '@/lib/rate-limit'
 
 const adminClient = () => createAdminClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,8 +9,20 @@ const adminClient = () => createAdminClient(
 )
 
 export async function POST(req: NextRequest) {
+  // Require auth so anonymous attackers can't probe for valid codes
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Rate limit per user to prevent brute force code-guessing
+  if (await isRateLimited(`promo_validate:${user.id}`, { maxAttempts: 10, windowMs: 60_000 })) {
+    return NextResponse.json({ error: 'Too many attempts. Try again later.' }, { status: 429 })
+  }
+
   const { code } = await req.json()
-  if (!code) return NextResponse.json({ error: 'No code provided' }, { status: 400 })
+  if (typeof code !== 'string' || code.length === 0 || code.length > 64) {
+    return NextResponse.json({ error: 'No code provided' }, { status: 400 })
+  }
 
   const { data: promo } = await adminClient()
     .from('promo_codes')

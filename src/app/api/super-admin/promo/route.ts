@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { safeEqual } from '@/lib/security'
 
 function validateSecret(req: NextRequest) {
-  return req.headers.get('x-super-admin-secret') === process.env.SUPER_ADMIN_SECRET
+  return safeEqual(req.headers.get('x-super-admin-secret'), process.env.SUPER_ADMIN_SECRET)
 }
 
 const adminClient = () => createAdminClient(

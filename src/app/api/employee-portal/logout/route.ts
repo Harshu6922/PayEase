@@ -4,7 +4,9 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 export async function POST(req: NextRequest) {
   const auth = req.headers.get('authorization')
   const token = auth?.replace('Bearer ', '').trim()
-  if (!token) return NextResponse.json({ ok: true })
+  if (!token || token.length !== 64 || !/^[a-f0-9]+$/.test(token)) {
+    return NextResponse.json({ ok: true })
+  }
 
   const db = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

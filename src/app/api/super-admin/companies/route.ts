@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { safeEqual } from '@/lib/security'
 
 function authCheck(req: NextRequest) {
-  const secret = req.headers.get('x-super-admin-secret')
-  return secret === process.env.SUPER_ADMIN_SECRET
+  return safeEqual(req.headers.get('x-super-admin-secret'), process.env.SUPER_ADMIN_SECRET)
 }
 
 export async function GET(req: NextRequest) {
