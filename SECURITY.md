@@ -38,6 +38,16 @@ This document tracks security posture for PayEase. See `migrations/` for the SQL
 
 ---
 
+## Current advisor state (post-hardening)
+
+After all fixes, Supabase advisors show:
+- **0 ERRORs**
+- **3 INFO** (`viewer_sessions`, `employee_sessions`, `rate_limits` — RLS enabled with no policies. **By design** — service_role only.)
+- **3 WARN** (`auth_company_id`, `get_my_company_id`, `get_my_role` SECURITY DEFINER functions. **Required** — called from the `profiles` RLS policy itself; switching to INVOKER would cause infinite recursion.)
+- **1 WARN** (HIBP leaked password protection — Auth dashboard toggle, see below).
+
+Down from 73 issues (8 ERRORs + 65 WARNs) at the start of the audit.
+
 ## What YOU still need to do (manual — Supabase dashboard)
 
 These can't be done via SQL/code. Open the Supabase dashboard for project `fbzytsvdhiksqtnyicxf`:
