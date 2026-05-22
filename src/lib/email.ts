@@ -1,6 +1,9 @@
 import { Resend } from 'resend'
 
-const FROM = 'PayEase <noreply@payease.in>'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.payeasebuddy.co.in'
+const FROM = process.env.RESEND_FROM ?? 'PayEase <noreply@payeasebuddy.co.in>'
+const SUPPORT_EMAIL = 'payeasebuddy@gmail.com'
+
 function getResend() { return new Resend(process.env.RESEND_API_KEY) }
 
 export async function sendTrialEndingEmail(to: string, companyName: string, daysLeft: number) {
@@ -15,12 +18,12 @@ export async function sendTrialEndingEmail(to: string, companyName: string, days
         <p style="color:#afa7c2;font-size:14px;line-height:1.6">
           Hi ${companyName}, your free trial of PayEase ends soon. Subscribe now to keep access to your payroll data, employee records, and all features.
         </p>
-        <a href="https://pay-ease.vercel.app/billing"
+        <a href="${APP_URL}/billing"
           style="display:inline-block;margin:24px 0;padding:14px 28px;background:#bd9dff;color:#0F0A1E;font-weight:700;font-size:14px;border-radius:12px;text-decoration:none">
           Choose a Plan →
         </a>
         <p style="color:#6b6483;font-size:12px;margin-top:32px">
-          Plans start at ₹299/month. Questions? Reply to this email or visit our <a href="https://pay-ease.vercel.app/contact" style="color:#bd9dff">contact page</a>.
+          Plans start at ₹125/month. Questions? Reply to this email or write to <a href="mailto:${SUPPORT_EMAIL}" style="color:#bd9dff">${SUPPORT_EMAIL}</a>.
         </p>
       </div>
     `,
@@ -35,19 +38,19 @@ export async function sendPaymentConfirmationEmail(to: string, companyName: stri
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0F0A1E;color:#ebe1fe;padding:40px 32px;border-radius:16px">
         <div style="font-size:28px;font-weight:900;color:#bd9dff;margin-bottom:8px">PayEase</div>
-        <h1 style="font-size:22px;font-weight:700;margin:24px 0 12px">Payment confirmed ✓</h1>
+        <h1 style="font-size:22px;font-weight:700;margin:24px 0 12px">Payment confirmed</h1>
         <p style="color:#afa7c2;font-size:14px;line-height:1.6">
           Thank you, ${companyName}. Your payment of <strong style="color:#ebe1fe">₹${amountRs.toLocaleString('en-IN')}</strong> for the <strong style="color:#ebe1fe">${planName} Plan</strong> has been received.
         </p>
         <div style="margin:24px 0;padding:20px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:12px">
           <p style="margin:0;font-size:13px;color:#10b981;font-weight:600">Active subscription — full access restored</p>
         </div>
-        <a href="https://pay-ease.vercel.app/dashboard"
+        <a href="${APP_URL}/dashboard"
           style="display:inline-block;padding:14px 28px;background:#bd9dff;color:#0F0A1E;font-weight:700;font-size:14px;border-radius:12px;text-decoration:none">
           Go to Dashboard →
         </a>
         <p style="color:#6b6483;font-size:12px;margin-top:32px">
-          Need help? <a href="https://pay-ease.vercel.app/contact" style="color:#bd9dff">Contact support</a>
+          Need help? Email <a href="mailto:${SUPPORT_EMAIL}" style="color:#bd9dff">${SUPPORT_EMAIL}</a> — we reply within 24 hours.
         </p>
       </div>
     `,
@@ -62,7 +65,7 @@ export async function sendWelcomeEmail(to: string, companyName: string) {
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0F0A1E;color:#ebe1fe;padding:40px 32px;border-radius:16px">
         <div style="font-size:28px;font-weight:900;color:#bd9dff;margin-bottom:8px">PayEase</div>
-        <h1 style="font-size:22px;font-weight:700;margin:24px 0 12px">Welcome, ${companyName} 👋</h1>
+        <h1 style="font-size:22px;font-weight:700;margin:24px 0 12px">Welcome, ${companyName}</h1>
         <p style="color:#afa7c2;font-size:14px;line-height:1.6">
           Your 7-day free trial has started. Here's what to do first:
         </p>
@@ -71,12 +74,13 @@ export async function sendWelcomeEmail(to: string, companyName: string) {
           <li>Mark today's attendance under <strong style="color:#ebe1fe">Attendance</strong></li>
           <li>Run your first payroll under <strong style="color:#ebe1fe">Reports</strong></li>
         </ol>
-        <a href="https://pay-ease.vercel.app/dashboard"
+        <a href="${APP_URL}/dashboard"
           style="display:inline-block;margin:24px 0;padding:14px 28px;background:#bd9dff;color:#0F0A1E;font-weight:700;font-size:14px;border-radius:12px;text-decoration:none">
           Get Started →
         </a>
         <p style="color:#6b6483;font-size:12px;margin-top:32px">
-          Trial ends in 7 days. <a href="https://pay-ease.vercel.app/billing" style="color:#bd9dff">View plans</a>
+          Trial ends in 7 days. <a href="${APP_URL}/billing" style="color:#bd9dff">View plans</a> from ₹125/month.<br/>
+          Need help? Email <a href="mailto:${SUPPORT_EMAIL}" style="color:#bd9dff">${SUPPORT_EMAIL}</a>.
         </p>
       </div>
     `,

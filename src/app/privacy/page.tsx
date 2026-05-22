@@ -82,6 +82,8 @@ export default function PrivacyPolicy() {
           <p className="text-xs" style={{ color: '#6b6483' }}>
             © {new Date().getFullYear()} PayEase. All rights reserved. &nbsp;
             <Link href="/terms" className="hover:text-[#bd9dff] transition-colors">Terms of Service</Link>
+            &nbsp;·&nbsp;
+            <Link href="/refund-policy" className="hover:text-[#bd9dff] transition-colors">Refund Policy</Link>
           </p>
         </div>
       </div>

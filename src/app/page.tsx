@@ -403,18 +403,29 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-surface w-full border-t border-[#7C3AED]/10">
-        <div className="flex flex-col md:flex-row justify-between items-center px-12 py-10 gap-6 max-w-7xl mx-auto">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <img src="/payease logo.png" alt="PayEase" className="h-7 w-7 rounded-lg object-cover" />
-              <span className="text-lg font-bold text-text">PayEase</span>
+        <div className="max-w-7xl mx-auto px-12 py-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <img src="/payease logo.png" alt="PayEase" className="h-7 w-7 rounded-lg object-cover" />
+                <span className="text-lg font-bold text-text">PayEase</span>
+              </div>
+              <p className="text-sm text-text-muted">© 2026 PayEase. Made in India with Pride.</p>
+              <a href="mailto:payeasebuddy@gmail.com" className="text-xs text-text-muted hover:text-text transition-colors">
+                Support: payeasebuddy@gmail.com
+              </a>
             </div>
-            <p className="text-sm text-text-muted">© 2026 PayEase. Made in India with Pride. 🇮🇳</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <a href="#features" className="text-text-muted hover:text-text transition-colors text-sm">Features</a>
+              <a href="#pricing" className="text-text-muted hover:text-text transition-colors text-sm">Pricing</a>
+              <Link href="/contact" className="text-text-muted hover:text-text transition-colors text-sm">Contact</Link>
+              <Link href="/login" className="text-text-muted hover:text-text transition-colors text-sm">Sign In</Link>
+            </div>
           </div>
-          <div className="flex gap-8">
-            <a href="#features" className="text-text-muted hover:text-text transition-colors text-sm">Features</a>
-            <a href="#pricing" className="text-text-muted hover:text-text transition-colors text-sm">Pricing</a>
-            <Link href="/login" className="text-text-muted hover:text-text transition-colors text-sm">Sign In</Link>
+          <div className="mt-8 pt-6 border-t border-[#7C3AED]/10 flex flex-wrap gap-x-5 gap-y-2 text-xs text-text-muted">
+            <Link href="/terms" className="hover:text-text transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-text transition-colors">Privacy Policy</Link>
+            <Link href="/refund-policy" className="hover:text-text transition-colors">Refund & Cancellation</Link>
           </div>
         </div>
       </footer>

@@ -21,7 +21,7 @@ const SECTIONS = [
   },
   {
     title: '4. Subscription & Billing',
-    body: `Subscriptions are billed monthly via Razorpay. Prices are shown in Indian Rupees (INR) inclusive of applicable taxes. Subscriptions auto-renew unless cancelled. Refunds are not provided for partial billing periods. We reserve the right to change pricing with 30 days notice.`,
+    body: `Subscriptions are billed monthly via Razorpay. Prices are shown in Indian Rupees (INR) inclusive of applicable taxes. Subscriptions auto-renew on the same calendar day each month until cancelled. Plans currently start at ₹125/month. Cancellation, refund eligibility, and the refund process are governed by our separate Refund & Cancellation Policy, which forms part of these terms.`,
   },
   {
     title: '5. Free Trial',
@@ -94,6 +94,8 @@ export default function TermsOfService() {
           <p className="text-xs" style={{ color: '#6b6483' }}>
             © {new Date().getFullYear()} PayEase. All rights reserved. &nbsp;
             <Link href="/privacy" className="hover:text-[#bd9dff] transition-colors">Privacy Policy</Link>
+            &nbsp;·&nbsp;
+            <Link href="/refund-policy" className="hover:text-[#bd9dff] transition-colors">Refund Policy</Link>
           </p>
         </div>
       </div>
