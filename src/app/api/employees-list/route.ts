@@ -15,7 +15,7 @@ export async function GET() {
 
   const [{ data: employees }, { data: subData }] = await Promise.all([
     supabase.from('employees').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
-    supabase.from('subscriptions').select('plan, razorpay_subscription_id').eq('company_id', companyId).maybeSingle(),
+    supabase.from('subscriptions').select('plan, status, razorpay_subscription_id').eq('company_id', companyId).maybeSingle(),
   ])
 
   return NextResponse.json({ employees: employees ?? [], userRole, subscription: subData })

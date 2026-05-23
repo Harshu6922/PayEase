@@ -20,7 +20,7 @@ export default async function EmployeesPage() {
   const [{ data, error }, { data: subData }] = await Promise.all([
     supabase.from('employees').select('*').eq('company_id', companyId).order('created_at', { ascending: false }),
     companyId
-      ? supabase.from('subscriptions').select('plan, razorpay_subscription_id').eq('company_id', companyId).maybeSingle()
+      ? supabase.from('subscriptions').select('plan, status, razorpay_subscription_id').eq('company_id', companyId).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
 
@@ -36,7 +36,9 @@ export default async function EmployeesPage() {
 
   const employees: Employee[] = (data || []) as Employee[]
   const planId: PlanId = ((subData as any)?.plan ?? 'starter') as PlanId
-  const isSubscribed = !!((subData as any)?.razorpay_subscription_id)
+  // Trust the subscription status (same source middleware uses for access control).
+  // razorpay_subscription_id may be null for accounts activated manually or via promo.
+  const isSubscribed = (subData as any)?.status === 'active'
   const employeeLimit = isSubscribed ? (PLANS[planId]?.employeeLimit ?? 15) : 1
   const activeEmployeeCount = employees.filter(e => e.is_active).length
   const atSeatLimit = activeEmployeeCount >= employeeLimit

@@ -33,7 +33,7 @@ export function useDashboardStats() {
 export interface EmployeesData {
   employees: any[]
   userRole: 'admin' | 'viewer'
-  subscription: { plan: string; razorpay_subscription_id: string | null } | null
+  subscription: { plan: string; status: string | null; razorpay_subscription_id: string | null } | null
 }
 
 export function useEmployeesList() {
