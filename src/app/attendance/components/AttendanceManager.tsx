@@ -292,12 +292,18 @@ export default function AttendanceManager({
           const short = standardHours - workedHours;
           if (short > 0) dailyPay = dailyWage - short * hourlyRate;
         }
-        const deductionHours = status === 'Absent' ? standardHours : status === 'Half Day' ? standardHours / 2 : Math.max(0, standardHours - workedHours);
+        // For Absent days, deduction is 0 — the day is already excluded from earnings
+        // by the payroll formula (per_day × days_worked). Adding a deduction here
+        // would double-count the absence and silently underpay the employee.
+        const deductionHours = status === 'Absent' ? 0
+          : status === 'Half Day' ? standardHours / 2
+          : Math.max(0, standardHours - workedHours);
+        const deductionAmount = status === 'Absent' ? 0 : dailyWage - dailyPay;
         return {
           company_id: verifiedCompanyId, employee_id: emp.id, date: globalDate, status,
           start_time: startTime, end_time: endTime, daily_wage: dailyWage, hourly_rate: hourlyRate,
           worked_hours: workedHours, daily_pay: dailyPay, overtime_hours: 0, overtime_amount: 0,
-          deduction_hours: deductionHours, deduction_amount: dailyWage - dailyPay,
+          deduction_hours: deductionHours, deduction_amount: deductionAmount,
         };
       });
 

@@ -79,7 +79,7 @@ export default function EmployeeAttendanceSection({ employee, companyId }: { emp
       } else {
         result.push({
           date: dateStr, status: 'Absent', start_time: defaultStart, end_time: defaultEnd,
-          worked_hours: 0, overtime_hours: 0, overtime_amount: 0, deduction_amount: dailyWage,
+          worked_hours: 0, overtime_hours: 0, overtime_amount: 0, deduction_amount: 0,
           exists: false, dirty: false,
         })
       }
@@ -127,8 +127,13 @@ export default function EmployeeAttendanceSection({ employee, companyId }: { emp
       const short = standardHours - workedHours
       if (short > 0) dailyPay = dailyWage - short * hourlyRate
     }
-    const deductionHours = day.status === 'Absent' ? standardHours : day.status === 'Half Day' ? standardHours / 2 : Math.max(0, standardHours - workedHours)
-    const deductionAmount = dailyWage - Math.min(dailyPay, dailyWage)
+    // For Absent days, deduction is 0 — the day is already excluded from earnings
+    // by the payroll formula. A deduction here would double-count the absence.
+    const deductionHours = day.status === 'Absent' ? 0
+      : day.status === 'Half Day' ? standardHours / 2
+      : Math.max(0, standardHours - workedHours)
+    const deductionAmount = day.status === 'Absent' ? 0
+      : dailyWage - Math.min(dailyPay, dailyWage)
 
     const { error: upsertErr } = await supabase.from('attendance_records').upsert({
       company_id: companyId, employee_id: employee.id, date: day.date,
