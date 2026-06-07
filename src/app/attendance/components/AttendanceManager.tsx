@@ -53,6 +53,7 @@ export default function AttendanceManager({
   const [calViewYear, setCalViewYear] = useState(() => new Date().getFullYear());
   const [calViewMonth, setCalViewMonth] = useState(() => new Date().getMonth());
   const calAnchorRef = useRef<HTMLButtonElement>(null);
+  const calPopoverRef = useRef<HTMLDivElement>(null);
   const [globalStartTime, setGlobalStartTime] = useState('09:00');
   const [globalEndTime, setGlobalEndTime] = useState('17:00');
 
@@ -120,6 +121,7 @@ export default function AttendanceManager({
     if (!showCalendar) return;
     function handleOutside(e: MouseEvent) {
       if (calAnchorRef.current && calAnchorRef.current.contains(e.target as Node)) return;
+      if (calPopoverRef.current && calPopoverRef.current.contains(e.target as Node)) return;
       setShowCalendar(false);
     }
     document.addEventListener('mousedown', handleOutside);
@@ -147,6 +149,7 @@ export default function AttendanceManager({
 
   const calendarPortal = showCalendar && calendarRect && typeof document !== 'undefined' ? createPortal(
     <div
+      ref={calPopoverRef}
       style={{
         position: 'fixed',
         top: calendarRect.bottom + 8,
