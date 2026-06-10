@@ -125,16 +125,19 @@ export interface Database {
       companies: {
         Row: {
           created_at: string | null
+          default_salary_divisor: number | null
           id: string
           name: string
         }
         Insert: {
           created_at?: string | null
+          default_salary_divisor?: number | null
           id?: string
           name: string
         }
         Update: {
           created_at?: string | null
+          default_salary_divisor?: number | null
           id?: string
           name?: string
         }
@@ -152,6 +155,7 @@ export interface Database {
           joining_date: string
           monthly_salary: number
           overtime_multiplier: number
+          salary_divisor: number | null
           standard_working_hours: number
           worker_type: string
         }
@@ -166,6 +170,7 @@ export interface Database {
           joining_date: string
           monthly_salary: number
           overtime_multiplier?: number
+          salary_divisor?: number | null
           standard_working_hours: number
           worker_type?: string
         }
@@ -180,6 +185,7 @@ export interface Database {
           joining_date?: string
           monthly_salary?: number
           overtime_multiplier?: number
+          salary_divisor?: number | null
           standard_working_hours?: number
           worker_type?: string
         }
