@@ -1,5 +1,9 @@
 import { Employee, AttendanceRecord } from "@/types";
-import { calculateDailyPayroll, calculateRates } from "./payroll-utils";
+import { calculateRates } from "./payroll-utils";
+
+function round2(num: number): number {
+  return Math.round(num * 100) / 100;
+}
 
 /**
  * Payroll columns of an attendance row that depend on the salary divisor.
@@ -16,18 +20,34 @@ export type RecomputedRow = Pick<
   | "deduction_amount"
 >;
 
+type StoredRow = Pick<
+  AttendanceRecord,
+  | "status"
+  | "date"
+  | "daily_wage"
+  | "worked_hours"
+  | "daily_pay"
+  | "overtime_hours"
+  | "overtime_amount"
+  | "deduction_hours"
+  | "deduction_amount"
+>;
+
 /**
- * Recomputes the divisor-dependent payroll columns for a single stored
- * attendance row using the employee's current `salary_divisor`.
+ * Recomputes the divisor-dependent payroll columns for a stored attendance row
+ * when the employee's `salary_divisor` changes.
  *
- * Absent rows are forced to zero pay/deduction (the day is already excluded
- * from earnings by the per-day formula, so deducting again would double-count
- * — see commit 695a54d7).
+ * Every monetary field the app records is linear in the daily wage (the two
+ * attendance save paths always set `overtime = 0` and
+ * `deduction = daily_wage - daily_pay`). So rather than recomputing from times
+ * — which would inject overtime the app never records — we **rescale** the
+ * stored amounts by `newDailyWage / oldDailyWage`, preserving worked/overtime/
+ * deduction hours and the recording logic exactly.
+ *
+ * Absent rows keep zero pay/deduction (the day is already excluded from
+ * earnings; deducting again would double-count — see commit 695a54d7).
  */
-export function recomputeAttendanceRow(
-  employee: Employee,
-  row: Pick<AttendanceRecord, "status" | "date" | "start_time" | "end_time">
-): RecomputedRow {
+export function recomputeAttendanceRow(employee: Employee, row: StoredRow): RecomputedRow {
   const [yearStr, monthStr] = row.date.split("-");
   const { dailyWage, hourlyRate } = calculateRates(
     employee,
@@ -48,15 +68,17 @@ export function recomputeAttendanceRow(
     };
   }
 
-  const p = calculateDailyPayroll(employee, row.date, row.start_time, row.end_time);
+  const oldWage = Number(row.daily_wage) || 0;
+  const ratio = oldWage > 0 ? dailyWage / oldWage : 0;
+
   return {
-    daily_wage: p.daily_wage,
-    hourly_rate: p.hourly_rate,
-    worked_hours: p.worked_hours,
-    daily_pay: p.daily_pay,
-    overtime_hours: p.overtime_hours,
-    overtime_amount: p.overtime_amount,
-    deduction_hours: p.deduction_hours,
-    deduction_amount: p.deduction_amount,
+    daily_wage: dailyWage,
+    hourly_rate: hourlyRate,
+    worked_hours: Number(row.worked_hours) || 0,
+    daily_pay: round2((Number(row.daily_pay) || 0) * ratio),
+    overtime_hours: Number(row.overtime_hours) || 0,
+    overtime_amount: round2((Number(row.overtime_amount) || 0) * ratio),
+    deduction_hours: Number(row.deduction_hours) || 0,
+    deduction_amount: round2((Number(row.deduction_amount) || 0) * ratio),
   };
 }
