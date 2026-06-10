@@ -43,6 +43,7 @@ export default function EditEmployeeModal({ employee }: Props) {
     full_name: employee.full_name,
     employee_id: employee.employee_id,
     monthly_salary: String(employee.monthly_salary),
+    salary_divisor: employee.salary_divisor != null ? String(employee.salary_divisor) : '',
     standard_working_hours: String(employee.standard_working_hours),
     overtime_multiplier: String(employee.overtime_multiplier || 1.5),
     joining_date: employee.joining_date,
@@ -74,11 +75,16 @@ export default function EditEmployeeModal({ employee }: Props) {
           return
         }
       }
+      const newDivisor = formData.worker_type === 'salaried' && formData.salary_divisor
+        ? parseInt(formData.salary_divisor, 10) : null
+      const divisorChanged = newDivisor !== (employee.salary_divisor ?? null)
+
       const { error: updateError } = await supabase.from('employees').update({
         full_name: formData.full_name,
         employee_id: formData.employee_id,
         monthly_salary: formData.worker_type === 'daily' || formData.worker_type === 'commission'
           ? 0 : parseFloat(formData.monthly_salary),
+        salary_divisor: newDivisor,
         standard_working_hours: formData.worker_type === 'commission'
           ? 8 : parseFloat(formData.standard_working_hours),
         overtime_multiplier: formData.worker_type === 'commission' || formData.worker_type === 'daily'
@@ -95,6 +101,17 @@ export default function EditEmployeeModal({ employee }: Props) {
       }).eq('id', employee.id)
 
       if (updateError) throw new Error(updateError.message)
+
+      // Rescale this employee's stored attendance rows (current + previous
+      // months) when the divisor changed, so figures stay consistent.
+      if (divisorChanged) {
+        await fetch('/api/employees/recompute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employeeId: employee.id }),
+        }).catch(() => {})
+      }
+
       setIsOpen(false)
       router.refresh()
     } catch (err: unknown) {
@@ -202,6 +219,38 @@ export default function EditEmployeeModal({ employee }: Props) {
                   <input type="number" value={formData.monthly_salary}
                     onChange={e => setFormData(prev => ({ ...prev, monthly_salary: e.target.value }))}
                     className={inputCls} required />
+                </div>
+              )}
+
+              {/* Salary Divisor — salaried only */}
+              {formData.worker_type === 'salaried' && (
+                <div>
+                  <label className={labelCls}>Salary Divisor (days)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min={1} max={31} value={formData.salary_divisor}
+                      placeholder="Actual days in month"
+                      onChange={e => setFormData(prev => ({ ...prev, salary_divisor: e.target.value }))}
+                      className={inputCls} />
+                    {['26', '30'].map(v => (
+                      <button key={v} type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, salary_divisor: v }))}
+                        className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          formData.salary_divisor === v
+                            ? 'bg-[#bd9dff]/25 text-[#ebe1fe] border border-[#bd9dff]/40'
+                            : 'bg-[rgba(189,157,255,0.05)] text-[#afa7c2] border border-[rgba(189,157,255,0.1)]'
+                        }`}>{v}</button>
+                    ))}
+                    {formData.salary_divisor && (
+                      <button type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, salary_divisor: '' }))}
+                        className="shrink-0 rounded-xl px-3 py-2.5 text-sm text-[#afa7c2] border border-[rgba(189,157,255,0.1)] bg-[rgba(189,157,255,0.05)]">
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs mt-1.5 text-[#afa7c2]/70">
+                    Per-day pay = monthly salary ÷ this number. Blank = actual days in the month. Changing this recomputes past months.
+                  </p>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Plus, X } from 'lucide-react'
@@ -47,6 +47,7 @@ export default function AddEmployeeModal({
     phone_number: '',
     notification_method: 'sms' as 'whatsapp' | 'sms' | 'none',
     monthly_salary: '',
+    salary_divisor: '',
     standard_working_hours: '8',
     overtime_multiplier: '1.0',
     joining_date: new Date().toISOString().split('T')[0],
@@ -63,6 +64,25 @@ export default function AddEmployeeModal({
     const checked = (e.target as HTMLInputElement).checked
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
   }
+
+  // New employees inherit the company's default salary divisor (if set).
+  useEffect(() => {
+    if (!isOpen) return
+    let active = true
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+      const companyId = (profile as any)?.company_id
+      if (!companyId) return
+      const { data: company } = await supabase
+        .from('companies').select('default_salary_divisor').eq('id', companyId).maybeSingle()
+      const def = (company as any)?.default_salary_divisor
+      if (active && def) setFormData(prev => ({ ...prev, salary_divisor: String(def) }))
+    })()
+    return () => { active = false }
+  }, [isOpen, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,6 +115,8 @@ export default function AddEmployeeModal({
         employee_id: formData.employee_id,
         monthly_salary: formData.worker_type === 'daily' || formData.worker_type === 'commission'
           ? 0 : parseFloat(formData.monthly_salary),
+        salary_divisor: formData.worker_type === 'salaried' && formData.salary_divisor
+          ? parseInt(formData.salary_divisor, 10) : null,
         standard_working_hours: formData.worker_type === 'commission'
           ? 8 : parseFloat(formData.standard_working_hours),
         overtime_multiplier: formData.worker_type === 'commission' || formData.worker_type === 'daily'
@@ -119,6 +141,7 @@ export default function AddEmployeeModal({
         phone_number: '',
         notification_method: 'sms',
         monthly_salary: '',
+        salary_divisor: '',
         standard_working_hours: '8',
         overtime_multiplier: '1.0',
         joining_date: new Date().toISOString().split('T')[0],
@@ -261,6 +284,38 @@ export default function AddEmployeeModal({
                   <input type="number" value={formData.monthly_salary} placeholder="e.g. 25000"
                     onChange={e => setFormData(prev => ({ ...prev, monthly_salary: e.target.value }))}
                     className={inputCls} required />
+                </div>
+              )}
+
+              {/* Salary Divisor — salaried only */}
+              {formData.worker_type === 'salaried' && (
+                <div>
+                  <label className={labelCls}>Salary Divisor (days)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min={1} max={31} value={formData.salary_divisor}
+                      placeholder="Actual days in month"
+                      onChange={e => setFormData(prev => ({ ...prev, salary_divisor: e.target.value }))}
+                      className={inputCls} />
+                    {['26', '30'].map(v => (
+                      <button key={v} type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, salary_divisor: v }))}
+                        className={`shrink-0 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          formData.salary_divisor === v
+                            ? 'bg-[#bd9dff]/25 text-[#ebe1fe] border border-[#bd9dff]/40'
+                            : 'bg-[rgba(189,157,255,0.05)] text-[#afa7c2] border border-[rgba(189,157,255,0.1)]'
+                        }`}>{v}</button>
+                    ))}
+                    {formData.salary_divisor && (
+                      <button type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, salary_divisor: '' }))}
+                        className="shrink-0 rounded-xl px-3 py-2.5 text-sm text-[#afa7c2] border border-[rgba(189,157,255,0.1)] bg-[rgba(189,157,255,0.05)]">
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs mt-1.5 text-[#afa7c2]/70">
+                    Per-day pay = monthly salary ÷ this number. Blank = actual days in the month. Use 26 for the &ldquo;26-day&rdquo; method.
+                  </p>
                 </div>
               )}
 
