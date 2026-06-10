@@ -279,7 +279,7 @@ export default function AttendanceManager({
         const standardHours = Number(emp.standard_working_hours) || 8;
         const dailyWage = emp.worker_type === 'daily'
           ? Number(emp.daily_rate ?? 0)
-          : Number(emp.monthly_salary) / daysInMonth;
+          : Number(emp.monthly_salary) / (emp.salary_divisor ?? daysInMonth);
         const hourlyRate = dailyWage / standardHours;
         let startTime = state?.overrideStartTime || (status === 'Absent' ? '00:00' : globalStartTime);
         let endTime = state?.overrideEndTime || (status === 'Absent' ? '00:00' : globalEndTime);

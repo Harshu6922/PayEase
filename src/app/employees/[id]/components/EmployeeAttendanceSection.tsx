@@ -62,7 +62,7 @@ export default function EmployeeAttendanceSection({ employee, companyId }: { emp
   const buildDays = useCallback((existing: any[]) => {
     const [yr, mo] = month.split('-').map(Number)
     const daysInMonth = getDaysInMonth(new Date(yr, mo - 1))
-    const dailyWage = Number(employee.monthly_salary) / daysInMonth
+    const dailyWage = Number(employee.monthly_salary) / (employee.salary_divisor ?? daysInMonth)
     const result: DayRecord[] = []
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${month}-${String(d).padStart(2, '0')}`
@@ -110,7 +110,7 @@ export default function EmployeeAttendanceSection({ employee, companyId }: { emp
     const [yr, mo] = month.split('-').map(Number)
     const daysInMonthCount = getDaysInMonth(new Date(yr, mo - 1))
     const standardHours = Number(employee.standard_working_hours) || 8
-    const dailyWage = Number(employee.monthly_salary) / daysInMonthCount
+    const dailyWage = Number(employee.monthly_salary) / (employee.salary_divisor ?? daysInMonthCount)
     const hourlyRate = dailyWage / standardHours
 
     let startTime = day.status === 'Absent' ? '00:00' : day.start_time

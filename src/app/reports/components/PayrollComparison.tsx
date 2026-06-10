@@ -15,7 +15,8 @@ function calcEarnings(emp: any, attendance: any[], workEntries: any[], dailyAtt:
   // salaried
   const empAtt = attendance.filter(a => a.employee_id === emp.id)
   const workedDays = empAtt.filter(a => Number(a.worked_hours) > 0).length
-  const perDay = days > 0 ? Number(emp.monthly_salary) / days : 0
+  const divisor = emp.salary_divisor ?? days
+  const perDay = divisor > 0 ? Number(emp.monthly_salary) / divisor : 0
   const ot = empAtt.reduce((s: number, a: any) => s + Number(a.overtime_amount ?? 0), 0)
   const ded = empAtt.reduce((s: number, a: any) => s + Number(a.deduction_amount ?? 0), 0)
   return workedDays * perDay + ot - ded

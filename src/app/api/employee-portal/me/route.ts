@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
   const [{ data: emp }, { data: company }] = await Promise.all([
     db.from('employees')
-      .select('id, full_name, employee_id, worker_type, monthly_salary, daily_rate, standard_working_hours, joining_date, is_active, phone_number')
+      .select('id, full_name, employee_id, worker_type, monthly_salary, daily_rate, standard_working_hours, salary_divisor, joining_date, is_active, phone_number')
       .eq('id', employee_id).maybeSingle(),
     db.from('companies').select('name').eq('id', company_id).maybeSingle(),
   ])
@@ -65,7 +65,9 @@ export async function GET(req: NextRequest) {
   // Monthly earnings
   let monthlyEarnings = 0
   if (emp.worker_type === 'salaried') {
-    monthlyEarnings = Math.round((daysPresent / 26) * (emp.monthly_salary ?? 0))
+    const [yr, mo] = monthStart.split('-').map(Number)
+    const divisor = emp.salary_divisor ?? new Date(yr, mo, 0).getDate()
+    monthlyEarnings = Math.round((daysPresent / divisor) * (emp.monthly_salary ?? 0))
   } else if (emp.worker_type === 'daily') {
     monthlyEarnings = Math.round(daysPresent * (emp.daily_rate ?? 0))
   } else if (emp.worker_type === 'commission') {

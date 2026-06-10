@@ -36,6 +36,7 @@ export interface EmployeeDetailPDFProps {
   dailyRate?: number;
   workerType?: string;
   daysInMonth: number;
+  salaryDivisor?: number | null;
   prevBalance: number;
   outstandingDays: number;
   prevMonthName: string;
@@ -50,6 +51,7 @@ export default function EmployeeDetailPDF({
   dailyRate = 0,
   workerType = 'salaried',
   daysInMonth,
+  salaryDivisor = null,
   prevBalance,
   outstandingDays,
   prevMonthName,
@@ -58,7 +60,8 @@ export default function EmployeeDetailPDF({
   const monthLabel = format(parse(month, 'yyyy-MM', new Date()), 'MMMM yyyy');
   const isDaily = workerType === 'daily';
   const isCommission = workerType === 'commission';
-  const dailyWage = isDaily ? dailyRate : (daysInMonth > 0 ? monthlySalary / daysInMonth : 0);
+  const salaryDays = salaryDivisor ?? daysInMonth;
+  const dailyWage = isDaily ? dailyRate : (salaryDays > 0 ? monthlySalary / salaryDays : 0);
   const netPayable = row.final_payable_salary + prevBalance;
   const remaining = netPayable - paidAmount;
 

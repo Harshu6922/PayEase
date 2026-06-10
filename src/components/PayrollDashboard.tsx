@@ -21,6 +21,7 @@ interface Employee {
   worker_type: 'salaried' | 'commission' | 'daily'
   daily_rate: number | null
   standard_working_hours: number | null
+  salary_divisor?: number | null
 }
 
 interface AttendanceRecord {
@@ -118,7 +119,8 @@ function calculatePayroll(
         total_overtime_amount += Number(record.overtime_amount || 0)
         total_deduction_amount += Number(record.deduction_amount || 0)
       })
-      const per_day_salary = workingDays > 0 ? Number(emp.monthly_salary) / workingDays : 0
+      const divisor = emp.salary_divisor ?? workingDays
+      const per_day_salary = divisor > 0 ? Number(emp.monthly_salary) / divisor : 0
       earned_salary = total_worked_days > 0 ? per_day_salary * total_worked_days : 0
     }
 
@@ -382,6 +384,7 @@ export default function PayrollDashboard({
           dailyRate={Number((emp as any).daily_rate ?? 0)}
           workerType={emp.worker_type}
           daysInMonth={actualDaysInMonth}
+          salaryDivisor={emp.salary_divisor ?? null}
           prevBalance={pb}
           outstandingDays={od}
           prevMonthName={prevMonthName}

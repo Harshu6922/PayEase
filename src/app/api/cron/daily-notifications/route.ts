@@ -74,7 +74,7 @@ async function sendSMS(apiKey: string, toPhone: string, message: string): Promis
 }
 
 async function calcEmployeeData(empId: string, workerType: string, monthlySalary: number,
-  dailyRate: number, stdHours: number, today: string, monthStart: string) {
+  dailyRate: number, stdHours: number, salaryDivisor: number | null, today: string, monthStart: string) {
   const { data: todayAtt } = await getAdminClient().from('attendance_records')
     .select('status, time_in, time_out').eq('employee_id', empId).eq('date', today).maybeSingle()
   const hrs = hoursToday(todayAtt, stdHours ?? 8)
@@ -85,7 +85,9 @@ async function calcEmployeeData(empId: string, workerType: string, monthlySalary
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
     const days = (monthAtt ?? []).reduce(
       (s: number, a: any) => s + (a.status === 'Half Day' ? 0.5 : a.status === 'Present' ? 1 : 0), 0)
-    monthlyEarnings = Math.round((days / 26) * (monthlySalary ?? 0))
+    const [yr, mo] = monthStart.split('-').map(Number)
+    const divisor = salaryDivisor ?? new Date(yr, mo, 0).getDate()
+    monthlyEarnings = Math.round((days / divisor) * (monthlySalary ?? 0))
   } else if (workerType === 'daily') {
     const { data: monthAtt } = await getAdminClient().from('attendance_records').select('status')
       .eq('employee_id', empId).gte('date', monthStart).lte('date', today)
@@ -166,7 +168,7 @@ export async function GET(req: NextRequest) {
     const companyName = (company as any)?.name ?? 'Your Company'
 
     const { data: employees } = await getAdminClient().from('employees')
-      .select('id, full_name, phone_number, worker_type, monthly_salary, daily_rate, standard_working_hours, notification_method')
+      .select('id, full_name, phone_number, worker_type, monthly_salary, daily_rate, standard_working_hours, salary_divisor, notification_method')
       .eq('company_id', company_id).eq('is_active', true)
 
     if (!employees || employees.length === 0) continue
@@ -177,7 +179,7 @@ export async function GET(req: NextRequest) {
       if (method === 'none' || !e.phone_number) continue
 
       const { hrs, monthlyEarnings, advanceBalance } = await calcEmployeeData(
-        e.id, e.worker_type, e.monthly_salary, e.daily_rate, e.standard_working_hours, today, monthStart
+        e.id, e.worker_type, e.monthly_salary, e.daily_rate, e.standard_working_hours, e.salary_divisor, today, monthStart
       )
 
       const phone = formatPhone(e.phone_number)
