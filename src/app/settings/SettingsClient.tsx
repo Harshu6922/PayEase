@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { inviteUser, changeRole, removeMember, updateMyName } from './actions'
+import { inviteUser, changeRole, removeMember, updateMyName, saveDefaultSalaryDivisor, applySalaryDivisorToAll } from './actions'
 import { createClient } from '@/lib/supabase/client'
 import { Copy, Check, LogOut, Trash2, Shield, UserPlus, MessageCircle, Eye, EyeOff, ShieldCheck, ShieldOff, QrCode } from 'lucide-react'
 import { staggerContainer, fadeInUp } from '@/lib/animations'
@@ -21,6 +21,7 @@ interface Props {
   currentUserId: string
   userEmail: string
   members: Member[]
+  defaultSalaryDivisor: number | null
 }
 
 const glassCard: React.CSSProperties = {
@@ -45,9 +46,35 @@ function initials(name: string) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
-export default function SettingsClient({ companyName, companyId, currentUserId, userEmail, members: initialMembers }: Props) {
+export default function SettingsClient({ companyName, companyId, currentUserId, userEmail, members: initialMembers, defaultSalaryDivisor }: Props) {
   const router = useRouter()
   const [members, setMembers] = useState(initialMembers)
+  const [divisorInput, setDivisorInput] = useState(defaultSalaryDivisor != null ? String(defaultSalaryDivisor) : '')
+  const [divisorBusy, setDivisorBusy] = useState<null | 'save' | 'apply'>(null)
+  const [divisorMsg, setDivisorMsg] = useState<string | null>(null)
+
+  const parseDivisor = (): number | null => {
+    if (!divisorInput.trim()) return null
+    const n = parseInt(divisorInput, 10)
+    return Number.isNaN(n) ? null : n
+  }
+
+  const handleSaveDivisor = async () => {
+    setDivisorBusy('save'); setDivisorMsg(null)
+    const { error } = await saveDefaultSalaryDivisor(parseDivisor())
+    setDivisorMsg(error ? error : 'Default saved. New employees will inherit it.')
+    setDivisorBusy(null)
+  }
+
+  const handleApplyDivisorToAll = async () => {
+    const label = divisorInput.trim() ? `divisor ${parseDivisor()}` : 'actual days in month'
+    if (!confirm(`Apply ${label} to ALL salaried employees and recompute their attendance for current and previous months? This cannot be undone automatically.`)) return
+    setDivisorBusy('apply'); setDivisorMsg(null)
+    const { error, updated, employees } = await applySalaryDivisorToAll(parseDivisor())
+    if (error) setDivisorMsg(error)
+    else { setDivisorMsg(`Applied to ${employees ?? 0} employees · ${updated ?? 0} attendance rows recomputed.`); router.refresh() }
+    setDivisorBusy(null)
+  }
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteStatus, setInviteStatus] = useState<string | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
@@ -202,6 +229,56 @@ export default function SettingsClient({ companyName, companyId, currentUserId, 
               <p className="text-[10px] text-[#afa7c2]/60 italic">
                 Company name changes require contacting support. Company ID is used for external viewer login.
               </p>
+            </div>
+          </motion.section>
+
+          {/* Payroll — salary divisor */}
+          <motion.section variants={fadeInUp}>
+            <span className={sectionLabelCls}>Payroll</span>
+            <div className="p-8 rounded-2xl" style={glassCard}>
+              <label className={labelCls}>Default Salary Divisor (days)</label>
+              <p className="text-xs text-[#afa7c2]/70 mb-4">
+                Per-day pay for salaried staff = monthly salary ÷ this number. Leave blank to use the
+                actual number of days in each month. Use <strong className="text-[#ebe1fe]">26</strong> for
+                the &ldquo;26-day&rdquo; method (weekly-offs paid).
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <input type="number" min={1} max={31} value={divisorInput}
+                  placeholder="Actual days"
+                  onChange={e => setDivisorInput(e.target.value)}
+                  className={`${inputCls} max-w-[160px]`} style={inputStyle} />
+                {['26', '30'].map(v => (
+                  <button key={v} type="button" onClick={() => setDivisorInput(v)}
+                    className="shrink-0 rounded-xl px-4 py-3 text-sm font-semibold transition-colors"
+                    style={{
+                      background: divisorInput === v ? 'rgba(189,157,255,0.25)' : 'rgba(189,157,255,0.05)',
+                      border: `1px solid ${divisorInput === v ? 'rgba(189,157,255,0.4)' : 'rgba(189,157,255,0.1)'}`,
+                      color: divisorInput === v ? '#ebe1fe' : '#afa7c2',
+                    }}>{v}</button>
+                ))}
+                {divisorInput && (
+                  <button type="button" onClick={() => setDivisorInput('')}
+                    className="shrink-0 rounded-xl px-4 py-3 text-sm text-[#afa7c2]"
+                    style={{ background: 'rgba(189,157,255,0.05)', border: '1px solid rgba(189,157,255,0.1)' }}>
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <button type="button" onClick={handleSaveDivisor} disabled={divisorBusy !== null}
+                  className="rounded-xl px-5 py-2.5 text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(189,157,255,0.15)', border: '1px solid rgba(189,157,255,0.3)', color: '#bd9dff' }}>
+                  {divisorBusy === 'save' ? 'Saving…' : 'Save as default'}
+                </button>
+                <button type="button" onClick={handleApplyDivisorToAll} disabled={divisorBusy !== null}
+                  className="rounded-xl px-5 py-2.5 text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ background: 'rgba(189,157,255,0.28)', border: '1px solid rgba(189,157,255,0.45)', color: '#ebe1fe' }}>
+                  {divisorBusy === 'apply' ? 'Applying…' : 'Apply to all employees'}
+                </button>
+              </div>
+              {divisorMsg && (
+                <p className="mt-4 text-sm" style={{ color: '#bd9dff' }}>{divisorMsg}</p>
+              )}
             </div>
           </motion.section>
 

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
-import { recomputeAttendanceRow } from '@/lib/payroll-backfill'
-import { Employee } from '@/types'
+import { recomputeEmployeesAttendance } from '@/lib/recompute-attendance'
 
 /**
  * Recomputes (rescales) stored attendance rows after a salary_divisor change,
@@ -40,35 +39,10 @@ export async function POST(req: NextRequest) {
   const { data: employees, error: empErr } = await empQuery
   if (empErr) return NextResponse.json({ error: empErr.message }, { status: 500 })
 
-  let updated = 0
-
-  for (const emp of employees ?? []) {
-    const { data: rows, error: rowErr } = await admin
-      .from('attendance_records')
-      .select('id, status, date, daily_wage, hourly_rate, worked_hours, daily_pay, overtime_hours, overtime_amount, deduction_hours, deduction_amount')
-      .eq('employee_id', emp.id)
-    if (rowErr) return NextResponse.json({ error: rowErr.message }, { status: 500 })
-
-    const updates = (rows ?? [])
-      .map((row: any) => {
-        const next = recomputeAttendanceRow(emp as unknown as Employee, row)
-        const changed =
-          next.daily_wage !== Number(row.daily_wage) ||
-          next.hourly_rate !== Number(row.hourly_rate) ||
-          next.daily_pay !== Number(row.daily_pay) ||
-          next.overtime_amount !== Number(row.overtime_amount) ||
-          next.deduction_amount !== Number(row.deduction_amount)
-        return changed ? { id: row.id, ...next } : null
-      })
-      .filter(Boolean) as Array<{ id: string } & ReturnType<typeof recomputeAttendanceRow>>
-
-    for (const u of updates) {
-      const { id, ...fields } = u
-      const { error: updErr } = await admin.from('attendance_records').update(fields).eq('id', id)
-      if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
-      updated++
-    }
+  try {
+    const updated = await recomputeEmployeesAttendance(admin, (employees ?? []) as any)
+    return NextResponse.json({ success: true, updated, employees: employees?.length ?? 0 })
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'Recompute failed' }, { status: 500 })
   }
-
-  return NextResponse.json({ success: true, updated, employees: employees?.length ?? 0 })
 }

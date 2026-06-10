@@ -22,7 +22,7 @@ export default async function SettingsPage() {
 
   const { data: companyData } = await supabase
     .from('companies')
-    .select('name')
+    .select('name, default_salary_divisor')
     .eq('id', profile.company_id)
     .maybeSingle()
 
@@ -55,6 +55,7 @@ export default async function SettingsPage() {
       currentUserId={user.id}
       userEmail={user!.email ?? ''}
       members={membersWithEmail}
+      defaultSalaryDivisor={(companyData as any)?.default_salary_divisor ?? null}
     />
   )
 }
