@@ -9,12 +9,21 @@ function round2(num: number): number {
 }
 
 /**
+ * Returns the divisor used to convert monthly salary into a daily wage.
+ * When the employee has a fixed `salary_divisor` (e.g. 26) it is used as-is;
+ * otherwise we fall back to the actual number of days in the month.
+ */
+export function effectiveDivisor(employee: Employee, month: number, year: number): number {
+  return employee.salary_divisor ?? getDaysInMonth(new Date(year, month - 1));
+}
+
+/**
  * Calculates standard rates for the employee for a given month and year.
  */
 export function calculateRates(employee: Employee, month: number, year: number) {
   // Ensure we use Date considering month is 1-12
-  const daysInMonth = getDaysInMonth(new Date(year, month - 1));
-  const dailyWage = round2(employee.monthly_salary / daysInMonth);
+  const divisor = effectiveDivisor(employee, month, year);
+  const dailyWage = round2(employee.monthly_salary / divisor);
   const hourlyRate = round2(dailyWage / employee.standard_working_hours);
 
   return { dailyWage, hourlyRate };
