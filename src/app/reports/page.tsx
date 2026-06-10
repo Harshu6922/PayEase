@@ -112,6 +112,10 @@ export default async function ReportsPage({
   // Build outstandingByEmployee map
   const outstandingByEmployee: Record<string, { totalOutstanding: number; advances: { id: string; remaining: number; advance_date: string }[] }> = {}
   ;(advancesRaw || []).forEach((a: any) => {
+    // An advance can only be recovered from the month it was given onward.
+    // Skip advances dated after the displayed payroll month, otherwise a future
+    // advance would be deducted from earlier months' salary.
+    if (a.advance_date > endDate) return
     const repaid = (a.advance_repayments || []).reduce((s: number, r: any) => s + Number(r.amount), 0)
     const remaining = Number(a.amount) - repaid
     if (remaining <= 0) return  // settled, skip
