@@ -236,6 +236,15 @@ export default function PayrollDashboard({
   const [paymentModal, setPaymentModal] = useState<{ row: PayrollRow; payable: number } | null>(null)
   const [localPayments, setLocalPayments] = useState<Payment[]>(monthPayments)
 
+  // Keep the displayed month in lockstep with the server-fetched data. The page
+  // re-fetches attendance/payments keyed to the URL's ?month, passing a fresh
+  // initialMonth; without this sync, selectedMonth (which drives the per-day
+  // day-count divisor) could lag the data and show salaries computed against the
+  // wrong month's day count.
+  useEffect(() => {
+    setSelectedMonth(initialMonth)
+  }, [initialMonth])
+
   useEffect(() => {
     setPaidUpToDay(null)
     setLocalPayments(monthPayments)
@@ -314,7 +323,9 @@ export default function PayrollDashboard({
 
   const navigateMonth = (dir: 'prev' | 'next') => {
     const newMonth = dir === 'prev' ? prevMonthStr(selectedMonth) : nextMonthStr(selectedMonth)
-    setSelectedMonth(newMonth)
+    // Don't optimistically set selectedMonth here — it must stay in lockstep with
+    // the server-fetched attendance. The effect on initialMonth updates it once the
+    // new data arrives; isPending drives the loading state until then.
     startTransition(() => { router.push(`/reports?month=${newMonth}`) })
   }
 

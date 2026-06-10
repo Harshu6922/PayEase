@@ -62,7 +62,7 @@ export default async function ReportsPage({
   // Fetch Raw Employees (all worker types)
   const { data: employees, error: empErr } = await supabase
     .from('employees')
-    .select('id, employee_id, full_name, company_id, monthly_salary, worker_type, daily_rate, standard_working_hours')
+    .select('id, employee_id, full_name, company_id, monthly_salary, worker_type, daily_rate, standard_working_hours, salary_divisor')
     .eq('company_id', companyId)
     .eq('is_active', true)
 

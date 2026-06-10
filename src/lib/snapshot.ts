@@ -23,7 +23,7 @@ export async function generateSnapshot(companyId: string) {
     { data: advances },
     { data: todayAtt },
   ] = await Promise.all([
-    db.from('employees').select('id,full_name,worker_type,monthly_salary').eq('company_id', companyId).eq('is_active', true),
+    db.from('employees').select('id,full_name,worker_type,monthly_salary,salary_divisor').eq('company_id', companyId).eq('is_active', true),
     db.from('attendance').select('employee_id,worked_hours,overtime_amount,deduction_amount').eq('company_id', companyId).like('date', `${month}%`),
     db.from('work_entries').select('employee_id,total_amount').eq('company_id', companyId).like('date', `${month}%`),
     db.from('daily_attendance').select('employee_id,pay_amount').eq('company_id', companyId).like('date', `${month}%`),
@@ -58,7 +58,8 @@ export async function generateSnapshot(companyId: string) {
       const worked = att.filter((a: any) => Number(a.worked_hours) > 0).length
       const ot = att.reduce((s: number, a: any) => s + Number(a.overtime_amount ?? 0), 0)
       const ded = att.reduce((s: number, a: any) => s + Number(a.deduction_amount ?? 0), 0)
-      earned = Math.round((Number(e.monthly_salary) / daysInMonth * worked + ot - ded) * 100) / 100
+      const divisor = e.salary_divisor ?? daysInMonth
+      earned = Math.round((Number(e.monthly_salary) / divisor * worked + ot - ded) * 100) / 100
     }
     const adv = outstanding[e.id] ?? 0
     return {
